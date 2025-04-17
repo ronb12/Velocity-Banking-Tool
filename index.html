@@ -10,7 +10,6 @@
       margin: 0;
       padding: 20px;
       background-color: #f4f4f9;
-      overflow-x: hidden; /* Prevent horizontal scroll on the body */
     }
 
     .container {
@@ -19,7 +18,7 @@
       background: #fff;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
 
     h1, h2 {
@@ -48,72 +47,21 @@
       width: 100%;
       overflow-x: auto;
       margin-top: 20px;
-      -webkit-overflow-scrolling: touch; /* For smoother scrolling on mobile */
     }
 
     table {
       width: 100%;
-      table-layout: auto;
       border-collapse: collapse;
     }
 
     th, td {
       padding: 8px;
       text-align: center;
-      min-width: 120px;
+      min-width: 100px; /* Minimum column width to ensure readability */
     }
 
     th {
       background-color: #f4f4f4;
-    }
-
-    /* Mobile responsiveness */
-    @media (max-width: 600px) {
-      .container {
-        padding: 15px;
-      }
-
-      h1, h2 {
-        font-size: 1.2em;
-      }
-
-      .link a {
-        font-size: 14px;
-        padding: 8px 16px;
-      }
-
-      /* Ensure table is scrollable on smaller screens */
-      .table-container {
-        width: 100%;
-        overflow-x: auto;
-        margin-top: 20px;
-      }
-
-      table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        white-space: nowrap; /* Prevent table from breaking to new lines */
-      }
-
-      th, td {
-        min-width: 120px; /* Increase min-width for better fitting */
-      }
-    }
-
-    /* For landscape mode */
-    @media (min-width: 601px) and (orientation: landscape) {
-      .table-container {
-        width: 100%;
-        overflow-x: auto;
-        margin-top: 20px;
-      }
-
-      table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-      }
     }
   </style>
 </head>
