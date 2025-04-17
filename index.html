@@ -1,59 +1,202 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Velocity Banking Tool</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #f4f4f9;
-    }
-    .container {
-      max-width: 800px;
-      margin: auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    h1, h2 {
-      text-align: center;
-    }
-    .link {
-      text-align: center;
-      margin-top: 20px;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Velocity Banking Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
 
-    .link a {
-      text-decoration: none;
-      background-color: #007BFF;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-    }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
 
-    .link a:hover {
-      background-color: #0056b3;
-    }
-  </style>
+        h1,
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input,
+        button,
+        select {
+            width: calc(100% - 22px);
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .link a {
+            text-decoration: none;
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+
+        .link a:hover {
+            background-color: #0056b3;
+        }
+
+        .feedback {
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .high {
+            background-color: #ffcccc;
+            color: #cc0000;
+        }
+
+        .normal {
+            background-color: #ccffcc;
+            color: #006600;
+        }
+
+        .strategy {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        /* Mobile-First Design */
+        @media (max-width: 600px) {
+            input,
+            button,
+            select {
+                font-size: 16px;
+                padding: 12px;
+                width: 100%;
+            }
+
+            .container {
+                padding: 15px;
+                box-shadow: none;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            h1,
+            h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Velocity Banking Tool</h1>
-    <p>Welcome to the Velocity Banking Tool. Calculate your debt reduction strategies below.</p>
 
-    <div class="link">
-      <a href="debt_strategy_name_with_clear_button.html">Go to Debt Strategy Tool</a>
+<body>
+    <div class="container">
+        <h1>Velocity Banking Tool</h1>
+        <p>Welcome to the Velocity Banking Tool. Calculate your debt reduction strategies below.</p>
+
+        <div class="link">
+            <a href="debt-entry.html">Go to Debt Entry Tool</a>
+        </div>
+
+        <form id="calculator-form">
+            <!-- Form Fields for Monthly Income, Debt Balance, etc. -->
+            <label for="income">Monthly Income ($)</label>
+            <input id="income" required="" step="0.01" type="number" />
+
+            <label for="debtBalance">Total Debt Balance ($)</label>
+            <input id="debtBalance" required="" step="0.01" type="number" />
+
+            <label for="interestRate">Average Interest Rate (%)</label>
+            <input id="interestRate" required="" step="0.01" type="number" />
+
+            <button type="submit">Calculate Strategy</button>
+        </form>
+
+        <div id="feedback"></div>
+        <div id="recommended-strategy" style="margin-top: 30px;">
+            <h2>Recommended Strategy</h2>
+            <div id="recommended-strategy-details"></div>
+        </div>
+
+        <footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">
+            Created by Ronell Bradley
+        </footer>
     </div>
 
-    <h2>Start Calculating Your Debt Strategy</h2>
-    <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
+    <script>
+        // Placeholder calculation (for demo purposes)
+        document.getElementById('calculator-form').addEventListener('submit', function(event) {
+            event.preventDefault();
 
-    <!-- Add more tools or sections here as needed -->
+            // Get user inputs
+            const income = parseFloat(document.getElementById('income').value);
+            const debtBalance = parseFloat(document.getElementById('debtBalance').value);
+            const interestRate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
 
-  </div>
+            // Perform calculations (here we use placeholders)
+            const totalDebt = debtBalance;
+            const totalInterest = totalDebt * interestRate;
+
+            // Provide feedback to the user
+            document.getElementById('feedback').innerHTML = `
+                <p>Your monthly income is $${income.toFixed(2)}</p>
+                <p>Total debt balance is $${debtBalance.toFixed(2)}</p>
+                <p>Calculated Interest Rate: ${interestRate.toFixed(2)}</p>
+            `;
+
+            // Display the recommended strategy (demo)
+            document.getElementById('recommended-strategy-details').innerHTML = `
+                <p>Strategy suggestion goes here...</p>
+            `;
+        });
+    </script>
 </body>
+
 </html>
