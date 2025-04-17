@@ -10,18 +10,30 @@
       margin: 0;
       padding: 20px;
       background-color: #f4f4f9;
+      box-sizing: border-box;
     }
+    
     .container {
-      max-width: 800px;
+      max-width: 100%;
+      width: 100%;
       margin: auto;
       background: #fff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-sizing: border-box;
     }
+
     h1, h2 {
       text-align: center;
+      margin-bottom: 20px;
     }
+
+    p {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
     .link {
       text-align: center;
       margin-top: 20px;
@@ -33,10 +45,32 @@
       color: white;
       padding: 10px 20px;
       border-radius: 5px;
+      display: inline-block;
     }
 
     .link a:hover {
       background-color: #0056b3;
+    }
+
+    /* Add styles for mobile screens */
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+
+      .link a {
+        width: 100%;
+        text-align: center;
+        padding: 12px;
+      }
+
+      h1, h2 {
+        font-size: 24px;
+      }
+
+      p {
+        font-size: 14px;
+      }
     }
   </style>
 </head>
@@ -53,7 +87,6 @@
     <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
 
     <!-- Add more tools or sections here as needed -->
-
   </div>
 </body>
 </html>
