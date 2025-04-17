@@ -10,6 +10,7 @@
       margin: 0;
       padding: 20px;
       background-color: #f4f4f9;
+      overflow-x: hidden; /* Prevent horizontal scroll on the body */
     }
 
     .container {
@@ -19,7 +20,6 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      overflow-x: hidden; /* Prevent horizontal scroll on the body */
     }
 
     h1, h2 {
@@ -43,7 +43,7 @@
       background-color: #0056b3;
     }
 
-    /* Table styling */
+    /* Table container for scroll */
     .table-container {
       width: 100%;
       overflow-x: auto;
@@ -53,28 +53,24 @@
 
     table {
       width: 100%;
-      table-layout: auto; /* Ensure columns adjust as needed */
+      table-layout: auto;
       border-collapse: collapse;
     }
 
     th, td {
       padding: 8px;
       text-align: center;
-      min-width: 120px; /* Prevent columns from being too small */
+      min-width: 120px;
     }
 
     th {
       background-color: #f4f4f4;
     }
 
+    /* Mobile responsiveness */
     @media (max-width: 600px) {
-      body {
-        padding: 10px;
-      }
-
       .container {
         padding: 15px;
-        box-shadow: none;
       }
 
       h1, h2 {
