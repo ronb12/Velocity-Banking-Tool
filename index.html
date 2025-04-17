@@ -39,37 +39,33 @@
       background-color: #0056b3;
     }
 
-    .results {
-      display: block;
+    /* Ensure the chart area fits within the screen */
+    .chart-container {
       width: 100%;
       overflow-x: auto;
       margin-top: 20px;
     }
 
+    /* Make the table responsive for mobile */
+    .results {
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
     .results table {
       width: 100%;
-      min-width: 500px; /* Ensures the table doesn’t collapse too much */
+      table-layout: fixed; /* Ensures columns are evenly distributed */
       border-collapse: collapse;
-      table-layout: fixed; /* Helps columns scale evenly */
     }
-
     .results th, .results td {
       padding: 8px;
       text-align: center;
       white-space: nowrap;
-      word-wrap: break-word;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-
     .results th {
       background-color: #f4f4f4;
-    }
-
-    /* Add flexbox for responsive design */
-    .table-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 20px;
     }
 
     /* For small screen sizes (i.e., mobile view) */
@@ -124,7 +120,7 @@
     <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
 
     <!-- Chart container that will allow horizontal scrolling if necessary -->
-    <div class="table-container">
+    <div class="chart-container">
       <div class="results">
         <!-- Example results (replace this with your actual chart or table results) -->
         <table>
