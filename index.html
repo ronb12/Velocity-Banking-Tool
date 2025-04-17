@@ -52,7 +52,27 @@
       background-color: #0056b3;
     }
 
-    /* Add styles for mobile screens */
+    /* Fix for Tables and Payoff Charts */
+    table {
+      width: 100%;
+      table-layout: fixed;  /* Ensures the table adjusts to available space */
+      overflow-x: auto; /* Prevents table from overflowing */
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+      word-wrap: break-word;  /* Ensures text inside the table cells wraps and doesn't overflow */
+    }
+
+    th {
+      background-color: #f4f4f4;
+    }
+
+    /* Add mobile-friendly adjustments */
     @media (max-width: 600px) {
       .container {
         padding: 10px;
@@ -71,7 +91,20 @@
       p {
         font-size: 14px;
       }
+
+      table {
+        width: 100%;
+        overflow-x: auto;
+        display: block; /* Makes table scrollable on small screens */
+        white-space: nowrap; /* Prevents text overflow */
+      }
+
+      th, td {
+        font-size: 12px;  /* Makes table text smaller on mobile devices */
+        padding: 8px;
+      }
     }
+
   </style>
 </head>
 <body>
@@ -86,7 +119,24 @@
     <h2>Start Calculating Your Debt Strategy</h2>
     <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
 
+    <!-- Placeholder for Debt Strategy Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Creditor</th>
+          <th>Balance ($)</th>
+          <th>Interest Rate (%)</th>
+          <th>Min Payment ($)</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Table rows will be added dynamically with JavaScript -->
+      </tbody>
+    </table>
+
     <!-- Add more tools or sections here as needed -->
+
   </div>
 </body>
 </html>
