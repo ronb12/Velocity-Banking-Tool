@@ -45,7 +45,27 @@
       margin-top: 20px;
     }
 
-    /* Responsive for mobile */
+    /* Make the table responsive for mobile */
+    .results {
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+    .results table {
+      width: 100%;
+      max-width: 100%; /* Prevent the table from expanding too much */
+      min-width: 600px; /* Ensures that the table doesn't collapse too much */
+      border-collapse: collapse;
+    }
+    .results th, .results td {
+      padding: 8px;
+      text-align: center;
+    }
+    .results th {
+      background-color: #f4f4f4;
+    }
+
+    /* For small screen sizes (i.e., mobile view) */
     @media (max-width: 600px) {
       body {
         padding: 10px;
@@ -62,25 +82,6 @@
         padding: 8px 16px;
       }
     }
-
-    /* Add responsiveness for results and charts */
-    .results {
-      width: 100%;
-      overflow-x: auto;
-    }
-    .results table {
-      width: 100%;
-      min-width: 600px; /* Ensures that table doesn't collapse too much */
-      border-collapse: collapse;
-    }
-    .results th, .results td {
-      padding: 8px;
-      text-align: center;
-    }
-    .results th {
-      background-color: #f4f4f4;
-    }
-
   </style>
 </head>
 <body>
