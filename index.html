@@ -10,9 +10,9 @@
       margin: 0;
       padding: 20px;
       background-color: #f4f4f9;
-      box-sizing: border-box;
+      box-sizing: border-box; /* Ensures padding doesn't cause overflow */
     }
-    
+
     .container {
       max-width: 100%;
       width: 100%;
@@ -55,7 +55,7 @@
     /* Fix for Tables and Payoff Charts */
     table {
       width: 100%;
-      table-layout: fixed;  /* Ensures the table adjusts to available space */
+      table-layout: auto;  /* Adjusts table to fit content */
       overflow-x: auto; /* Prevents table from overflowing */
       border-collapse: collapse;
       margin-bottom: 20px;
@@ -63,7 +63,7 @@
 
     th, td {
       border: 1px solid #ddd;
-      padding: 10px;
+      padding: 8px;
       text-align: center;
       word-wrap: break-word;  /* Ensures text inside the table cells wraps and doesn't overflow */
     }
@@ -93,16 +93,36 @@
       }
 
       table {
+        display: block;
         width: 100%;
         overflow-x: auto;
-        display: block; /* Makes table scrollable on small screens */
-        white-space: nowrap; /* Prevents text overflow */
+        white-space: nowrap; /* Prevents content from breaking the layout */
       }
 
       th, td {
         font-size: 12px;  /* Makes table text smaller on mobile devices */
         padding: 8px;
       }
+
+      .link {
+        margin-top: 10px;
+      }
+    }
+
+    /* Ensure that charts and tables are responsive */
+    .responsive-container {
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .responsive-container iframe,
+    .responsive-container table {
+      max-width: 100%;
+      height: auto;
+      margin-top: 20px;
     }
 
   </style>
@@ -120,20 +140,22 @@
     <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
 
     <!-- Placeholder for Debt Strategy Table -->
-    <table>
-      <thead>
-        <tr>
-          <th>Creditor</th>
-          <th>Balance ($)</th>
-          <th>Interest Rate (%)</th>
-          <th>Min Payment ($)</th>
-          <th>Remove</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Table rows will be added dynamically with JavaScript -->
-      </tbody>
-    </table>
+    <div class="responsive-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Creditor</th>
+            <th>Balance ($)</th>
+            <th>Interest Rate (%)</th>
+            <th>Min Payment ($)</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Table rows will be added dynamically with JavaScript -->
+        </tbody>
+      </table>
+    </div>
 
     <!-- Add more tools or sections here as needed -->
 
