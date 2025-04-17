@@ -19,6 +19,7 @@
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      overflow-x: hidden; /* Prevent horizontal scroll on the body */
     }
 
     h1, h2 {
@@ -47,6 +48,7 @@
       width: 100%;
       overflow-x: auto;
       margin-top: 20px;
+      -webkit-overflow-scrolling: touch; /* For smoother scrolling on mobile */
     }
 
     table {
@@ -58,7 +60,7 @@
     th, td {
       padding: 8px;
       text-align: center;
-      min-width: 100px; /* Prevent columns from being too small */
+      min-width: 120px; /* Prevent columns from being too small */
     }
 
     th {
