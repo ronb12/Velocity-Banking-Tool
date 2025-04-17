@@ -43,13 +43,14 @@
       display: block;
       width: 100%;
       overflow-x: auto;
+      margin-top: 20px;
     }
 
     .results table {
       width: 100%;
+      min-width: 500px; /* Ensures the table doesn’t collapse too much */
       border-collapse: collapse;
-      max-width: 100%;
-      min-width: 500px; /* Ensures table doesn't collapse too much */
+      table-layout: fixed; /* Helps columns scale evenly */
     }
 
     .results th, .results td {
@@ -91,12 +92,15 @@
         margin-top: 20px;
         overflow-x: auto; /* Horizontal scroll for large tables */
       }
+      .results table {
+        width: 100%; /* Make sure the table fits within mobile width */
+      }
     }
 
     /* For landscape mode */
     @media (min-width: 601px) and (orientation: landscape) {
       .results {
-        max-width: 100%; /* Ensure table fits within the available width */
+        width: 100%; /* Ensure table fits within the available width */
         overflow-x: auto; /* Allow horizontal scroll when necessary */
       }
 
