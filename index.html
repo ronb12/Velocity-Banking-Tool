@@ -17,7 +17,7 @@
       background: #fff;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     h1, h2 {
       text-align: center;
@@ -41,35 +41,21 @@
     button:hover {
       background-color: #0056b3;
     }
-    .feedback {
-      font-weight: bold;
-      padding: 10px;
-      border-radius: 4px;
-      margin: 10px 0;
-    }
-    .high {
-      background-color: #ffcccc;
-      color: #cc0000;
-    }
-    .normal {
-      background-color: #ccffcc;
-      color: #006600;
-    }
-    .strategy {
+    .link {
+      text-align: center;
       margin-top: 20px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
+
+    .link a {
+      text-decoration: none;
+      background-color: #007BFF;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
     }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background-color: #f4f4f4;
+
+    .link a:hover {
+      background-color: #0056b3;
     }
   </style>
 </head>
@@ -80,66 +66,54 @@
 
     <form id="creditScoreForm">
       <label for="paymentHistory">Payment History (%)</label>
-      <input id="paymentHistory" type="number" step="1" min="0" max="100" placeholder="Enter payment history (0-100)" required />
+      <input id="paymentHistory" type="number" step="1" value="99" />
       
       <label for="creditUtilization">Credit Utilization (%)</label>
-      <input id="creditUtilization" type="number" step="1" min="0" max="100" placeholder="Enter credit utilization (0-100)" required />
-
-      <label for="lengthOfCreditHistory">Length of Credit History (Years)</label>
-      <input id="lengthOfCreditHistory" type="number" step="1" min="0" placeholder="Enter length of credit history" required />
-
-      <label for="creditInquiries">Recent Credit Inquiries</label>
-      <input id="creditInquiries" type="number" step="1" min="0" placeholder="Enter number of recent inquiries" required />
-
+      <input id="creditUtilization" type="number" step="1" value="46" />
+      
+      <label for="creditHistoryLength">Length of Credit History (Years)</label>
+      <input id="creditHistoryLength" type="number" step="1" value="2" />
+      
+      <label for="recentInquiries">Recent Credit Inquiries</label>
+      <input id="recentInquiries" type="number" step="1" value="22" />
+      
       <label for="creditMix">Credit Mix (Number of Accounts)</label>
-      <input id="creditMix" type="number" step="1" min="0" placeholder="Enter number of credit accounts" required />
+      <input id="creditMix" type="number" step="1" value="6" />
 
-      <button type="submit">Estimate My Credit Score</button>
+      <button type="button" onclick="estimateCreditScore()">Estimate My Credit Score</button>
     </form>
 
-    <h2>Estimated Credit Score</h2>
-    <p>Your estimated credit score is: <span id="estimatedScore">--</span></p>
-
-    <footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">
-      Created by Ronell Bradley
-    </footer>
+    <div id="estimatedCreditScore">
+      <h2>Estimated Credit Score</h2>
+      <p>Your estimated credit score is: <span id="creditScore">Not Estimated</span></p>
+    </div>
   </div>
 
   <script>
-    document.getElementById('creditScoreForm').addEventListener('submit', function(e) {
-      e.preventDefault();
+    function estimateCreditScore() {
+      // Get the form values
+      const paymentHistory = parseFloat(document.getElementById("paymentHistory").value) || 0;
+      const creditUtilization = parseFloat(document.getElementById("creditUtilization").value) || 0;
+      const creditHistoryLength = parseFloat(document.getElementById("creditHistoryLength").value) || 0;
+      const recentInquiries = parseInt(document.getElementById("recentInquiries").value) || 0;
+      const creditMix = parseInt(document.getElementById("creditMix").value) || 0;
 
-      // Get input values
-      const paymentHistory = parseInt(document.getElementById('paymentHistory').value);
-      const creditUtilization = parseInt(document.getElementById('creditUtilization').value);
-      const lengthOfCreditHistory = parseInt(document.getElementById('lengthOfCreditHistory').value);
-      const creditInquiries = parseInt(document.getElementById('creditInquiries').value);
-      const creditMix = parseInt(document.getElementById('creditMix').value);
+      // Calculate each factor's weight
+      const paymentHistoryScore = (paymentHistory / 100) * 35;  // 35% weight
+      const creditUtilizationScore = (100 - creditUtilization) * 0.3;  // 30% weight (lower utilization = higher score)
+      const creditHistoryLengthScore = (creditHistoryLength >= 10) ? 15 : (creditHistoryLength * 1.5);  // 15% weight
+      const recentInquiriesScore = (recentInquiries > 5) ? (10 - (recentInquiries / 2)) : 10;  // 10% weight
+      const creditMixScore = (creditMix > 5) ? 10 : (creditMix * 2);  // 10% weight
 
-      // Payment History Calculation (35% of Score)
-      const paymentHistoryScore = (paymentHistory / 100) * 35;
+      // Calculate final score
+      const totalScore = paymentHistoryScore + creditUtilizationScore + creditHistoryLengthScore + recentInquiriesScore + creditMixScore;
 
-      // Credit Utilization Calculation (30% of Score)
-      const utilizationScore = (100 - creditUtilization) / 100 * 30;
+      // Calculate the final estimated credit score (scale it to a range of 300 to 850)
+      const estimatedScore = Math.max(300, Math.min(850, totalScore));
 
-      // Length of Credit History Calculation (15% of Score)
-      const lengthOfCreditHistoryScore = (lengthOfCreditHistory / 25) * 15; // Assuming maximum of 25 years for full score
-
-      // Recent Credit Inquiries Calculation (10% of Score)
-      const inquiriesScore = creditInquiries === 0 ? 10 : (1 / (creditInquiries + 1)) * 10;
-
-      // Credit Mix Calculation (10% of Score, for simplicity, we use number of accounts as an estimate)
-      const creditMixScore = (Math.min(5, (creditMix / 10)) / 5) * 10;
-
-      // Total Score Calculation
-      const totalScore = Math.round(paymentHistoryScore + utilizationScore + lengthOfCreditHistoryScore + inquiriesScore + creditMixScore);
-
-      // Ensure score is within valid range
-      const estimatedScore = Math.min(Math.max(totalScore, 300), 850);
-
-      // Display the estimated credit score
-      document.getElementById("estimatedScore").textContent = estimatedScore;
-    });
+      // Display the estimated score
+      document.getElementById("creditScore").textContent = estimatedScore.toFixed(0);
+    }
   </script>
 </body>
 </html>
