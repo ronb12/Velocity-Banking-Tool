@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Velocity Banking Tool</title>
+  <title>Velocity Banking Tool - Credit Score Estimator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,118 +17,104 @@
       background: #fff;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     h1, h2 {
       text-align: center;
     }
-    .link {
-      text-align: center;
-      margin-top: 20px;
+    form {
+      margin-bottom: 20px;
     }
-
-    .link a {
-      text-decoration: none;
-      background-color: #007BFF;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-    }
-
-    .link a:hover {
-      background-color: #0056b3;
-    }
-
-    /* Styling the Credit Score Estimator */
-    .credit-score-container {
-      background: #f4f4f9;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      margin-top: 40px;
-    }
-
-    input, button {
-      width: 100%;
-      padding: 10px;
+    input, button, select {
+      width: calc(100% - 22px);
       margin: 10px 0;
+      padding: 10px;
       font-size: 16px;
-      border-radius: 4px;
       border: 1px solid #ddd;
+      border-radius: 4px;
     }
     button {
       background-color: #007BFF;
-      color: white;
+      color: #fff;
       cursor: pointer;
     }
     button:hover {
       background-color: #0056b3;
     }
-
-    h3 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .results {
+    .feedback {
       font-weight: bold;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .high {
+      background-color: #ffcccc;
+      color: #cc0000;
+    }
+    .normal {
+      background-color: #ccffcc;
+      color: #006600;
+    }
+    .strategy {
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
       text-align: center;
     }
-
+    th {
+      background-color: #f4f4f4;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Velocity Banking Tool</h1>
-    <p>Welcome to the Velocity Banking Tool. Calculate your debt reduction strategies below.</p>
+    <h1>Velocity Banking Tool - Credit Score Estimator</h1>
+    <p>Estimate your credit score based on the factors that impact it, such as payment history, credit utilization, length of credit history, and recent credit inquiries.</p>
 
-    <div class="link">
-      <a href="debt_strategy_name_with_clear_button.html">Go to Debt Strategy Tool</a>
-    </div>
+    <form id="creditScoreForm">
+      <label for="paymentHistory">Payment History (%)</label>
+      <input id="paymentHistory" type="number" step="1" min="0" max="100" placeholder="Enter payment history (0-100)" required />
+      
+      <label for="creditUtilization">Credit Utilization (%)</label>
+      <input id="creditUtilization" type="number" step="1" min="0" max="100" placeholder="Enter credit utilization (0-100)" required />
 
-    <h2>Start Calculating Your Debt Strategy</h2>
-    <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
+      <label for="lengthOfCreditHistory">Length of Credit History (Years)</label>
+      <input id="lengthOfCreditHistory" type="number" step="1" min="0" placeholder="Enter length of credit history" required />
 
-    <!-- Credit Score Estimator Form -->
-    <div class="credit-score-container">
-      <h3>Credit Score Estimator</h3>
-      <form id="creditScoreForm">
-        <label for="paymentHistory">Payment History (%)</label>
-        <input type="number" id="paymentHistory" required placeholder="Enter Payment History %" />
+      <label for="creditInquiries">Recent Credit Inquiries</label>
+      <input id="creditInquiries" type="number" step="1" min="0" placeholder="Enter number of recent inquiries" required />
 
-        <label for="creditUtilization">Credit Utilization (%)</label>
-        <input type="number" id="creditUtilization" required placeholder="Enter Credit Utilization %" />
+      <label for="creditMix">Credit Mix (Number of Accounts)</label>
+      <input id="creditMix" type="number" step="1" min="0" placeholder="Enter number of credit accounts" required />
 
-        <label for="totalCreditLimit">Total Credit Limit ($)</label>
-        <input type="number" id="totalCreditLimit" required placeholder="Enter Total Credit Limit" />
+      <button type="submit">Estimate My Credit Score</button>
+    </form>
 
-        <label for="totalDebt">Total Debt ($)</label>
-        <input type="number" id="totalDebt" required placeholder="Enter Total Debt" />
+    <h2>Estimated Credit Score</h2>
+    <p>Your estimated credit score is: <span id="estimatedScore">--</span></p>
 
-        <label for="lengthOfCreditHistory">Length of Credit History (Years)</label>
-        <input type="number" id="lengthOfCreditHistory" required placeholder="Enter Length of Credit History (Years)" />
-
-        <label for="creditInquiries">Recent Credit Inquiries (Last 12 months)</label>
-        <input type="number" id="creditInquiries" required placeholder="Enter Recent Credit Inquiries" />
-
-        <button type="submit">Estimate Credit Score</button>
-      </form>
-
-      <h4 class="results">Estimated Credit Score: <span id="estimatedScore">--</span></h4>
-    </div>
+    <footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">
+      Created by Ronell Bradley
+    </footer>
   </div>
 
   <script>
-    document.getElementById("creditScoreForm").addEventListener("submit", function (e) {
+    document.getElementById('creditScoreForm').addEventListener('submit', function(e) {
       e.preventDefault();
 
       // Get input values
-      const paymentHistory = parseInt(document.getElementById("paymentHistory").value);
-      const creditUtilization = parseInt(document.getElementById("creditUtilization").value);
-      const totalCreditLimit = parseInt(document.getElementById("totalCreditLimit").value);
-      const totalDebt = parseInt(document.getElementById("totalDebt").value);
-      const lengthOfCreditHistory = parseInt(document.getElementById("lengthOfCreditHistory").value);
-      const creditInquiries = parseInt(document.getElementById("creditInquiries").value);
+      const paymentHistory = parseInt(document.getElementById('paymentHistory').value);
+      const creditUtilization = parseInt(document.getElementById('creditUtilization').value);
+      const lengthOfCreditHistory = parseInt(document.getElementById('lengthOfCreditHistory').value);
+      const creditInquiries = parseInt(document.getElementById('creditInquiries').value);
+      const creditMix = parseInt(document.getElementById('creditMix').value);
 
       // Payment History Calculation (35% of Score)
       const paymentHistoryScore = (paymentHistory / 100) * 35;
@@ -137,16 +123,22 @@
       const utilizationScore = (100 - creditUtilization) / 100 * 30;
 
       // Length of Credit History Calculation (15% of Score)
-      const lengthOfCreditHistoryScore = (lengthOfCreditHistory / 25) * 15;
+      const lengthOfCreditHistoryScore = (lengthOfCreditHistory / 25) * 15; // Assuming maximum of 25 years for full score
 
       // Recent Credit Inquiries Calculation (10% of Score)
       const inquiriesScore = creditInquiries === 0 ? 10 : (1 / (creditInquiries + 1)) * 10;
 
+      // Credit Mix Calculation (10% of Score, for simplicity, we use number of accounts as an estimate)
+      const creditMixScore = (Math.min(5, (creditMix / 10)) / 5) * 10;
+
       // Total Score Calculation
-      const totalScore = Math.round(paymentHistoryScore + utilizationScore + lengthOfCreditHistoryScore + inquiriesScore);
+      const totalScore = Math.round(paymentHistoryScore + utilizationScore + lengthOfCreditHistoryScore + inquiriesScore + creditMixScore);
+
+      // Ensure score is within valid range
+      const estimatedScore = Math.min(Math.max(totalScore, 300), 850);
 
       // Display the estimated credit score
-      document.getElementById("estimatedScore").textContent = totalScore;
+      document.getElementById("estimatedScore").textContent = estimatedScore;
     });
   </script>
 </body>
