@@ -10,121 +10,54 @@
       margin: 0;
       padding: 20px;
       background-color: #f4f4f9;
-      box-sizing: border-box; /* Ensures padding doesn't cause overflow */
     }
-
     .container {
       max-width: 100%;
-      width: 100%;
       margin: auto;
       background: #fff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      box-sizing: border-box;
     }
-
     h1, h2 {
       text-align: center;
-      margin-bottom: 20px;
+      font-size: 1.5em;
     }
-
-    p {
-      font-size: 16px;
-      line-height: 1.5;
-    }
-
     .link {
       text-align: center;
       margin-top: 20px;
     }
-
     .link a {
       text-decoration: none;
       background-color: #007BFF;
       color: white;
       padding: 10px 20px;
       border-radius: 5px;
-      display: inline-block;
     }
-
     .link a:hover {
       background-color: #0056b3;
     }
 
-    /* Fix for Tables and Payoff Charts */
-    table {
+    /* Ensuring charts fit within screen width */
+    .chart-container {
       width: 100%;
-      table-layout: auto;  /* Adjusts table to fit content */
-      overflow-x: auto; /* Prevents table from overflowing */
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-      word-wrap: break-word;  /* Ensures text inside the table cells wraps and doesn't overflow */
-    }
-
-    th {
-      background-color: #f4f4f4;
-    }
-
-    /* Add mobile-friendly adjustments */
-    @media (max-width: 600px) {
-      .container {
-        padding: 10px;
-      }
-
-      .link a {
-        width: 100%;
-        text-align: center;
-        padding: 12px;
-      }
-
-      h1, h2 {
-        font-size: 24px;
-      }
-
-      p {
-        font-size: 14px;
-      }
-
-      table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
-        white-space: nowrap; /* Prevents content from breaking the layout */
-      }
-
-      th, td {
-        font-size: 12px;  /* Makes table text smaller on mobile devices */
-        padding: 8px;
-      }
-
-      .link {
-        margin-top: 10px;
-      }
-    }
-
-    /* Ensure that charts and tables are responsive */
-    .responsive-container {
-      width: 100%;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .responsive-container iframe,
-    .responsive-container table {
-      max-width: 100%;
-      height: auto;
+      overflow-x: auto;
       margin-top: 20px;
     }
 
+    /* Add a responsive design for mobile */
+    @media (max-width: 600px) {
+      .container {
+        padding: 15px;
+      }
+      h1, h2 {
+        font-size: 1.2em;
+      }
+      .link a {
+        font-size: 14px;
+        padding: 8px 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -139,26 +72,13 @@
     <h2>Start Calculating Your Debt Strategy</h2>
     <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
 
-    <!-- Placeholder for Debt Strategy Table -->
-    <div class="responsive-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Creditor</th>
-            <th>Balance ($)</th>
-            <th>Interest Rate (%)</th>
-            <th>Min Payment ($)</th>
-            <th>Remove</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Table rows will be added dynamically with JavaScript -->
-        </tbody>
-      </table>
+    <!-- Chart container that will allow horizontal scrolling -->
+    <div class="chart-container">
+      <!-- Example chart (Replace this with your actual chart or other content) -->
+      <div style="width: 2000px; height: 300px; background-color: lightblue; text-align: center;">
+        Chart Content Here
+      </div>
     </div>
-
-    <!-- Add more tools or sections here as needed -->
-
   </div>
 </body>
 </html>
