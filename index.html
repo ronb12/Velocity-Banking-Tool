@@ -11,6 +11,7 @@
       padding: 20px;
       background-color: #f4f4f9;
     }
+
     .container {
       max-width: 100%;
       margin: auto;
@@ -19,9 +20,11 @@
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
+
     h1, h2 {
       text-align: center;
     }
+
     .link {
       text-align: center;
       margin-top: 20px;
@@ -39,43 +42,64 @@
       background-color: #0056b3;
     }
 
-    /* For the table container to be scrollable on mobile */
+    /* Table styling */
     .table-container {
       width: 100%;
       overflow-x: auto;
       margin-top: 20px;
     }
 
-    /* Make the table responsive */
     table {
       width: 100%;
+      table-layout: auto; /* Ensure columns adjust as needed */
       border-collapse: collapse;
-      table-layout: fixed; /* Fix the layout of the columns */
     }
+
     th, td {
       padding: 8px;
       text-align: center;
-      white-space: nowrap; /* Prevent long text from wrapping */
+      min-width: 100px; /* Prevent columns from being too small */
     }
+
     th {
       background-color: #f4f4f4;
     }
 
-    /* For smaller screens */
     @media (max-width: 600px) {
       body {
         padding: 10px;
       }
+
       .container {
         padding: 15px;
         box-shadow: none;
       }
+
       h1, h2 {
         font-size: 1.2em;
       }
+
       .link a {
         font-size: 14px;
         padding: 8px 16px;
+      }
+
+      /* Ensure table is scrollable on smaller screens */
+      .table-container {
+        width: 100%;
+        overflow-x: auto;
+        margin-top: 20px;
+      }
+
+      table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap; /* Prevent table from breaking to new lines */
+      }
+
+      th, td {
+        min-width: 120px; /* Increase min-width for better fitting */
       }
     }
 
@@ -85,6 +109,12 @@
         width: 100%;
         overflow-x: auto;
         margin-top: 20px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
       }
     }
   </style>
