@@ -21,12 +21,12 @@
     }
     h1, h2 {
       text-align: center;
-      font-size: 1.5em;
     }
     .link {
       text-align: center;
       margin-top: 20px;
     }
+
     .link a {
       text-decoration: none;
       background-color: #007BFF;
@@ -34,35 +34,41 @@
       padding: 10px 20px;
       border-radius: 5px;
     }
+
     .link a:hover {
       background-color: #0056b3;
     }
 
-    /* Ensure the chart area fits within the screen */
-    .chart-container {
+    .results {
+      display: block;
       width: 100%;
       overflow-x: auto;
-      margin-top: 20px;
     }
 
-    /* Make the table responsive for mobile */
-    .results {
-      width: 100%;
-      overflow-x: auto;
-      display: block;
-    }
     .results table {
       width: 100%;
-      max-width: 100%; /* Prevent the table from expanding too much */
-      min-width: 600px; /* Ensures that the table doesn't collapse too much */
       border-collapse: collapse;
+      max-width: 100%;
+      min-width: 500px; /* Ensures table doesn't collapse too much */
     }
+
     .results th, .results td {
       padding: 8px;
       text-align: center;
+      white-space: nowrap;
+      word-wrap: break-word;
     }
+
     .results th {
       background-color: #f4f4f4;
+    }
+
+    /* Add flexbox for responsive design */
+    .table-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
     }
 
     /* For small screen sizes (i.e., mobile view) */
@@ -81,6 +87,23 @@
         font-size: 14px;
         padding: 8px 16px;
       }
+      .results {
+        margin-top: 20px;
+        overflow-x: auto; /* Horizontal scroll for large tables */
+      }
+    }
+
+    /* For landscape mode */
+    @media (min-width: 601px) and (orientation: landscape) {
+      .results {
+        max-width: 100%; /* Ensure table fits within the available width */
+        overflow-x: auto; /* Allow horizontal scroll when necessary */
+      }
+
+      .results table {
+        width: 100%;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -97,7 +120,7 @@
     <p>This tool helps you calculate strategies to pay down your debt faster, based on your income, expenses, and debts.</p>
 
     <!-- Chart container that will allow horizontal scrolling if necessary -->
-    <div class="chart-container">
+    <div class="table-container">
       <div class="results">
         <!-- Example results (replace this with your actual chart or table results) -->
         <table>
