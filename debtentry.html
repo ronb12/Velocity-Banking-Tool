@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -86,7 +85,6 @@
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h1>Debt Entry Table</h1>
@@ -145,9 +143,7 @@
 
         function calculateTotals() {
             const rows = document.querySelectorAll('#debtTable tbody tr');
-            let totalBalance = 0,
-                totalInterest = 0,
-                totalMinPay = 0;
+            let totalBalance = 0, totalInterest = 0, totalMinPay = 0;
 
             rows.forEach(row => {
                 const balance = parseFloat(row.children[1].querySelector('input').value) || 0;
@@ -166,5 +162,4 @@
         }
     </script>
 </body>
-
 </html>
