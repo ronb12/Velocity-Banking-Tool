@@ -9,12 +9,8 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f4f4f9;
       margin: 0;
-      padding: 30px 20px;
+      padding: 30px 15px;
       text-align: center;
-    }
-    h1 {
-      font-size: 2em;
-      margin-bottom: 10px;
     }
     .container {
       max-width: 700px;
@@ -24,41 +20,65 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    label {
-      display: block;
-      margin: 20px 0 10px;
-      font-weight: bold;
+    h1 {
+      font-size: 2em;
+      margin-bottom: 20px;
     }
-    input[type=range], input[type=number], select {
+    .form-group {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .form-group input,
+    .form-group select {
       width: 100%;
       padding: 10px;
       font-size: 1em;
+      box-sizing: border-box;
+    }
+    .range-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .range-group input[type=range] {
+      flex: 1;
+    }
+    .value-badge {
+      min-width: 50px;
+      text-align: right;
+      font-weight: bold;
+      color: #333;
     }
     #scoreOutput {
-      font-size: 2em;
+      font-size: 2.2em;
       font-weight: bold;
       margin-top: 20px;
     }
     .scoreColor {
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 6px;
     }
     .poor { background-color: #ffcccc; color: #a60000; }
     .fair { background-color: #fff0b3; color: #8a6d00; }
     .good { background-color: #ccffcc; color: #006600; }
     .excellent { background-color: #d4f1f4; color: #007777; }
-    footer {
-      margin-top: 30px;
-      font-size: 14px;
-      color: #777;
-    }
     nav a {
       display: inline-block;
       margin-bottom: 20px;
       text-decoration: none;
       color: #007bff;
       font-weight: bold;
+    }
+    footer {
+      margin-top: 40px;
+      font-size: 14px;
+      color: #777;
     }
   </style>
 </head>
@@ -71,25 +91,39 @@
   <div class="container">
     <h1>💳 Credit Score Estimator</h1>
 
-    <label for="paymentHistory">Payment History (on-time %)</label>
-    <input type="range" id="paymentHistory" min="0" max="100" value="100" />
-    <span id="paymentHistoryVal">100%</span>
+    <div class="form-group">
+      <label for="paymentHistory">Payment History (on-time %)</label>
+      <div class="range-group">
+        <input type="range" id="paymentHistory" min="0" max="100" value="100" />
+        <div class="value-badge" id="paymentHistoryVal">100%</div>
+      </div>
+    </div>
 
-    <label for="utilization">Credit Utilization (%)</label>
-    <input type="range" id="utilization" min="0" max="100" value="30" />
-    <span id="utilizationVal">30%</span>
+    <div class="form-group">
+      <label for="utilization">Credit Utilization (%)</label>
+      <div class="range-group">
+        <input type="range" id="utilization" min="0" max="100" value="30" />
+        <div class="value-badge" id="utilizationVal">30%</div>
+      </div>
+    </div>
 
-    <label for="historyLength">Credit History Length (Years)</label>
-    <input type="number" id="historyLength" min="0" max="30" value="5" />
+    <div class="form-group">
+      <label for="historyLength">Credit History Length (Years)</label>
+      <input type="number" id="historyLength" min="0" max="30" value="5" />
+    </div>
 
-    <label for="inquiries">Recent Credit Inquiries (last 12 mo)</label>
-    <input type="number" id="inquiries" min="0" max="30" value="2" />
+    <div class="form-group">
+      <label for="inquiries">Recent Credit Inquiries (last 12 mo)</label>
+      <input type="number" id="inquiries" min="0" max="30" value="2" />
+    </div>
 
-    <label for="creditMix">Do you have mixed credit? (Loans + Cards)</label>
-    <select id="creditMix">
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
+    <div class="form-group">
+      <label for="creditMix">Do you have mixed credit? (Loans + Cards)</label>
+      <select id="creditMix">
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+    </div>
 
     <div id="scoreOutput">Estimated Score: 720</div>
     <div id="scoreAdvice" class="scoreColor good">Your credit is looking good! Stay consistent.</div>
@@ -122,36 +156,29 @@
 
       let score = 850;
 
-      // Payment History
       if (ph >= 99) score -= 0;
       else if (ph >= 95) score -= 20;
       else if (ph >= 90) score -= 50;
       else score -= 100;
 
-      // Utilization
       if (util <= 10) score -= 0;
       else if (util <= 30) score -= 30;
       else if (util <= 50) score -= 70;
       else score -= 150;
 
-      // Credit History
       if (history >= 8) score -= 0;
       else if (history >= 4) score -= 20;
       else if (history >= 2) score -= 50;
       else score -= 80;
 
-      // Inquiries
       if (inquiries <= 2) score -= 0;
       else if (inquiries <= 5) score -= 20;
       else if (inquiries <= 10) score -= 50;
       else score -= 80;
 
-      // Mix
       if (!mix) score -= 20;
 
-      // Clamp score
       score = Math.max(300, Math.min(850, Math.round(score)));
-
       elements.scoreOutput.textContent = `Estimated Score: ${score}`;
 
       if (score < 580) {
@@ -169,14 +196,12 @@
       }
     }
 
-    // Event listeners
     Object.values(elements).forEach(el => {
-      if (el.tagName === "INPUT" || el.tagName === "SELECT") {
+      if (el && (el.tagName === "INPUT" || el.tagName === "SELECT")) {
         el.addEventListener("input", updateValues);
       }
     });
 
-    // Initialize
     updateValues();
   </script>
 
