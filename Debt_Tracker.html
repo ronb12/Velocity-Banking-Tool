@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – Realistic Months Left</title>
+  <title>Debt Tracker – Priority, Sorting, Amortization</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -41,9 +41,18 @@
       background-color: #222;
       color: #fff;
     }
+    .priority-urgent {
+      background-color: #ffe5e5;
+    }
+    .priority-medium {
+      background-color: #fff3cd;
+    }
+    .priority-low {
+      background-color: #e6f4ea;
+    }
     button {
-      margin-top: 10px;
-      padding: 10px;
+      margin: 5px;
+      padding: 8px 12px;
       background: #007bff;
       color: white;
       border: none;
@@ -60,6 +69,28 @@
     canvas {
       margin-top: 30px;
     }
+    select {
+      margin: 10px 0;
+      padding: 6px;
+      font-size: 16px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      background: white;
+      padding: 20px;
+      border: 1px solid #ccc;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      max-height: 80vh;
+      overflow-y: auto;
+      z-index: 999;
+    }
+    .modal h3 {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
@@ -68,7 +99,14 @@
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
 
-  <h1>Debt Tracker with Real Months Left</h1>
+  <h1>Debt Tracker with Sorting + Amortization</h1>
+
+  <select id="priorityFilter" onchange="filterRows()">
+    <option value="all">🔍 Show All</option>
+    <option value="urgent">🔥 Urgent Only</option>
+    <option value="medium">⚠️ Medium Only</option>
+    <option value="low">✅ Low Only</option>
+  </select>
 
   <table id="debtTable">
     <thead>
@@ -80,6 +118,7 @@
         <th>Months Left</th>
         <th>CFI</th>
         <th>Priority</th>
+        <th>Amortize</th>
         <th>Delete</th>
       </tr>
     </thead>
@@ -95,14 +134,17 @@
   <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0</div>
   <canvas id="debtChart" width="400" height="200"></canvas>
 
+  <div id="amortizationModal" class="modal"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const tableBody = document.querySelector("#debtTable tbody");
+    const modal = document.getElementById("amortizationModal");
 
     function getPriorityTag(cfi) {
-      if (cfi < 20) return "🔥 Urgent";
-      if (cfi < 50) return "⚠️ Medium";
-      return "✅ Low";
+      if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
+      if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
+      return { tag: "✅ Low", class: "priority-low" };
     }
 
     function calcRealMonths(balance, rate, payment) {
@@ -116,6 +158,25 @@
       }
     }
 
+    function showAmortization(balance, rate, payment) {
+      const r = rate / 100 / 12;
+      let month = 1, output = "", totalInterest = 0;
+      output += `<h3>Amortization Schedule</h3><table border="1" width="100%"><tr><th>Month</th><th>Start Balance</th><th>Interest</th><th>Principal</th><th>End Balance</th></tr>`;
+      while (balance > 0 && month < 1000) {
+        const interest = balance * r;
+        const principal = Math.min(payment - interest, balance);
+        const endBalance = balance + interest - payment;
+        output += `<tr><td>${month}</td><td>$${balance.toFixed(2)}</td><td>$${interest.toFixed(2)}</td><td>$${principal.toFixed(2)}</td><td>$${Math.max(0,endBalance).toFixed(2)}</td></tr>`;
+        balance = endBalance;
+        totalInterest += interest;
+        if (balance <= 0) break;
+        month++;
+      }
+      output += `</table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
+      modal.innerHTML = output + `<button onclick="modal.style.display='none'">Close</button>`;
+      modal.style.display = "block";
+    }
+
     function addDebt(name = '', balance = '', rate = '', payment = '') {
       const row = document.createElement("tr");
       row.innerHTML = `
@@ -126,10 +187,20 @@
         <td class="monthsLeft">-</td>
         <td class="cfi">-</td>
         <td class="priority">-</td>
+        <td><button onclick="amortizeRow(this)">📆</button></td>
         <td><button onclick="removeRow(this)">❌</button></td>
       `;
       tableBody.appendChild(row);
       calculateSummary();
+    }
+
+    function amortizeRow(btn) {
+      const row = btn.closest("tr");
+      const inputs = row.querySelectorAll("input");
+      const balance = parseFloat(inputs[1].value) || 0;
+      const rate = parseFloat(inputs[2].value) || 0;
+      const payment = parseFloat(inputs[3].value) || 0;
+      if (balance && rate && payment) showAmortization(balance, rate, payment);
     }
 
     function removeRow(btn) {
@@ -141,13 +212,12 @@
       const data = [];
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
-        const debt = {
+        data.push({
           name: inputs[0].value,
           balance: parseFloat(inputs[1].value) || 0,
           rate: parseFloat(inputs[2].value) || 0,
           payment: parseFloat(inputs[3].value) || 0
-        };
-        data.push(debt);
+        });
       });
       localStorage.setItem("debtData", JSON.stringify(data));
       alert("Saved!");
@@ -156,15 +226,14 @@
     function loadDebts() {
       const data = JSON.parse(localStorage.getItem("debtData")) || [];
       tableBody.innerHTML = "";
-      data.forEach(debt => addDebt(debt.name, debt.balance, debt.rate, debt.payment));
+      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment));
       calculateSummary();
     }
 
     function calculateSummary() {
       let totalBalance = 0;
       let totalPayment = 0;
-      const chartLabels = [];
-      const chartData = [];
+      const chartLabels = [], chartData = [];
 
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
@@ -175,11 +244,14 @@
 
         const months = calcRealMonths(balance, rate, payment);
         const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-        const priority = getPriorityTag(cfi);
+        const { tag, class: priorityClass } = getPriorityTag(cfi);
 
         row.querySelector(".monthsLeft").innerText = months;
         row.querySelector(".cfi").innerText = cfi;
-        row.querySelector(".priority").innerText = priority;
+        row.querySelector(".priority").innerText = tag;
+
+        row.className = priorityClass;
+        row.setAttribute("data-priority", priorityClass);
 
         totalBalance += balance;
         totalPayment += payment;
@@ -191,6 +263,18 @@
         `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)}`;
 
       drawChart(chartLabels, chartData);
+    }
+
+    function filterRows() {
+      const filter = document.getElementById("priorityFilter").value;
+      tableBody.querySelectorAll("tr").forEach(row => {
+        const priority = row.getAttribute("data-priority");
+        if (filter === "all" || (priority && priority.includes(filter))) {
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
+      });
     }
 
     function drawChart(labels, data) {
@@ -214,9 +298,7 @@
           scales: {
             y: {
               beginAtZero: true,
-              ticks: {
-                callback: value => "$" + value
-              }
+              ticks: { callback: v => "$" + v }
             }
           }
         }
@@ -227,17 +309,15 @@
       const rows = [["Debt Name", "Balance", "Rate", "Payment", "Months Left", "CFI", "Priority"]];
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
-        const name = inputs[0].value;
-        const balance = inputs[1].value;
-        const rate = inputs[2].value;
-        const payment = inputs[3].value;
         const months = row.querySelector(".monthsLeft").innerText;
         const cfi = row.querySelector(".cfi").innerText;
         const priority = row.querySelector(".priority").innerText;
-        rows.push([name, balance, rate, payment, months, cfi, priority]);
+        rows.push([
+          inputs[0].value, inputs[1].value, inputs[2].value, inputs[3].value,
+          months, cfi, priority
+        ]);
       });
-
-      let csv = rows.map(r => r.join(",")).join("\n");
+      const csv = rows.map(r => r.join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
