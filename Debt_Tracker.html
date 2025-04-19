@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker</title>
+  <title>Debt Tracker + CFI</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -68,7 +68,7 @@
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
 
-  <h1>Debt Tracker</h1>
+  <h1>Debt Tracker with Auto CFI</h1>
 
   <table id="debtTable">
     <thead>
@@ -78,6 +78,8 @@
         <th>Interest Rate (%)</th>
         <th>Min Payment ($)</th>
         <th>Months Left</th>
+        <th>CFI</th>
+        <th>Priority</th>
         <th>Delete</th>
       </tr>
     </thead>
@@ -88,6 +90,8 @@
   <button onclick="saveDebts()">💾 Save</button>
   <button onclick="loadDebts()">📂 Load</button>
   <button onclick="calculateSummary()">📊 Update Totals</button>
+  <button onclick="exportToExcel()">📥 Export to Excel</button>
+  <button onclick="window.print()">🖨️ Export to PDF</button>
 
   <div class="summary" id="summaryText">
     Total Debt: $0 | Total Monthly Payments: $0
@@ -99,14 +103,24 @@
   <script>
     const tableBody = document.querySelector("#debtTable tbody");
 
+    function getPriorityTag(cfi) {
+      if (cfi < 20) return "🔥 Urgent";
+      if (cfi < 50) return "⚠️ Medium";
+      return "✅ Low";
+    }
+
     function addDebt(name = '', balance = '', rate = '', payment = '', months = '') {
       const row = document.createElement("tr");
+      const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+      const priority = getPriorityTag(cfi);
       row.innerHTML = `
         <td><input value="${name}" /></td>
         <td><input type="number" value="${balance}" /></td>
         <td><input type="number" value="${rate}" /></td>
         <td><input type="number" value="${payment}" /></td>
         <td><input type="number" value="${months}" /></td>
+        <td class="cfi">${cfi}</td>
+        <td class="priority">${priority}</td>
         <td><button onclick="removeRow(this)">❌</button></td>
       `;
       tableBody.appendChild(row);
@@ -156,6 +170,11 @@
         totalBalance += balance;
         totalPayment += payment;
 
+        const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+        const priority = getPriorityTag(cfi);
+        row.querySelector(".cfi").innerText = cfi;
+        row.querySelector(".priority").innerText = priority;
+
         chartLabels.push(name);
         chartData.push(balance);
       });
@@ -196,7 +215,25 @@
       });
     }
 
-    // Initial load if data exists
+    function exportToExcel() {
+      const rows = [["Debt Name", "Balance", "Rate", "Payment", "Months", "CFI", "Priority"]];
+      tableBody.querySelectorAll("tr").forEach(row => {
+        const cells = row.querySelectorAll("input, .cfi, .priority");
+        const rowData = [];
+        cells.forEach(cell => {
+          rowData.push(cell.value || cell.innerText);
+        });
+        rows.push(rowData);
+      });
+
+      let csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "debt_tracker.csv";
+      a.click();
+    }
+
     window.onload = loadDebts;
   </script>
 </body>
