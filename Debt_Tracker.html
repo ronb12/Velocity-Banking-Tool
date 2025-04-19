@@ -170,58 +170,6 @@
       document.getElementById("pasteArea").value = "";
     }
 
-    function amortizeRow(btn) {
-      const row = btn.closest("tr");
-      const inputs = row.querySelectorAll("input");
-      const balance = parseFloat(inputs[1].value);
-      const rate = parseFloat(inputs[2].value);
-      const payment = parseFloat(inputs[3].value);
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      let y = 20, month = 1, totalInterest = 0;
-      doc.text("Amortization Schedule", 10, 10);
-      while (balance > 0 && month < 240) {
-        const interest = balance * (rate / 100 / 12);
-        const principal = Math.min(payment - interest, balance);
-        const end = balance - principal;
-        doc.text(`Month ${month}: $${balance.toFixed(2)} | Int $${interest.toFixed(2)} | Prin $${principal.toFixed(2)} | End $${end.toFixed(2)}`, 10, y);
-        balance = end;
-        totalInterest += interest;
-        y += 8;
-        if (y > 270) { doc.addPage(); y = 10; }
-        month++;
-      }
-      doc.save("amortization.pdf");
-    }
-
-    function removeRow(btn) {
-      btn.parentElement.parentElement.remove();
-      calculateSummary();
-    }
-
-    function exportToExcel() {
-      const rows = [["Name","Balance","Rate","Payment","Months","CFI","Interest","Priority"]];
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        rows.push([
-          inputs[0].value,
-          inputs[1].value,
-          inputs[2].value,
-          inputs[3].value,
-          row.querySelector(".monthsLeft").innerText,
-          row.querySelector(".cfi").innerText,
-          row.querySelector(".interest").innerText,
-          row.querySelector(".priority").innerText
-        ]);
-      });
-      const csv = rows.map(r => r.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "debt_tracker.csv";
-      a.click();
-    }
-
     function importCSV() {
       const file = document.getElementById("csvFileInput").files[0];
       if (!file) return;
@@ -232,9 +180,10 @@
           if (i === 0) return;
           const [name, balance, rate, payment] = line.split(",");
           if (name && balance && rate && payment) {
-            addDebt(name, parseFloat(balance), parseFloat(rate), parseFloat(payment));
+            addDebt(name.trim(), parseFloat(balance), parseFloat(rate), parseFloat(payment));
           }
         });
+        calculateSummary();
       };
       reader.readAsText(file);
     }
@@ -259,6 +208,34 @@
       tableBody.innerHTML = "";
       data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment));
       calculateSummary();
+    }
+
+    function removeRow(btn) {
+      btn.parentElement.parentElement.remove();
+      calculateSummary();
+    }
+
+    function drawChart(labels, data) {
+      const ctx = document.getElementById("debtChart").getContext("2d");
+      if (window.debtChart) window.debtChart.destroy();
+      window.debtChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Debt Balance ($)",
+            data,
+            backgroundColor: "rgba(54, 162, 235, 0.7)"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: v => "$" + v } }
+          }
+        }
+      });
     }
 
     window.onload = loadDebts;
