@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – With Total Interest</title>
+  <title>Debt Tracker – With Total Interest & Print</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -58,8 +58,8 @@
       font-size: 18px;
     }
     canvas { margin-top: 30px; }
-    select {
-      margin: 10px 0;
+    select, input[type="file"] {
+      margin: 10px 5px;
       padding: 6px;
       font-size: 16px;
     }
@@ -82,7 +82,7 @@
 </head>
 <body>
   <nav><a href="index.html">⬅️ Back to Dashboard</a></nav>
-  <h1>Debt Tracker with Total Interest</h1>
+  <h1>Debt Tracker with Print & Interest</h1>
 
   <select id="priorityFilter" onchange="filterRows()">
     <option value="all">🔍 Show All</option>
@@ -113,7 +113,7 @@
   <button onclick="saveDebts()">💾 Save</button>
   <button onclick="loadDebts()">📂 Load</button>
   <button onclick="exportToExcel()">📥 Export to Excel</button>
-  <button onclick="window.print()">🖨️ Export to PDF</button>
+  <button onclick="window.print()">🖨️ Print Page</button>
   <input type="file" id="csvFileInput" accept=".csv" onchange="importCSV()" />
 
   <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0</div>
@@ -160,20 +160,53 @@
 
     function showAmortization(balance, rate, payment) {
       const r = rate / 100 / 12;
-      let month = 1, output = "", totalInterest = 0;
-      output += `<h3>Amortization Schedule</h3><table border="1" width="100%"><tr><th>Month</th><th>Start</th><th>Interest</th><th>Principal</th><th>End</th></tr>`;
+      let month = 1, rows = "", totalInterest = 0;
+
       while (balance > 0 && month < 1000) {
         const interest = balance * r;
         const principal = Math.min(payment - interest, balance);
         const end = balance + interest - payment;
-        output += `<tr><td>${month}</td><td>$${balance.toFixed(2)}</td><td>$${interest.toFixed(2)}</td><td>$${principal.toFixed(2)}</td><td>$${Math.max(0,end).toFixed(2)}</td></tr>`;
+        rows += `<tr><td>${month}</td><td>$${balance.toFixed(2)}</td><td>$${interest.toFixed(2)}</td><td>$${principal.toFixed(2)}</td><td>$${Math.max(0,end).toFixed(2)}</td></tr>`;
         balance = end;
         totalInterest += interest;
         month++;
       }
-      output += `</table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
-      modal.innerHTML = output + `<button onclick="modal.style.display='none'">Close</button>`;
+
+      const html = `
+        <h3>Amortization Schedule</h3>
+        <table border="1" width="100%" style="border-collapse: collapse;">
+          <tr><th>Month</th><th>Start</th><th>Interest</th><th>Principal</th><th>End</th></tr>
+          ${rows}
+        </table>
+        <p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>
+        <button onclick="printAmortization()">🖨️ Print Table</button>
+        <button onclick="modal.style.display='none'">Close</button>
+      `;
+      modal.innerHTML = html;
       modal.style.display = "block";
+    }
+
+    function printAmortization() {
+      const content = document.getElementById("amortizationModal").innerHTML;
+      const win = window.open("", "", "width=800,height=600");
+      win.document.write(`
+        <html>
+          <head>
+            <title>Print Amortization</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+              th { background-color: #f4f4f4; }
+            </style>
+          </head>
+          <body>${content}</body>
+        </html>
+      `);
+      win.document.close();
+      win.focus();
+      win.print();
+      win.close();
     }
 
     function addDebt(name = '', balance = '', rate = '', payment = '') {
