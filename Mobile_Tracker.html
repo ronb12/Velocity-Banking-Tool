@@ -136,6 +136,7 @@
   <div id="summary" class="tab-content">
     <h2>Summary</h2>
     <p id="summaryText">Loading...</p>
+    <p id="interestText"></p>
     <canvas id="debtChart" height="200"></canvas>
   </div>
 
@@ -187,14 +188,26 @@
     }
 
     function update() {
-      let totalBalance = 0, totalPayment = 0;
+      let totalBalance = 0, totalPayment = 0, totalInterest = 0;
       let labels = [], data = [];
 
       tableBody.querySelectorAll("tr").forEach(row => {
         const cells = row.querySelectorAll("input");
         const name = cells[0].value;
         const balance = parseFloat(cells[1].value) || 0;
+        const rate = parseFloat(cells[2].value) || 0;
         const payment = parseFloat(cells[3].value) || 0;
+
+        let r = rate / 100 / 12;
+        let months = 0, remaining = balance;
+        while (remaining > 0 && months < 1200) {
+          let interest = remaining * r;
+          let principal = payment - interest;
+          if (principal <= 0) break;
+          remaining -= principal;
+          totalInterest += interest;
+          months++;
+        }
 
         totalBalance += balance;
         totalPayment += payment;
@@ -204,6 +217,8 @@
 
       document.getElementById("summaryText").innerText =
         `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)}`;
+      document.getElementById("interestText").innerText =
+        `Estimated Total Interest: $${totalInterest.toFixed(2)}`;
 
       const ctx = document.getElementById("debtChart").getContext("2d");
       if (window.debtChart) window.debtChart.destroy();
