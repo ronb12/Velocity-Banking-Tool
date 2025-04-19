@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Debt Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f7f8fa;
+    }
+    h1 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #222;
+      color: #fff;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .summary {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    canvas {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Debt Tracker</h1>
+
+  <table id="debtTable">
+    <thead>
+      <tr>
+        <th>Debt Name</th>
+        <th>Balance ($)</th>
+        <th>Interest Rate (%)</th>
+        <th>Min Payment ($)</th>
+        <th>Months Left</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button onclick="addDebt()">+ Add Debt</button>
+  <button onclick="saveDebts()">💾 Save</button>
+  <button onclick="loadDebts()">📂 Load</button>
+  <button onclick="calculateSummary()">📊 Update Totals</button>
+
+  <div class="summary" id="summaryText">
+    Total Debt: $0 | Total Monthly Payments: $0
+  </div>
+
+  <canvas id="debtChart" width="400" height="200"></canvas>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const tableBody = document.querySelector("#debtTable tbody");
+
+    function addDebt(name = '', balance = '', rate = '', payment = '', months = '') {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input value="${name}" /></td>
+        <td><input type="number" value="${balance}" /></td>
+        <td><input type="number" value="${rate}" /></td>
+        <td><input type="number" value="${payment}" /></td>
+        <td><input type="number" value="${months}" /></td>
+        <td><button onclick="removeRow(this)">❌</button></td>
+      `;
+      tableBody.appendChild(row);
+    }
+
+    function removeRow(btn) {
+      btn.parentElement.parentElement.remove();
+      calculateSummary();
+    }
+
+    function saveDebts() {
+      const data = [];
+      tableBody.querySelectorAll("tr").forEach(row => {
+        const cells = row.querySelectorAll("input");
+        const debt = {
+          name: cells[0].value,
+          balance: parseFloat(cells[1].value) || 0,
+          rate: parseFloat(cells[2].value) || 0,
+          payment: parseFloat(cells[3].value) || 0,
+          months: parseFloat(cells[4].value) || 0
+        };
+        data.push(debt);
+      });
+      localStorage.setItem("debtData", JSON.stringify(data));
+      alert("Saved!");
+    }
+
+    function loadDebts() {
+      const data = JSON.parse(localStorage.getItem("debtData")) || [];
+      tableBody.innerHTML = "";
+      data.forEach(debt => addDebt(debt.name, debt.balance, debt.rate, debt.payment, debt.months));
+      calculateSummary();
+    }
+
+    function calculateSummary() {
+      let totalBalance = 0;
+      let totalPayment = 0;
+      const chartLabels = [];
+      const chartData = [];
+
+      tableBody.querySelectorAll("tr").forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value;
+        const balance = parseFloat(inputs[1].value) || 0;
+        const payment = parseFloat(inputs[3].value) || 0;
+
+        totalBalance += balance;
+        totalPayment += payment;
+
+        chartLabels.push(name);
+        chartData.push(balance);
+      });
+
+      document.getElementById("summaryText").innerText =
+        `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)}`;
+
+      drawChart(chartLabels, chartData);
+    }
+
+    function drawChart(labels, data) {
+      const ctx = document.getElementById("debtChart").getContext("2d");
+      if (window.debtChart) window.debtChart.destroy();
+      window.debtChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Debt Balance ($)",
+            data,
+            backgroundColor: "rgba(54, 162, 235, 0.7)"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: value => "$" + value
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Initial load if data exists
+    window.onload = loadDebts;
+  </script>
+</body>
+</html>
