@@ -227,7 +227,6 @@ function amortizeRow(btn) {
   const today = new Date().toLocaleDateString();
   html += `<div style='text-align:right; margin-bottom:10px;'>
     <button onclick="printAmortization()">🖨️ Print</button>
-    <button onclick="exportAmortizationToPDF()">📄 Export PDF</button>
     <button onclick="document.getElementById('amortizationModal').style.display='none'">❌ Close</button>
   </div>
   <h2 style='text-align:center;'>Amortization Schedule – ${name}</h2>
