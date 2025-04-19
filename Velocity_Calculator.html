@@ -3,26 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Crusher – Velocity Banking Tool</title>
+  <title>Velocity Banking Calculator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f4f9;
       margin: 0;
       padding: 20px;
-    }
-    nav {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    nav a {
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 16px;
-      color: #007BFF;
-    }
-    nav a:hover {
-      text-decoration: underline;
     }
     .container {
       max-width: 800px;
@@ -32,227 +19,137 @@
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    h1, h2 {
+    h1 {
       text-align: center;
     }
-    form {
-      margin-bottom: 20px;
-    }
-    input, button, select {
-      width: calc(100% - 22px);
+    input, select, button {
+      width: 100%;
       margin: 10px 0;
       padding: 10px;
       font-size: 16px;
-      border: 1px solid #ddd;
+      border: 1px solid #ccc;
       border-radius: 4px;
     }
     button {
       background-color: #007BFF;
-      color: #fff;
+      color: white;
+      border: none;
       cursor: pointer;
     }
     button:hover {
       background-color: #0056b3;
     }
-    .feedback {
-      font-weight: bold;
-      padding: 10px;
-      border-radius: 4px;
-      margin: 10px 0;
-    }
-    .high {
-      background-color: #ffcccc;
-      color: #cc0000;
-    }
-    .normal {
-      background-color: #ccffcc;
-      color: #006600;
-    }
-    .strategy {
+    #results {
       margin-top: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background-color: #f4f4f4;
-    }
-    @media print {
-      form, button { display: none !important; }
-      .strategy { page-break-after: always; }
-      table { page-break-inside: avoid; }
-      body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      #user-name-display {
-        display: block !important;
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 20px;
-        color: #000;
-      }
-    }
-    #recommended-strategy {
-      background: #e8f5e9;
-      border: 2px solid #4caf50;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
-    }
-    #recommended-strategy h2 {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .recommendation-badge {
-      background: #4CAF50;
-      color: white;
-      padding: 4px 10px;
+      background: #e9ffe9;
+      border: 2px solid #4CAF50;
+      padding: 15px;
       border-radius: 6px;
-      font-weight: bold;
+    }
+    footer {
+      text-align: center;
+      margin-top: 40px;
       font-size: 14px;
+      color: #777;
     }
   </style>
 </head>
 <body>
 
-  <nav>
-    <a href="index.html">⬅️ Back to Dashboard</a>
-  </nav>
+<div class="container">
+  <h1>📊 Velocity Banking Calculator</h1>
+  <form id="calcForm">
+    <input type="text" id="userName" placeholder="Your Name (Optional)" />
+    <input type="number" id="income" step="0.01" placeholder="Monthly Income ($)" required />
+    <input type="number" id="extraIncome" step="0.01" placeholder="Yearly Extra Income ($)" required />
+    <input type="number" id="expenses" step="0.01" placeholder="Monthly Expenses ($)" required />
+    <input type="number" id="debtBalance" step="0.01" placeholder="Total Debt Balance ($)" required />
+    <input type="number" id="interestRate" step="0.01" placeholder="Average Interest Rate (%)" required />
+    <input type="number" id="minimumPayment" step="0.01" placeholder="Minimum Monthly Payment ($)" required />
+    <input type="number" id="extraPayment" step="0.01" placeholder="Extra Payment ($)" />
+    <input type="number" id="chunkPayment" step="0.01" placeholder="Chunk Payment Amount ($)" required />
+    <input type="text" id="chunkMonths" placeholder="Chunk Months (comma-separated, e.g., 2,4,6)" />
+    <select id="lineOfCredit" required>
+      <option value="">Select Line of Credit</option>
+      <option value="Credit Card">Credit Card</option>
+      <option value="HELOC">HELOC</option>
+      <option value="PLOC">PLOC</option>
+      <option value="Personal Loan">Personal Loan</option>
+    </select>
+    <button type="submit">Calculate</button>
+    <button type="button" id="saveInputs">💾 Save</button>
+    <button type="button" id="loadInputs">📂 Load</button>
+    <button type="button" id="exportPdf">🖨️ Export to PDF</button>
+    <button type="button" id="clearInputs">🧹 Clear</button>
+  </form>
 
-  <div class="container">
-    <h1>Debt Crusher – Velocity Banking Tool</h1>
-    <form id="calculator-form">
-      <label for="userName">Your Name (optional):</label>
-      <input id="userName" name="userName" placeholder="Enter your name" type="text"/>
-      <label for="income">Monthly Income ($)</label>
-      <input id="income" required step="0.01" type="number"/>
-      <label for="extraIncome">Yearly Extra Income ($)</label>
-      <input id="extraIncome" required step="0.01" type="number"/>
-      <label for="expenses">Monthly Expenses ($)</label>
-      <input id="expenses" required step="0.01" type="number"/>
-      <label for="debtBalance">Total Debt Balance ($)</label>
-      <input id="debtBalance" required step="0.01" type="number"/>
-      <label for="interestRate">Average Interest Rate (%)</label>
-      <input id="interestRate" required step="0.01" type="number"/>
-      <label for="minimumPayment">Minimum Monthly Payment ($)</label>
-      <input id="minimumPayment" required step="0.01" type="number"/>
-      <label for="extraPayment">Extra Payment ($)</label>
-      <input id="extraPayment" step="0.01" type="number"/>
-      <label for="lineOfCredit">Select Velocity Banking Line of Credit:</label>
-      <select id="lineOfCredit" required>
-        <option value="creditCard">Credit Card</option>
-        <option value="HELOC">HELOC</option>
-        <option value="personalLoan">Personal Loan</option>
-        <option value="businessLoan">Business Loan</option>
-        <option value="ploc">PLOC (e.g., NetCredit)</option>
-      </select>
-      <label for="chunkPayment">Velocity Banking Chunk Payment ($)</label>
-      <input id="chunkPayment" required step="0.01" type="number"/>
-      <label for="chunkMonths">Months for Chunk Payments (comma-separated, e.g., 3,6,12)</label>
-      <input id="chunkMonths" placeholder="e.g., 3,6,12" type="text"/>
-      <button type="submit">Calculate</button>
-      <button id="saveInputs" type="button">Save Inputs</button>
-      <button id="loadInputs" type="button">Load Inputs</button>
-      <button id="exportPdf" type="button">Export Strategy as PDF</button>
-      <button id="clearInputs" type="button">Clear Inputs</button>
-      <label><input id="limitMonthsToggle" style="width:auto; margin-right:10px;" type="checkbox"/> Limit table to first 60 months</label>
-    </form>
+  <div id="results"></div>
 
-    <div id="feedback"></div>
-    <div id="user-name-display" style="font-size: 18px; font-weight: bold; margin-top: 20px;"></div>
-    <div id="results"></div>
+  <footer>Created by Ronell Bradley</footer>
+</div>
 
-    <div id="recommended-strategy" style="margin-top: 30px;">
-      <h2>Recommended Strategy<span class="recommendation-badge">RECOMMENDED</span></h2>
-      <div id="recommended-strategy-details"></div>
-    </div>
+<!-- PDF Export CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  const form = document.getElementById("calcForm");
+  const results = document.getElementById("results");
 
-    <footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">
-      Created by Ronell Bradley
-    </footer>
-  </div>
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
 
-  <!-- PDF Export -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script>
-    document.getElementById("calculator-form").addEventListener("submit", function(e) {
-      e.preventDefault();
+    const income = parseFloat(document.getElementById("income").value) || 0;
+    const extraIncome = parseFloat(document.getElementById("extraIncome").value) || 0;
+    const expenses = parseFloat(document.getElementById("expenses").value) || 0;
+    const debtBalance = parseFloat(document.getElementById("debtBalance").value) || 0;
+    const interestRate = parseFloat(document.getElementById("interestRate").value) || 0;
+    const minPayment = parseFloat(document.getElementById("minimumPayment").value) || 0;
+    const extraPayment = parseFloat(document.getElementById("extraPayment").value) || 0;
+    const chunkPayment = parseFloat(document.getElementById("chunkPayment").value) || 0;
+    const chunkMonths = document.getElementById("chunkMonths").value.split(",").map(x => parseInt(x.trim())).filter(n => !isNaN(n));
+    const lineOfCredit = document.getElementById("lineOfCredit").value;
+    const name = document.getElementById("userName").value;
 
-      const name = document.getElementById("userName").value;
-      const income = parseFloat(document.getElementById("income").value);
-      const extraIncome = parseFloat(document.getElementById("extraIncome").value);
-      const expenses = parseFloat(document.getElementById("expenses").value);
-      const debtBalance = parseFloat(document.getElementById("debtBalance").value);
-      const interestRate = parseFloat(document.getElementById("interestRate").value);
-      const minimumPayment = parseFloat(document.getElementById("minimumPayment").value);
-      const extraPayment = parseFloat(document.getElementById("extraPayment").value || 0);
-      const chunkPayment = parseFloat(document.getElementById("chunkPayment").value);
-      const lineOfCredit = document.getElementById("lineOfCredit").value;
-      const chunkMonths = document.getElementById("chunkMonths").value.split(",").map(m => parseInt(m.trim())).filter(n => !isNaN(n));
+    const monthlySurplus = income - expenses - minPayment;
+    const totalAvailable = monthlySurplus + (extraIncome / 12);
+    const totalChunked = chunkMonths.length * chunkPayment;
+    const interestSaved = (totalChunked * (interestRate / 100)) * (chunkMonths.length > 0 ? (chunkMonths[chunkMonths.length - 1] / 12) : 0);
 
-      const surplus = income - expenses - minimumPayment;
-      const totalAvailable = surplus + (extraIncome / 12);
+    results.innerHTML = `
+      <h3>${name ? name + "'s " : ""}Velocity Strategy</h3>
+      <p><strong>Monthly Surplus:</strong> $${monthlySurplus.toFixed(2)}</p>
+      <p><strong>Total Available per Month:</strong> $${totalAvailable.toFixed(2)}</p>
+      <p><strong>Total Chunked:</strong> $${totalChunked.toFixed(2)}</p>
+      <p><strong>Estimated Interest Saved:</strong> $${interestSaved.toFixed(2)}</p>
+      <p><strong>Strategy:</strong> Chunk $${chunkPayment.toFixed(2)} every ${chunkMonths.join(", ")} months using a ${lineOfCredit}</p>
+    `;
+  });
 
-      const chunkCount = chunkMonths.length;
-      const totalChunked = chunkCount * chunkPayment;
+  document.getElementById("saveInputs").addEventListener("click", () => {
+    const fields = ["userName", "income", "extraIncome", "expenses", "debtBalance", "interestRate", "minimumPayment", "extraPayment", "chunkPayment", "chunkMonths", "lineOfCredit"];
+    const data = {};
+    fields.forEach(id => data[id] = document.getElementById(id).value);
+    localStorage.setItem("velocityCalc", JSON.stringify(data));
+    alert("Saved!");
+  });
 
-      const interestSaved = (totalChunked * (interestRate / 100)) * (chunkMonths[chunkCount - 1] / 12);
+  document.getElementById("loadInputs").addEventListener("click", () => {
+    const data = JSON.parse(localStorage.getItem("velocityCalc"));
+    if (!data) return alert("No saved data.");
+    for (const key in data) {
+      if (document.getElementById(key)) {
+        document.getElementById(key).value = data[key];
+      }
+    }
+  });
 
-      document.getElementById("user-name-display").innerText = name ? `${name}'s Velocity Strategy` : '';
+  document.getElementById("clearInputs").addEventListener("click", () => {
+    form.reset();
+    results.innerHTML = '';
+  });
 
-      document.getElementById("results").innerHTML = `
-        <p><strong>Monthly Surplus:</strong> $${surplus.toFixed(2)}</p>
-        <p><strong>Total Available Monthly (inc. extra income):</strong> $${totalAvailable.toFixed(2)}</p>
-        <p><strong>Total Chunked Over ${chunkCount} Period(s):</strong> $${totalChunked.toFixed(2)}</p>
-        <p><strong>Estimated Interest Saved:</strong> $${interestSaved.toFixed(2)}</p>
-        <p><strong>Strategy:</strong> Chunk $${chunkPayment} via ${lineOfCredit.toUpperCase()} every ${chunkMonths.join(", ")} month(s)</p>
-      `;
-
-      document.getElementById("recommended-strategy-details").innerHTML = `
-        <ul>
-          <li>Use available surplus to aggressively pay down high-interest debt</li>
-          <li>Focus on debts with highest APR first</li>
-          <li>Repay credit line before next chunk</li>
-        </ul>
-      `;
-    });
-
-    document.getElementById("saveInputs").addEventListener("click", () => {
-      const fields = ["userName", "income", "extraIncome", "expenses", "debtBalance", "interestRate", "minimumPayment", "extraPayment", "chunkPayment", "chunkMonths", "lineOfCredit"];
-      const data = {};
-      fields.forEach(id => data[id] = document.getElementById(id).value);
-      localStorage.setItem("velocityInputs", JSON.stringify(data));
-      alert("Inputs saved!");
-    });
-
-    document.getElementById("loadInputs").addEventListener("click", () => {
-      const data = JSON.parse(localStorage.getItem("velocityInputs"));
-      if (!data) return alert("No saved inputs found.");
-      Object.keys(data).forEach(id => {
-        if (document.getElementById(id)) {
-          document.getElementById(id).value = data[id];
-        }
-      });
-    });
-
-    document.getElementById("clearInputs").addEventListener("click", () => {
-      document.getElementById("calculator-form").reset();
-      document.getElementById("results").innerHTML = '';
-      document.getElementById("user-name-display").innerText = '';
-      document.getElementById("recommended-strategy-details").innerHTML = '';
-    });
-
-    document.getElementById("exportPdf").addEventListener("click", () => {
-      const element = document.querySelector('.container');
-      html2pdf().from(element).save('velocity_strategy.pdf');
-    });
-  </script>
-
+  document.getElementById("exportPdf").addEventListener("click", () => {
+    html2pdf().from(document.querySelector(".container")).save("Velocity_Calculator.pdf");
+  });
+</script>
 </body>
 </html>
