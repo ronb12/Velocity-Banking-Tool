@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Credit Score Estimator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin: 20px 0 10px;
+      font-weight: bold;
+    }
+    input[type=range], input[type=number], select {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+    }
+    #scoreOutput {
+      font-size: 2em;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    .scoreColor {
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+    .poor { background-color: #ffcccc; color: #a60000; }
+    .fair { background-color: #fff0b3; color: #8a6d00; }
+    .good { background-color: #ccffcc; color: #006600; }
+    .excellent { background-color: #d4f1f4; color: #007777; }
+    footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #777;
+    }
+    nav a {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: #007bff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html">⬅️ Back to Dashboard</a>
+  </nav>
+
+  <div class="container">
+    <h1>💳 Credit Score Estimator</h1>
+
+    <label for="paymentHistory">Payment History (on-time %)</label>
+    <input type="range" id="paymentHistory" min="0" max="100" value="100" />
+    <span id="paymentHistoryVal">100%</span>
+
+    <label for="utilization">Credit Utilization (%)</label>
+    <input type="range" id="utilization" min="0" max="100" value="30" />
+    <span id="utilizationVal">30%</span>
+
+    <label for="historyLength">Credit History Length (Years)</label>
+    <input type="number" id="historyLength" min="0" max="30" value="5" />
+
+    <label for="inquiries">Recent Credit Inquiries (last 12 mo)</label>
+    <input type="number" id="inquiries" min="0" max="30" value="2" />
+
+    <label for="creditMix">Do you have mixed credit? (Loans + Cards)</label>
+    <select id="creditMix">
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+
+    <div id="scoreOutput">Estimated Score: 720</div>
+    <div id="scoreAdvice" class="scoreColor good">Your credit is looking good! Stay consistent.</div>
+  </div>
+
+  <footer>Created by Ronell Bradley</footer>
+
+  <script>
+    const elements = {
+      paymentHistory: document.getElementById("paymentHistory"),
+      utilization: document.getElementById("utilization"),
+      historyLength: document.getElementById("historyLength"),
+      inquiries: document.getElementById("inquiries"),
+      creditMix: document.getElementById("creditMix"),
+      scoreOutput: document.getElementById("scoreOutput"),
+      scoreAdvice: document.getElementById("scoreAdvice"),
+      phVal: document.getElementById("paymentHistoryVal"),
+      utilVal: document.getElementById("utilizationVal")
+    };
+
+    function updateValues() {
+      elements.phVal.textContent = `${elements.paymentHistory.value}%`;
+      elements.utilVal.textContent = `${elements.utilization.value}%`;
+
+      const ph = parseInt(elements.paymentHistory.value);
+      const util = parseInt(elements.utilization.value);
+      const history = parseInt(elements.historyLength.value);
+      const inquiries = parseInt(elements.inquiries.value);
+      const mix = elements.creditMix.value === "yes";
+
+      let score = 850;
+
+      // Payment History
+      if (ph >= 99) score -= 0;
+      else if (ph >= 95) score -= 20;
+      else if (ph >= 90) score -= 50;
+      else score -= 100;
+
+      // Utilization
+      if (util <= 10) score -= 0;
+      else if (util <= 30) score -= 30;
+      else if (util <= 50) score -= 70;
+      else score -= 150;
+
+      // Credit History
+      if (history >= 8) score -= 0;
+      else if (history >= 4) score -= 20;
+      else if (history >= 2) score -= 50;
+      else score -= 80;
+
+      // Inquiries
+      if (inquiries <= 2) score -= 0;
+      else if (inquiries <= 5) score -= 20;
+      else if (inquiries <= 10) score -= 50;
+      else score -= 80;
+
+      // Mix
+      if (!mix) score -= 20;
+
+      // Clamp score
+      score = Math.max(300, Math.min(850, Math.round(score)));
+
+      elements.scoreOutput.textContent = `Estimated Score: ${score}`;
+
+      if (score < 580) {
+        elements.scoreAdvice.textContent = "Very Poor – Start by lowering utilization and building payment history.";
+        elements.scoreAdvice.className = "scoreColor poor";
+      } else if (score < 670) {
+        elements.scoreAdvice.textContent = "Fair – You're on your way. Lower inquiries and utilization.";
+        elements.scoreAdvice.className = "scoreColor fair";
+      } else if (score < 740) {
+        elements.scoreAdvice.textContent = "Good – Stay consistent and let history grow.";
+        elements.scoreAdvice.className = "scoreColor good";
+      } else {
+        elements.scoreAdvice.textContent = "Excellent – You’re in a great position. Keep it up!";
+        elements.scoreAdvice.className = "scoreColor excellent";
+      }
+    }
+
+    // Event listeners
+    Object.values(elements).forEach(el => {
+      if (el.tagName === "INPUT" || el.tagName === "SELECT") {
+        el.addEventListener("input", updateValues);
+      }
+    });
+
+    // Initialize
+    updateValues();
+  </script>
+
+</body>
+</html>
