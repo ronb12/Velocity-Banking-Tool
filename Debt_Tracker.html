@@ -4,9 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – Smart Paste Fixed</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <title>Debt Tracker – Final Paste Working</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
@@ -22,7 +20,6 @@
       cursor: pointer;
     }
     button:hover { background: #0056b3; }
-    .summary { margin-top: 20px; font-size: 18px; }
     textarea {
       margin-top: 10px;
       width: 100%;
@@ -32,7 +29,7 @@
   </style>
 </head>
 <body>
-  <h1>Debt Tracker – Smart Paste Fixed</h1>
+  <h1>✅ Debt Tracker – Final Paste Working</h1>
 
   <table id="debtTable">
     <thead>
@@ -48,7 +45,7 @@
   </table>
 
   <button onclick="addDebt()">+ Add Debt</button>
-  <textarea id="pasteArea" rows="4" placeholder="Paste your data..."></textarea>
+  <textarea id="pasteArea" rows="5" placeholder="Paste anything: Name,Balance,Rate,Payment or Excel/CSV rows..."></textarea>
   <button onclick="parsePastedDebt()">📋 Paste Rows</button>
 
   <script>
@@ -67,24 +64,30 @@
     }
 
     function removeRow(btn) {
-      btn.parentElement.parentElement.remove();
+      btn.closest("tr").remove();
     }
 
     function parsePastedDebt() {
       const input = document.getElementById("pasteArea").value.trim();
       if (!input) return alert("No data to paste.");
       const lines = input.split("\n");
-      for (let line of lines) {
-        const parts = line.includes("\t") ? line.split("\t") : line.split(",");
+
+      lines.forEach((line, idx) => {
+        if (idx === 0 && line.toLowerCase().includes("debt name")) return;
+
+        let parts = line.includes("\t") ? line.split("\t") : line.split(",");
         let name = parts[0]?.trim() || "";
         let rawBalance = (parts[1] || "").replace(/[$,]/g, "");
         let rawRate = (parts[2] || "30").replace(/[%]/g, "");
         let rawPayment = (parts[3] || "100").replace(/[$,]/g, "");
+
         let balance = parseFloat(rawBalance) || 0;
         let rate = parseFloat(rawRate) || 30;
         let payment = parseFloat(rawPayment) || 100;
+
         if (name && balance) addDebt(name, balance, rate, payment);
-      }
+      });
+
       document.getElementById("pasteArea").value = "";
     }
   </script>
