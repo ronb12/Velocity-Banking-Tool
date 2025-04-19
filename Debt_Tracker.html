@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker + CFI</title>
+  <title>Debt Tracker – Auto CFI + Months Left</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -68,7 +68,7 @@
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
 
-  <h1>Debt Tracker with Auto CFI</h1>
+  <h1>Debt Tracker with Auto CFI & Months Left</h1>
 
   <table id="debtTable">
     <thead>
@@ -89,14 +89,10 @@
   <button onclick="addDebt()">+ Add Debt</button>
   <button onclick="saveDebts()">💾 Save</button>
   <button onclick="loadDebts()">📂 Load</button>
-  <button onclick="calculateSummary()">📊 Update Totals</button>
   <button onclick="exportToExcel()">📥 Export to Excel</button>
   <button onclick="window.print()">🖨️ Export to PDF</button>
 
-  <div class="summary" id="summaryText">
-    Total Debt: $0 | Total Monthly Payments: $0
-  </div>
-
+  <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0</div>
   <canvas id="debtChart" width="400" height="200"></canvas>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -109,21 +105,20 @@
       return "✅ Low";
     }
 
-    function addDebt(name = '', balance = '', rate = '', payment = '', months = '') {
+    function addDebt(name = '', balance = '', rate = '', payment = '') {
       const row = document.createElement("tr");
-      const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-      const priority = getPriorityTag(cfi);
       row.innerHTML = `
-        <td><input value="${name}" /></td>
-        <td><input type="number" value="${balance}" /></td>
-        <td><input type="number" value="${rate}" /></td>
-        <td><input type="number" value="${payment}" /></td>
-        <td><input type="number" value="${months}" /></td>
-        <td class="cfi">${cfi}</td>
-        <td class="priority">${priority}</td>
+        <td><input value="${name}" oninput="calculateSummary()" /></td>
+        <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
+        <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
+        <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
+        <td class="monthsLeft">0</td>
+        <td class="cfi">0</td>
+        <td class="priority">-</td>
         <td><button onclick="removeRow(this)">❌</button></td>
       `;
       tableBody.appendChild(row);
+      calculateSummary();
     }
 
     function removeRow(btn) {
@@ -134,13 +129,12 @@
     function saveDebts() {
       const data = [];
       tableBody.querySelectorAll("tr").forEach(row => {
-        const cells = row.querySelectorAll("input");
+        const inputs = row.querySelectorAll("input");
         const debt = {
-          name: cells[0].value,
-          balance: parseFloat(cells[1].value) || 0,
-          rate: parseFloat(cells[2].value) || 0,
-          payment: parseFloat(cells[3].value) || 0,
-          months: parseFloat(cells[4].value) || 0
+          name: inputs[0].value,
+          balance: parseFloat(inputs[1].value) || 0,
+          rate: parseFloat(inputs[2].value) || 0,
+          payment: parseFloat(inputs[3].value) || 0
         };
         data.push(debt);
       });
@@ -151,7 +145,7 @@
     function loadDebts() {
       const data = JSON.parse(localStorage.getItem("debtData")) || [];
       tableBody.innerHTML = "";
-      data.forEach(debt => addDebt(debt.name, debt.balance, debt.rate, debt.payment, debt.months));
+      data.forEach(debt => addDebt(debt.name, debt.balance, debt.rate, debt.payment));
       calculateSummary();
     }
 
@@ -167,14 +161,16 @@
         const balance = parseFloat(inputs[1].value) || 0;
         const payment = parseFloat(inputs[3].value) || 0;
 
-        totalBalance += balance;
-        totalPayment += payment;
-
+        const monthsLeft = payment > 0 ? Math.ceil(balance / payment) : 0;
         const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
         const priority = getPriorityTag(cfi);
+
+        row.querySelector(".monthsLeft").innerText = monthsLeft;
         row.querySelector(".cfi").innerText = cfi;
         row.querySelector(".priority").innerText = priority;
 
+        totalBalance += balance;
+        totalPayment += payment;
         chartLabels.push(name);
         chartData.push(balance);
       });
@@ -216,14 +212,17 @@
     }
 
     function exportToExcel() {
-      const rows = [["Debt Name", "Balance", "Rate", "Payment", "Months", "CFI", "Priority"]];
+      const rows = [["Debt Name", "Balance", "Rate", "Payment", "Months Left", "CFI", "Priority"]];
       tableBody.querySelectorAll("tr").forEach(row => {
-        const cells = row.querySelectorAll("input, .cfi, .priority");
-        const rowData = [];
-        cells.forEach(cell => {
-          rowData.push(cell.value || cell.innerText);
-        });
-        rows.push(rowData);
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value;
+        const balance = inputs[1].value;
+        const rate = inputs[2].value;
+        const payment = inputs[3].value;
+        const months = row.querySelector(".monthsLeft").innerText;
+        const cfi = row.querySelector(".cfi").innerText;
+        const priority = row.querySelector(".priority").innerText;
+        rows.push([name, balance, rate, payment, months, cfi, priority]);
       });
 
       let csv = rows.map(r => r.join(",")).join("\n");
