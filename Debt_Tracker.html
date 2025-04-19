@@ -4,12 +4,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – Final Paste Working</title>
+  <title>Debt Tracker – Full Featured with Paste</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #222; color: #fff; }
+    .priority-urgent { background-color: #ffe5e5; }
+    .priority-medium { background-color: #fff3cd; }
+    .priority-low { background-color: #e6f4ea; }
     button {
       margin: 5px;
       padding: 8px 12px;
@@ -20,16 +25,18 @@
       cursor: pointer;
     }
     button:hover { background: #0056b3; }
+    .summary { margin-top: 20px; font-size: 18px; }
     textarea {
       margin-top: 10px;
       width: 100%;
       padding: 10px;
       font-size: 16px;
     }
+    canvas { margin-top: 30px; }
   </style>
 </head>
 <body>
-  <h1>✅ Debt Tracker – Final Paste Working</h1>
+  <h1>📊 Debt Tracker – Full Featured</h1>
 
   <table id="debtTable">
     <thead>
@@ -38,6 +45,11 @@
         <th>Balance ($)</th>
         <th>Rate (%)</th>
         <th>Payment ($)</th>
+        <th>Months Left</th>
+        <th>CFI</th>
+        <th>Total Interest</th>
+        <th>Priority</th>
+        <th>Amortize</th>
         <th>Delete</th>
       </tr>
     </thead>
@@ -45,8 +57,14 @@
   </table>
 
   <button onclick="addDebt()">+ Add Debt</button>
-  <textarea id="pasteArea" rows="5" placeholder="Paste anything: Name,Balance,Rate,Payment or Excel/CSV rows..."></textarea>
+  <button onclick="saveDebts()">💾 Save</button>
+  <button onclick="loadDebts()">📂 Load</button>
+  <button onclick="exportToExcel()">📥 Export CSV</button>
+  <textarea id="pasteArea" rows="4" placeholder="Paste: Name,Balance,Rate,Payment"></textarea>
   <button onclick="parsePastedDebt()">📋 Paste Rows</button>
+
+  <div class="summary" id="summaryText">Total Debt: $0 | Total Payment: $0 | Total Interest: $0</div>
+  <canvas id="debtChart" width="400" height="200"></canvas>
 
   <script>
     const tableBody = document.querySelector("#debtTable tbody");
@@ -58,38 +76,184 @@
         <td><input type="number" value="${balance}" /></td>
         <td><input type="number" value="${rate}" /></td>
         <td><input type="number" value="${payment}" /></td>
+        <td class="months">-</td>
+        <td class="cfi">-</td>
+        <td class="interest">-</td>
+        <td class="priority">-</td>
+        <td><button onclick="amortizeRow(this)">📆</button></td>
         <td><button onclick="removeRow(this)">❌</button></td>
       `;
       tableBody.appendChild(row);
-    }
-
-    function removeRow(btn) {
-      btn.closest("tr").remove();
+      calculateSummary();
     }
 
     function parsePastedDebt() {
       const input = document.getElementById("pasteArea").value.trim();
-      if (!input) return alert("No data to paste.");
+      if (!input) return alert("Paste something!");
       const lines = input.split("\n");
-
-      lines.forEach((line, idx) => {
-        if (idx === 0 && line.toLowerCase().includes("debt name")) return;
-
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (i === 0 && line.toLowerCase().includes("debt name")) continue;
         let parts = line.includes("\t") ? line.split("\t") : line.split(",");
-        let name = parts[0]?.trim() || "";
-        let rawBalance = (parts[1] || "").replace(/[$,]/g, "");
-        let rawRate = (parts[2] || "30").replace(/[%]/g, "");
-        let rawPayment = (parts[3] || "100").replace(/[$,]/g, "");
-
-        let balance = parseFloat(rawBalance) || 0;
-        let rate = parseFloat(rawRate) || 30;
-        let payment = parseFloat(rawPayment) || 100;
-
-        if (name && balance) addDebt(name, balance, rate, payment);
-      });
-
+        const name = parts[0]?.trim();
+        const balance = parseFloat((parts[1] || "0").replace(/[$,]/g, ""));
+        const rate = parseFloat((parts[2] || "30").replace(/[%]/g, ""));
+        const payment = parseFloat((parts[3] || "100").replace(/[$,]/g, ""));
+        if (name && !isNaN(balance)) {
+          addDebt(name, balance, rate, payment);
+        }
+      }
       document.getElementById("pasteArea").value = "";
     }
+
+    function removeRow(btn) {
+      btn.closest("tr").remove();
+      calculateSummary();
+    }
+
+    function calcMonths(balance, rate, payment) {
+      const r = rate / 100 / 12;
+      if (balance <= 0 || r <= 0 || payment <= 0) return 0;
+      return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
+    }
+
+    function calcInterest(balance, rate, payment) {
+      let r = rate / 100 / 12, total = 0, month = 0;
+      while (balance > 0 && month < 1000) {
+        const interest = balance * r;
+        const principal = payment - interest;
+        if (principal <= 0) break;
+        balance -= principal;
+        total += interest;
+        month++;
+      }
+      return total;
+    }
+
+    function getPriority(cfi) {
+      if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
+      if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
+      return { tag: "✅ Low", class: "priority-low" };
+    }
+
+    function calculateSummary() {
+      let totalBal = 0, totalPay = 0, totalInt = 0;
+      let labels = [], data = [];
+
+      document.querySelectorAll("#debtTable tbody tr").forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value;
+        const balance = parseFloat(inputs[1].value) || 0;
+        const rate = parseFloat(inputs[2].value) || 0;
+        const payment = parseFloat(inputs[3].value) || 0;
+        const months = calcMonths(balance, rate, payment);
+        const cfi = (balance / payment).toFixed(2);
+        const interest = calcInterest(balance, rate, payment);
+        const { tag, class: pclass } = getPriority(cfi);
+
+        row.querySelector(".months").innerText = months;
+        row.querySelector(".cfi").innerText = cfi;
+        row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+        row.querySelector(".priority").innerText = tag;
+        row.className = pclass;
+
+        totalBal += balance;
+        totalPay += payment;
+        totalInt += interest;
+        labels.push(name);
+        data.push(balance);
+      });
+
+      document.getElementById("summaryText").innerText =
+        `Total Debt: $${totalBal.toFixed(2)} | Total Payment: $${totalPay.toFixed(2)} | Total Interest: $${totalInt.toFixed(2)}`;
+
+      drawChart(labels, data);
+    }
+
+    function drawChart(labels, data) {
+      const ctx = document.getElementById("debtChart").getContext("2d");
+      if (window.debtChart) window.debtChart.destroy();
+      window.debtChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [{
+            label: "Debt Balances",
+            data,
+            backgroundColor: "rgba(54, 162, 235, 0.7)"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { callback: v => "$" + v } }
+          }
+        }
+      });
+    }
+
+    function amortizeRow(btn) {
+      const row = btn.closest("tr");
+      const inputs = row.querySelectorAll("input");
+      let balance = parseFloat(inputs[1].value);
+      let rate = parseFloat(inputs[2].value);
+      let payment = parseFloat(inputs[3].value);
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20, month = 1, totalInt = 0;
+      doc.text("Amortization Schedule", 10, 10);
+      while (balance > 0 && month < 240) {
+        const interest = balance * (rate / 100 / 12);
+        const principal = Math.min(payment - interest, balance);
+        const end = balance - principal;
+        doc.text(`Month ${month}: $${balance.toFixed(2)} | Int $${interest.toFixed(2)} | Prin $${principal.toFixed(2)} | End $${end.toFixed(2)}`, 10, y);
+        balance = end;
+        totalInt += interest;
+        y += 8;
+        if (y > 270) { doc.addPage(); y = 10; }
+        month++;
+      }
+      doc.save("amortization.pdf");
+    }
+
+    function saveDebts() {
+      const data = [];
+      document.querySelectorAll("#debtTable tbody tr").forEach(row => {
+        const i = row.querySelectorAll("input");
+        data.push({ name: i[0].value, balance: i[1].value, rate: i[2].value, payment: i[3].value });
+      });
+      localStorage.setItem("debtData", JSON.stringify(data));
+    }
+
+    function loadDebts() {
+      const data = JSON.parse(localStorage.getItem("debtData")) || [];
+      tableBody.innerHTML = "";
+      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment));
+      calculateSummary();
+    }
+
+    function exportToExcel() {
+      const rows = [["Name","Balance","Rate","Payment","Months","CFI","Interest","Priority"]];
+      document.querySelectorAll("#debtTable tbody tr").forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        rows.push([
+          inputs[0].value, inputs[1].value, inputs[2].value, inputs[3].value,
+          row.querySelector(".months").innerText,
+          row.querySelector(".cfi").innerText,
+          row.querySelector(".interest").innerText,
+          row.querySelector(".priority").innerText
+        ]);
+      });
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "debt_tracker.csv";
+      a.click();
+    }
+
+    window.onload = loadDebts;
   </script>
 </body>
 </html>
