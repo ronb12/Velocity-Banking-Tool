@@ -178,9 +178,80 @@
     </footer>
   </div>
 
+  <!-- PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script>
-    // full working JS is already embedded in your copy — reuse existing script block
-    // (no change needed unless you're customizing logic)
+    document.getElementById("calculator-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const name = document.getElementById("userName").value;
+      const income = parseFloat(document.getElementById("income").value);
+      const extraIncome = parseFloat(document.getElementById("extraIncome").value);
+      const expenses = parseFloat(document.getElementById("expenses").value);
+      const debtBalance = parseFloat(document.getElementById("debtBalance").value);
+      const interestRate = parseFloat(document.getElementById("interestRate").value);
+      const minimumPayment = parseFloat(document.getElementById("minimumPayment").value);
+      const extraPayment = parseFloat(document.getElementById("extraPayment").value || 0);
+      const chunkPayment = parseFloat(document.getElementById("chunkPayment").value);
+      const lineOfCredit = document.getElementById("lineOfCredit").value;
+      const chunkMonths = document.getElementById("chunkMonths").value.split(",").map(m => parseInt(m.trim())).filter(n => !isNaN(n));
+
+      const surplus = income - expenses - minimumPayment;
+      const totalAvailable = surplus + (extraIncome / 12);
+
+      const chunkCount = chunkMonths.length;
+      const totalChunked = chunkCount * chunkPayment;
+
+      const interestSaved = (totalChunked * (interestRate / 100)) * (chunkMonths[chunkCount - 1] / 12);
+
+      document.getElementById("user-name-display").innerText = name ? `${name}'s Velocity Strategy` : '';
+
+      document.getElementById("results").innerHTML = `
+        <p><strong>Monthly Surplus:</strong> $${surplus.toFixed(2)}</p>
+        <p><strong>Total Available Monthly (inc. extra income):</strong> $${totalAvailable.toFixed(2)}</p>
+        <p><strong>Total Chunked Over ${chunkCount} Period(s):</strong> $${totalChunked.toFixed(2)}</p>
+        <p><strong>Estimated Interest Saved:</strong> $${interestSaved.toFixed(2)}</p>
+        <p><strong>Strategy:</strong> Chunk $${chunkPayment} via ${lineOfCredit.toUpperCase()} every ${chunkMonths.join(", ")} month(s)</p>
+      `;
+
+      document.getElementById("recommended-strategy-details").innerHTML = `
+        <ul>
+          <li>Use available surplus to aggressively pay down high-interest debt</li>
+          <li>Focus on debts with highest APR first</li>
+          <li>Repay credit line before next chunk</li>
+        </ul>
+      `;
+    });
+
+    document.getElementById("saveInputs").addEventListener("click", () => {
+      const fields = ["userName", "income", "extraIncome", "expenses", "debtBalance", "interestRate", "minimumPayment", "extraPayment", "chunkPayment", "chunkMonths", "lineOfCredit"];
+      const data = {};
+      fields.forEach(id => data[id] = document.getElementById(id).value);
+      localStorage.setItem("velocityInputs", JSON.stringify(data));
+      alert("Inputs saved!");
+    });
+
+    document.getElementById("loadInputs").addEventListener("click", () => {
+      const data = JSON.parse(localStorage.getItem("velocityInputs"));
+      if (!data) return alert("No saved inputs found.");
+      Object.keys(data).forEach(id => {
+        if (document.getElementById(id)) {
+          document.getElementById(id).value = data[id];
+        }
+      });
+    });
+
+    document.getElementById("clearInputs").addEventListener("click", () => {
+      document.getElementById("calculator-form").reset();
+      document.getElementById("results").innerHTML = '';
+      document.getElementById("user-name-display").innerText = '';
+      document.getElementById("recommended-strategy-details").innerHTML = '';
+    });
+
+    document.getElementById("exportPdf").addEventListener("click", () => {
+      const element = document.querySelector('.container');
+      html2pdf().from(element).save('velocity_strategy.pdf');
+    });
   </script>
 
 </body>
