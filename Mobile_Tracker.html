@@ -90,15 +90,40 @@
       width: 100%;
       border-radius: 4px;
     }
+    .top-nav {
+      background: var(--tab-active);
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    .top-nav a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .amort-btn {
+      background: #444;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      margin-top: 4px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
+
+  <div class="top-nav">
+    <a href="index.html">⬅️ Back to Dashboard</a>
+  </div>
+
   <div id="debts" class="tab-content active">
     <h2>Debts</h2>
     <table id="debtTable">
       <thead>
         <tr>
-          <th>Name</th><th>Balance</th><th>Rate (%)</th><th>Min Pay</th><th>Delete</th>
+          <th>Name</th><th>Balance</th><th>Rate (%)</th><th>Min Pay</th><th>Actions</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -126,21 +151,21 @@
   </div>
 
   <div class="tab-container">
-    <button class="active" onclick="switchTab('debts')">Debts</button>
-    <button onclick="switchTab('summary')">Summary</button>
-    <button onclick="switchTab('amortization')">Amortize</button>
-    <button onclick="switchTab('settings')">Settings</button>
+    <button class="active" onclick="switchTab('debts', this)">Debts</button>
+    <button onclick="switchTab('summary', this)">Summary</button>
+    <button onclick="switchTab('amortization', this)">Amortize</button>
+    <button onclick="switchTab('settings', this)">Settings</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const tableBody = document.querySelector("#debtTable tbody");
 
-    function switchTab(tabId) {
+    function switchTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelector(`#${tabId}`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
       document.querySelectorAll('.tab-container button').forEach(el => el.classList.remove('active'));
-      event.target.classList.add('active');
+      btn.classList.add('active');
     }
 
     function addDebt(name = '', balance = '', rate = '', payment = '') {
@@ -150,10 +175,43 @@
         <td><input type="number" value="${balance}" onchange="update()"/></td>
         <td><input type="number" value="${rate}" onchange="update()"/></td>
         <td><input type="number" value="${payment}" onchange="update()"/></td>
-        <td><button onclick="this.closest('tr').remove(); update();">❌</button></td>
+        <td>
+          <button onclick="this.closest('tr').remove(); update();">❌</button><br>
+          <button class="amort-btn" onclick="amortizeRow(this)">📆</button>
+        </td>
       `;
       tableBody.appendChild(row);
       update();
+    }
+
+    function amortizeRow(btn) {
+      const row = btn.closest("tr");
+      const cells = row.querySelectorAll("input");
+      const balance = parseFloat(cells[1].value) || 0;
+      const rate = parseFloat(cells[2].value) || 0;
+      const payment = parseFloat(cells[3].value) || 0;
+      const r = rate / 100 / 12;
+
+      let month = 1, output = "";
+      let remaining = balance;
+      let totalInterest = 0;
+
+      output += `<h3>Schedule for ${cells[0].value}</h3>`;
+      output += `<table border="1" width="100%"><tr><th>Month</th><th>Start</th><th>Interest</th><th>Principal</th><th>End</th></tr>`;
+
+      while (remaining > 0 && month < 1000) {
+        const interest = remaining * r;
+        const principal = Math.min(payment - interest, remaining);
+        const endBalance = remaining + interest - payment;
+        output += `<tr><td>${month}</td><td>$${remaining.toFixed(2)}</td><td>$${interest.toFixed(2)}</td><td>$${principal.toFixed(2)}</td><td>$${Math.max(0,endBalance).toFixed(2)}</td></tr>`;
+        remaining = endBalance;
+        totalInterest += interest;
+        month++;
+      }
+
+      output += `</table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
+      document.getElementById("amortizationSchedule").innerHTML = output;
+      switchTab('amortization', document.querySelectorAll('.tab-container button')[2]);
     }
 
     function update() {
