@@ -161,3 +161,211 @@
   <div class="container">
     <a class="back" href="index.html">🔙 Back to Dashboard</a>
     <h1>💰 Savings Goal Tracker</h1>
+
+    <table id="goalsTable">
+      <thead>
+        <tr>
+          <th>Goal Name</th>
+          <th>Target Amount ($)</th>
+          <th>Saved So Far ($)</th>
+          <th>Progress</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="addGoal()">+ Add Savings Goal</button>
+    <button onclick="printGoals()">🖨️ Print Goals</button>
+
+    <div class="challenge-buttons">
+      <button onclick="generateChallenge('easy')">🎯 Easy Challenge</button>
+      <button onclick="generateChallenge('medium')">💪 Medium Challenge</button>
+      <button onclick="generateChallenge('hard')">🔥 Hard Challenge</button>
+      <button onclick="exportChallenges()">📤 Export Challenges</button>
+    </div>
+
+    <div class="challenge-box" id="challengeBox" style="display: none;"></div>
+
+    <div class="log">
+      <h3>📋 Challenge Log</h3>
+      <div id="challengeLog"></div>
+      <div class="stats" id="challengeStats">Completed: 0 of 0</div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'savings_goals';
+    const CHALLENGE_LOG_KEY = 'challenge_log';
+
+    function addGoal(name = '', target = 0, saved = 0) {
+      const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
+      const newRow = table.insertRow();
+
+      const nameCell = newRow.insertCell(0);
+      const targetCell = newRow.insertCell(1);
+      const savedCell = newRow.insertCell(2);
+      const progressCell = newRow.insertCell(3);
+      const deleteCell = newRow.insertCell(4);
+
+      nameCell.innerHTML = `<input type="text" value="${name}" oninput="saveGoals()" />`;
+      targetCell.innerHTML = `<input type="number" value="${target}" min="0" onchange="updateProgress(this)" />`;
+      savedCell.innerHTML = `<input type="number" value="${saved}" min="0" onchange="updateProgress(this)" />`;
+      progressCell.innerHTML = `
+        <div class="progress-bar"><div class="progress"></div></div>
+        <div class="progress-label"></div>
+      `;
+      deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
+
+      updateProgress(newRow);
+    }
+
+    function updateProgress(input) {
+      const row = input.closest('tr') || input;
+      const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+      const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+      const progress = row.cells[3].querySelector('.progress');
+      const label = row.cells[3].querySelector('.progress-label');
+
+      let percent = 0;
+      if (target > 0) {
+        percent = Math.min((saved / target) * 100, 100);
+      }
+
+      progress.style.width = percent + '%';
+      label.textContent = `$${saved.toFixed(2)} of $${target.toFixed(2)} saved`;
+
+      saveGoals();
+    }
+
+    function deleteRow(button) {
+      const row = button.closest("tr");
+      row.remove();
+      saveGoals();
+    }
+
+    function saveGoals() {
+      const rows = document.querySelectorAll('#goalsTable tbody tr');
+      const data = [];
+
+      rows.forEach(row => {
+        const name = row.cells[0].querySelector('input').value;
+        const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+        const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+        data.push({ name, target, saved });
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadGoals() {
+      const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      savedData.forEach(goal => {
+        addGoal(goal.name, goal.target, goal.saved);
+      });
+    }
+
+    function printGoals() {
+      window.print();
+    }
+
+    function randomAmount(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateChallenge(level = 'easy') {
+      let challenges = [];
+      if (level === 'easy') {
+        challenges = [
+          `💸 Save $${randomAmount(5, 20)} by skipping one small luxury this week.`,
+          `☕ Skip coffee/snacks for 3 days and save $${randomAmount(10, 25)}.`,
+          `🧺 Save $${randomAmount(5, 15)} every time you do laundry at home.`,
+          `🧹 Declutter and save $${randomAmount(1, 5)} per item donated.`
+        ];
+      } else if (level === 'medium') {
+        challenges = [
+          `📅 Save $${randomAmount(50, 100)} by the end of this month.`,
+          `🛍️ For every online cart you abandon, save $${randomAmount(20, 40)}.`,
+          `🍽️ Eat at home 5 times this week and save $${randomAmount(25, 60)}.`,
+          `🎮 No impulse buys for a week = save $${randomAmount(30, 75)}.`
+        ];
+      } else if (level === 'hard') {
+        challenges = [
+          `🔥 Save $${randomAmount(100, 250)} in a 7-day grind!`,
+          `💰 Do a no-spend weekend and save $${randomAmount(75, 150)}.`,
+          `📦 Cancel a subscription and save $${randomAmount(30, 80)} monthly.`,
+          `💸 Transfer $${randomAmount(100, 200)} to your savings right now!`
+        ];
+      }
+
+      const random = challenges[Math.floor(Math.random() * challenges.length)];
+      const box = document.getElementById('challengeBox');
+      box.textContent = random;
+      box.style.display = 'block';
+
+      addToChallengeLog(random);
+    }
+
+    function addToChallengeLog(text) {
+      const log = JSON.parse(localStorage.getItem(CHALLENGE_LOG_KEY) || '[]');
+      log.push({ text, done: false });
+      localStorage.setItem(CHALLENGE_LOG_KEY, JSON.stringify(log));
+      renderChallengeLog();
+    }
+
+    function renderChallengeLog() {
+      const logData = JSON.parse(localStorage.getItem(CHALLENGE_LOG_KEY) || '[]');
+      const logContainer = document.getElementById('challengeLog');
+      logContainer.innerHTML = '';
+      let completed = 0;
+
+      logData.forEach((item, index) => {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = item.done;
+        checkbox.onchange = () => {
+          logData[index].done = checkbox.checked;
+          localStorage.setItem(CHALLENGE_LOG_KEY, JSON.stringify(logData));
+          renderChallengeLog();
+        };
+
+        const label = document.createElement('label');
+        label.textContent = item.text;
+        if (item.done) {
+          label.style.textDecoration = 'line-through';
+          completed++;
+        }
+
+        entry.appendChild(checkbox);
+        entry.appendChild(label);
+        logContainer.appendChild(entry);
+      });
+
+      document.getElementById('challengeStats').textContent = `Completed: ${completed} of ${logData.length}`;
+    }
+
+    function exportChallenges() {
+      const logData = JSON.parse(localStorage.getItem(CHALLENGE_LOG_KEY) || '[]');
+      let csv = 'Challenge,Completed\n';
+      logData.forEach(item => {
+        csv += `"${item.text.replace(/"/g, '""')}",${item.done ? 'Yes' : 'No'}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'challenge_log.csv';
+      a.click();
+    }
+
+    window.onload = () => {
+      loadGoals();
+      renderChallengeLog();
+    };
+  </script>
+</body>
+</html>
