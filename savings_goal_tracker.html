@@ -111,7 +111,9 @@
   </div>
 
   <script>
-    function addGoal() {
+    const STORAGE_KEY = 'savings_goals';
+
+    function addGoal(name = '', target = 0, saved = 0) {
       const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
       const newRow = table.insertRow();
 
@@ -121,15 +123,17 @@
       const progressCell = newRow.insertCell(3);
       const deleteCell = newRow.insertCell(4);
 
-      nameCell.innerHTML = `<input type="text" placeholder="Goal name" />`;
-      targetCell.innerHTML = `<input type="number" value="0" min="0" onchange="updateProgress(this)" />`;
-      savedCell.innerHTML = `<input type="number" value="0" min="0" onchange="updateProgress(this)" />`;
+      nameCell.innerHTML = `<input type="text" value="${name}" oninput="saveGoals()" />`;
+      targetCell.innerHTML = `<input type="number" value="${target}" min="0" onchange="updateProgress(this)" />`;
+      savedCell.innerHTML = `<input type="number" value="${saved}" min="0" onchange="updateProgress(this)" />`;
       progressCell.innerHTML = `<div class="progress-bar"><div class="progress"></div></div>`;
       deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
+
+      updateProgress(newRow);
     }
 
     function updateProgress(input) {
-      const row = input.closest('tr');
+      const row = input.closest('tr') || input;
       const target = parseFloat(row.cells[1].querySelector('input').value || 0);
       const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
       const progress = row.cells[3].querySelector('.progress');
@@ -140,12 +144,38 @@
       }
 
       progress.style.width = percent + '%';
+      saveGoals();
     }
 
     function deleteRow(button) {
-      const row = button.closest('tr');
+      const row = button.closest("tr");
       row.remove();
+      saveGoals();
     }
+
+    function saveGoals() {
+      const rows = document.querySelectorAll('#goalsTable tbody tr');
+      const data = [];
+
+      rows.forEach(row => {
+        const name = row.cells[0].querySelector('input').value;
+        const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+        const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+        data.push({ name, target, saved });
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadGoals() {
+      const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      savedData.forEach(goal => {
+        addGoal(goal.name, goal.target, goal.saved);
+      });
+    }
+
+    // Initialize on page load
+    window.onload = loadGoals;
   </script>
 </body>
 </html>
