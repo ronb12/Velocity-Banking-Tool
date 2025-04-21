@@ -13,7 +13,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 950px;
       margin: auto;
       background: #fff;
       padding: 25px;
@@ -106,12 +106,24 @@
     }
 
     @media print {
-      button, .back, .challenge-box {
+      button, .back, .challenge-box, .challenge-buttons {
         display: none;
       }
       input {
         border: none;
       }
+    }
+
+    .challenge-buttons {
+      margin-top: 20px;
+    }
+
+    .challenge-buttons button {
+      background-color: #28a745;
+    }
+
+    .challenge-buttons button:hover {
+      background-color: #1e7e34;
     }
   </style>
 </head>
@@ -135,7 +147,12 @@
 
     <button onclick="addGoal()">+ Add Savings Goal</button>
     <button onclick="printGoals()">🖨️ Print Goals</button>
-    <button onclick="generateChallenge()">🎲 Generate Savings Challenge</button>
+
+    <div class="challenge-buttons">
+      <button onclick="generateChallenge('easy')">🎯 Easy Challenge</button>
+      <button onclick="generateChallenge('medium')">💪 Medium Challenge</button>
+      <button onclick="generateChallenge('hard')">🔥 Hard Challenge</button>
+    </div>
 
     <div class="challenge-box" id="challengeBox" style="display: none;"></div>
   </div>
@@ -214,19 +231,34 @@
       window.print();
     }
 
-    function generateChallenge() {
-      const challenges = [
-        "No-Spend Weekend Challenge 💸 — Save what you would’ve spent!",
-        "Save $5 for every coffee skipped this week ☕",
-        "Every time you eat at home, drop $10 into savings 🍽️",
-        "Transfer all your leftover change to your savings account today!",
-        "Pick one subscription to cancel and save the difference 💡",
-        "Save $20 every time you say 'no' to online shopping 🛍️",
-        "Put $1 away for every item you donate this week ♻️",
-        "Save $50 by cooking all meals at home for 5 days 🍳",
-        "Delete one shopping app and save what you would've spent 🧠",
-        "Set a mini-goal: Save $100 by the end of the month! 📅"
-      ];
+    function randomAmount(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateChallenge(level = 'easy') {
+      let challenges = [];
+      if (level === 'easy') {
+        challenges = [
+          `💸 Save $${randomAmount(5, 20)} by skipping one small luxury this week.`,
+          `☕ Skip coffee/snacks for 3 days and save $${randomAmount(10, 25)}.`,
+          `🧺 Save $${randomAmount(5, 15)} every time you do laundry at home.`,
+          `🧹 Declutter and save $${randomAmount(1, 5)} per item donated.`
+        ];
+      } else if (level === 'medium') {
+        challenges = [
+          `📅 Save $${randomAmount(50, 100)} by the end of this month.`,
+          `🛍️ For every online cart you abandon, save $${randomAmount(20, 40)}.`,
+          `🍽️ Eat at home 5 times this week and save $${randomAmount(25, 60)}.`,
+          `🎮 No impulse buys for a week = save $${randomAmount(30, 75)}.`
+        ];
+      } else if (level === 'hard') {
+        challenges = [
+          `🔥 Save $${randomAmount(100, 250)} in a 7-day grind!`,
+          `💰 Do a no-spend weekend and save $${randomAmount(75, 150)}.`,
+          `📦 Cancel a subscription and save $${randomAmount(30, 80)} monthly.`,
+          `💸 Transfer $${randomAmount(100, 200)} to your savings right now!`
+        ];
+      }
 
       const random = challenges[Math.floor(Math.random() * challenges.length)];
       const box = document.getElementById('challengeBox');
