@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Savings Goal Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    .progress-bar {
+      height: 20px;
+      background-color: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: #28a745;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="index.html">🔙 Back to Dashboard</a>
+    <h1>💰 Savings Goal Tracker</h1>
+
+    <table id="goalsTable">
+      <thead>
+        <tr>
+          <th>Goal Name</th>
+          <th>Target Amount ($)</th>
+          <th>Saved So Far ($)</th>
+          <th>Progress</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="addGoal()">+ Add Savings Goal</button>
+  </div>
+
+  <script>
+    function addGoal() {
+      const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
+      const newRow = table.insertRow();
+
+      const nameCell = newRow.insertCell(0);
+      const targetCell = newRow.insertCell(1);
+      const savedCell = newRow.insertCell(2);
+      const progressCell = newRow.insertCell(3);
+      const deleteCell = newRow.insertCell(4);
+
+      nameCell.innerHTML = `<input type="text" placeholder="Goal name" />`;
+      targetCell.innerHTML = `<input type="number" value="0" min="0" onchange="updateProgress(this)" />`;
+      savedCell.innerHTML = `<input type="number" value="0" min="0" onchange="updateProgress(this)" />`;
+      progressCell.innerHTML = `<div class="progress-bar"><div class="progress"></div></div>`;
+      deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
+    }
+
+    function updateProgress(input) {
+      const row = input.closest('tr');
+      const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+      const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+      const progress = row.cells[3].querySelector('.progress');
+
+      let percent = 0;
+      if (target > 0) {
+        percent = Math.min((saved / target) * 100, 100);
+      }
+
+      progress.style.width = percent + '%';
+    }
+
+    function deleteRow(button) {
+      const row = button.closest('tr');
+      row.remove();
+    }
+  </script>
+</body>
+</html>
