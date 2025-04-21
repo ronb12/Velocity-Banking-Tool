@@ -13,7 +13,7 @@
     }
 
     .container {
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
       background: #fff;
       padding: 25px;
@@ -64,8 +64,14 @@
       transition: width 0.3s ease;
     }
 
+    .progress-label {
+      margin-top: 5px;
+      font-size: 0.9em;
+      color: #333;
+    }
+
     button {
-      margin-top: 15px;
+      margin: 10px 10px 0 0;
       padding: 10px 15px;
       background-color: #007bff;
       color: white;
@@ -86,6 +92,26 @@
       color: white;
       text-decoration: none;
       border-radius: 6px;
+    }
+
+    .challenge-box {
+      background: #f0f9ff;
+      border: 1px solid #007bff;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 1.05em;
+    }
+
+    @media print {
+      button, .back, .challenge-box {
+        display: none;
+      }
+      input {
+        border: none;
+      }
     }
   </style>
 </head>
@@ -108,6 +134,10 @@
     </table>
 
     <button onclick="addGoal()">+ Add Savings Goal</button>
+    <button onclick="printGoals()">🖨️ Print Goals</button>
+    <button onclick="generateChallenge()">🎲 Generate Savings Challenge</button>
+
+    <div class="challenge-box" id="challengeBox" style="display: none;"></div>
   </div>
 
   <script>
@@ -126,7 +156,10 @@
       nameCell.innerHTML = `<input type="text" value="${name}" oninput="saveGoals()" />`;
       targetCell.innerHTML = `<input type="number" value="${target}" min="0" onchange="updateProgress(this)" />`;
       savedCell.innerHTML = `<input type="number" value="${saved}" min="0" onchange="updateProgress(this)" />`;
-      progressCell.innerHTML = `<div class="progress-bar"><div class="progress"></div></div>`;
+      progressCell.innerHTML = `
+        <div class="progress-bar"><div class="progress"></div></div>
+        <div class="progress-label"></div>
+      `;
       deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
 
       updateProgress(newRow);
@@ -137,6 +170,7 @@
       const target = parseFloat(row.cells[1].querySelector('input').value || 0);
       const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
       const progress = row.cells[3].querySelector('.progress');
+      const label = row.cells[3].querySelector('.progress-label');
 
       let percent = 0;
       if (target > 0) {
@@ -144,6 +178,8 @@
       }
 
       progress.style.width = percent + '%';
+      label.textContent = `$${saved.toFixed(2)} of $${target.toFixed(2)} saved`;
+
       saveGoals();
     }
 
@@ -174,7 +210,30 @@
       });
     }
 
-    // Initialize on page load
+    function printGoals() {
+      window.print();
+    }
+
+    function generateChallenge() {
+      const challenges = [
+        "No-Spend Weekend Challenge 💸 — Save what you would’ve spent!",
+        "Save $5 for every coffee skipped this week ☕",
+        "Every time you eat at home, drop $10 into savings 🍽️",
+        "Transfer all your leftover change to your savings account today!",
+        "Pick one subscription to cancel and save the difference 💡",
+        "Save $20 every time you say 'no' to online shopping 🛍️",
+        "Put $1 away for every item you donate this week ♻️",
+        "Save $50 by cooking all meals at home for 5 days 🍳",
+        "Delete one shopping app and save what you would've spent 🧠",
+        "Set a mini-goal: Save $100 by the end of the month! 📅"
+      ];
+
+      const random = challenges[Math.floor(Math.random() * challenges.length)];
+      const box = document.getElementById('challengeBox');
+      box.textContent = random;
+      box.style.display = 'block';
+    }
+
     window.onload = loadGoals;
   </script>
 </body>
