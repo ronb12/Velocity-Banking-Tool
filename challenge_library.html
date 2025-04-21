@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Challenge Library</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    .challenge-card {
+      border: 1px solid #007bff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .challenge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .challenge-header h2 {
+      margin: 0;
+      font-size: 1.2em;
+      color: #007bff;
+    }
+
+    .progress-stats {
+      font-weight: bold;
+      color: #333;
+    }
+
+    ul.challenge-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    ul.challenge-list li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    ul.challenge-list input[type="checkbox"] {
+      margin-right: 10px;
+    }
+
+    button, .pdf-btn {
+      margin-top: 10px;
+      margin-right: 10px;
+      padding: 8px 14px;
+      font-size: 14px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover, .pdf-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+    }
+
+    @media print {
+      button, .pdf-btn, .back-link {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="savings_goal_tracker.html">🔙 Back to Tracker</a>
+    <h1>📚 Savings Challenge Library</h1>
+
+    <div id="challengeContainer"></div>
+  </div>
+
+  <script>
+    const challenges = [
+      {
+        id: '5000_biweekly',
+        title: '$5,000 Biweekly Challenge (26 Weeks)',
+        pdf: 'pdfs/5000_biweekly.pdf',
+        items: Array.from({ length: 26 }, (_, i) => ({ label: `Week ${i+1} - Save $${(i+1)*75}`, amount: (i+1)*75 }))
+      },
+      {
+        id: '52_week_1378',
+        title: '$1,378 52-Week Challenge',
+        pdf: 'pdfs/52_week_1378.pdf',
+        items: Array.from({ length: 52 }, (_, i) => ({ label: `Week ${i+1} - Save $${i+1}`, amount: i+1 }))
+      },
+      {
+        id: '100_envelope',
+        title: '100 Envelope Challenge',
+        pdf: 'pdfs/100_envelope.pdf',
+        items: Array.from({ length: 100 }, (_, i) => ({ label: `Envelope ${i+1} - Save $${i+1}`, amount: i+1 }))
+      },
+      {
+        id: 'emergency_fund_3month',
+        title: '3-Month Emergency Fund',
+        pdf: 'pdfs/emergency_fund.pdf',
+        items: [
+          { label: 'Month 1 - Save $1,000', amount: 1000 },
+          { label: 'Month 2 - Save $1,000', amount: 1000 },
+          { label: 'Month 3 - Save $1,000', amount: 1000 },
+        ]
+      },
+      {
+        id: 'no_spend_30day',
+        title: '30-Day No Spend Challenge',
+        pdf: 'pdfs/no_spend_30day.pdf',
+        items: Array.from({ length: 30 }, (_, i) => ({ label: `Day ${i+1} - No unnecessary spending`, amount: 5 }))
+      }
+    ];
+
+    function loadLibrary() {
+      const container = document.getElementById('challengeContainer');
+      challenges.forEach(challenge => {
+        const savedData = JSON.parse(localStorage.getItem(challenge.id) || '[]');
+        const checked = new Array(challenge.items.length).fill(false).map((_, i) => savedData[i] || false);
+        const totalSaved = checked.reduce((sum, done, i) => done ? sum + challenge.items[i].amount : sum, 0);
+
+        const card = document.createElement('div');
+        card.className = 'challenge-card';
+
+        const header = document.createElement('div');
+        header.className = 'challenge-header';
+        header.innerHTML = `
+          <h2>${challenge.title}</h2>
+          <span class="progress-stats">Saved: $${totalSaved} / $${challenge.items.reduce((a,b)=>a+b.amount, 0)}</span>
+        `;
+
+        const list = document.createElement('ul');
+        list.className = 'challenge-list';
+
+        challenge.items.forEach((item, i) => {
+          const li = document.createElement('li');
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.checked = checked[i];
+          input.onchange = () => {
+            checked[i] = input.checked;
+            localStorage.setItem(challenge.id, JSON.stringify(checked));
+            loadLibrary(); // re-render to update stats
+          };
+          const label = document.createElement('label');
+          label.textContent = item.label;
+          li.appendChild(input);
+          li.appendChild(label);
+          list.appendChild(li);
+        });
+
+        const exportBtn = document.createElement('button');
+        exportBtn.textContent = '📤 Export to CSV';
+        exportBtn.onclick = () => {
+          let csv = 'Item,Completed\n';
+          challenge.items.forEach((item, i) => {
+            csv += `"${item.label}",${checked[i] ? 'Yes' : 'No'}\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${challenge.id}.csv`;
+          a.click();
+        };
+
+        const pdfBtn = document.createElement('a');
+        pdfBtn.href = challenge.pdf;
+        pdfBtn.textContent = '🖨️ Download PDF';
+        pdfBtn.target = '_blank';
+        pdfBtn.className = 'pdf-btn';
+
+        card.appendChild(header);
+        card.appendChild(list);
+        card.appendChild(exportBtn);
+        card.appendChild(pdfBtn);
+        container.appendChild(card);
+      });
+    }
+
+    window.onload = loadLibrary;
+  </script>
+</body>
+</html>
