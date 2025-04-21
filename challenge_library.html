@@ -24,51 +24,46 @@
     h1 {
       text-align: center;
       color: #2c3e50;
+      margin-bottom: 20px;
     }
 
-    .challenge-card {
-      border: 1px solid #007bff;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-
-    .challenge-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    .challenge-header h2 {
-      margin: 0;
-      font-size: 1.2em;
-      color: #007bff;
-    }
-
-    .progress-stats {
+    summary {
+      font-size: 1.1em;
       font-weight: bold;
-      color: #333;
+      padding: 10px;
+      background: #007bff;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
 
-    ul.challenge-list {
+    details {
+      margin-bottom: 20px;
+      border: 1px solid #007bff;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .challenge-content {
+      padding: 15px;
+    }
+
+    ul {
       list-style: none;
       padding-left: 0;
     }
 
-    ul.challenge-list li {
-      display: flex;
-      align-items: center;
+    li {
       margin-bottom: 8px;
     }
 
-    ul.challenge-list input[type="checkbox"] {
+    input[type="checkbox"] {
       margin-right: 10px;
     }
 
     button, .pdf-btn {
-      margin-top: 10px;
-      margin-right: 10px;
+      margin: 10px 10px 0 0;
       padding: 8px 14px;
       font-size: 14px;
       background-color: #007bff;
@@ -82,6 +77,11 @@
       background-color: #0056b3;
     }
 
+    .stats {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
     .back-link {
       display: inline-block;
       margin-bottom: 20px;
@@ -93,7 +93,7 @@
     }
 
     @media print {
-      button, .pdf-btn, .back-link {
+      button, .pdf-btn, .back-link, summary {
         display: none;
       }
     }
@@ -101,9 +101,8 @@
 </head>
 <body>
   <div class="container">
-    <a class="back-link" href="savings_goal_tracker.html">🔙 Back to Tracker</a>
+    <a class="back-link" href="index.html">🔙 Back to Dashboard</a>
     <h1>📚 Savings Challenge Library</h1>
-
     <div id="challengeContainer"></div>
   </div>
 
@@ -147,43 +146,44 @@
 
     function loadLibrary() {
       const container = document.getElementById('challengeContainer');
+      container.innerHTML = ''; // Clear before rendering
+
       challenges.forEach(challenge => {
         const savedData = JSON.parse(localStorage.getItem(challenge.id) || '[]');
         const checked = new Array(challenge.items.length).fill(false).map((_, i) => savedData[i] || false);
         const totalSaved = checked.reduce((sum, done, i) => done ? sum + challenge.items[i].amount : sum, 0);
 
-        const card = document.createElement('div');
-        card.className = 'challenge-card';
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = challenge.title;
 
-        const header = document.createElement('div');
-        header.className = 'challenge-header';
-        header.innerHTML = `
-          <h2>${challenge.title}</h2>
-          <span class="progress-stats">Saved: $${totalSaved} / $${challenge.items.reduce((a,b)=>a+b.amount, 0)}</span>
-        `;
+        const content = document.createElement('div');
+        content.className = 'challenge-content';
 
         const list = document.createElement('ul');
-        list.className = 'challenge-list';
-
         challenge.items.forEach((item, i) => {
           const li = document.createElement('li');
-          const input = document.createElement('input');
-          input.type = 'checkbox';
-          input.checked = checked[i];
-          input.onchange = () => {
-            checked[i] = input.checked;
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = checked[i];
+          checkbox.onchange = () => {
+            checked[i] = checkbox.checked;
             localStorage.setItem(challenge.id, JSON.stringify(checked));
-            loadLibrary(); // re-render to update stats
+            loadLibrary(); // Re-render stats
           };
           const label = document.createElement('label');
           label.textContent = item.label;
-          li.appendChild(input);
+          li.appendChild(checkbox);
           li.appendChild(label);
           list.appendChild(li);
         });
 
+        const stats = document.createElement('div');
+        stats.className = 'stats';
+        stats.textContent = `Completed: ${checked.filter(v => v).length} of ${challenge.items.length} | Saved: $${totalSaved}`;
+
         const exportBtn = document.createElement('button');
-        exportBtn.textContent = '📤 Export to CSV';
+        exportBtn.textContent = '📤 Export CSV';
         exportBtn.onclick = () => {
           let csv = 'Item,Completed\n';
           challenge.items.forEach((item, i) => {
@@ -199,15 +199,18 @@
 
         const pdfBtn = document.createElement('a');
         pdfBtn.href = challenge.pdf;
-        pdfBtn.textContent = '🖨️ Download PDF';
         pdfBtn.target = '_blank';
+        pdfBtn.textContent = '🖨️ Download PDF';
         pdfBtn.className = 'pdf-btn';
 
-        card.appendChild(header);
-        card.appendChild(list);
-        card.appendChild(exportBtn);
-        card.appendChild(pdfBtn);
-        container.appendChild(card);
+        content.appendChild(stats);
+        content.appendChild(list);
+        content.appendChild(exportBtn);
+        content.appendChild(pdfBtn);
+
+        details.appendChild(summary);
+        details.appendChild(content);
+        container.appendChild(details);
       });
     }
 
