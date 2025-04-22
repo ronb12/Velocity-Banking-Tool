@@ -224,65 +224,120 @@
         `🏦 Total Saved: $${totalSaved} | ✅ ${totalCompleted} of ${totalItems} items complete`;
     }
 
-    function toggleDetails(id) {
-      const box = document.getElementById('details-' + id);
-      if (box.style.display === 'none') {
-        const challenge = challenges.find(c => c.id === id);
-        const savedData = JSON.parse(localStorage.getItem(id) || '[]');
-        box.innerHTML = '';
+   function toggleDetails(id) {
+  const box = document.getElementById('details-' + id);
+  if (box.style.display === 'none') {
+    const challenge = challenges.find(c => c.id === id);
+    const savedData = JSON.parse(localStorage.getItem(id) || '[]');
+    const rewardKey = `${id}_reward`;
+    let rewardPerDay = parseFloat(localStorage.getItem(rewardKey) || 5);
 
-        const list = document.createElement('ul');
-        challenge.items.forEach((item, i) => {
-          const li = document.createElement('li');
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.checked = savedData[i] || false;
-          checkbox.onchange = () => {
-            savedData[i] = checkbox.checked;
-            localStorage.setItem(id, JSON.stringify(savedData));
-            renderChallenges();
-            toggleDetails(id); // rerender list
-          };
-          li.appendChild(checkbox);
-          li.appendChild(document.createTextNode(item.label));
-          list.appendChild(li);
-        });
+    box.innerHTML = '';
 
-        const summary = document.createElement('div');
-        const sum = challenge.items.reduce((acc, item, i) =>
-          acc + (savedData[i] ? item.amount : 0), 0);
-        summary.className = 'summary';
-        summary.textContent = `💰 Saved: $${sum}`;
+    // Optional reward input for no_spend_30day
+    let rewardInput = null;
+    if (id === 'no_spend_30day') {
+      const rewardWrapper = document.createElement('div');
+      rewardWrapper.style.marginBottom = '10px';
+      rewardWrapper.innerHTML = `
+        <label><b>💰 Choose reward per no-spend day:</b></label>
+        <select id="rewardSelect">
+          <option value="1">$1</option>
+          <option value="5" selected>$5</option>
+          <option value="10">$10</option>
+          <option value="custom">Custom</option>
+        </select>
+        <input id="customReward" type="number" placeholder="$" style="width:80px; margin-left:10px; display:none;" min="0.01" />
+      `;
+      box.appendChild(rewardWrapper);
 
-        const exportBtn = document.createElement('button');
-        exportBtn.textContent = '📤 Export CSV';
-        exportBtn.onclick = () => {
-          let csv = 'Item,Completed\n';
-          challenge.items.forEach((item, i) => {
-            csv += `"${item.label}",${savedData[i] ? 'Yes' : 'No'}\n`;
-          });
-          const blob = new Blob([csv], { type: 'text/csv' });
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = `${id}.csv`;
-          a.click();
-        };
+      const select = rewardWrapper.querySelector('#rewardSelect');
+      const customInput = rewardWrapper.querySelector('#customReward');
 
-        const pdfBtn = document.createElement('a');
-        pdfBtn.href = challenge.pdf;
-        pdfBtn.target = '_blank';
-        pdfBtn.textContent = '🖨️ PDF';
-        pdfBtn.className = 'pdf-btn';
-
-        box.appendChild(summary);
-        box.appendChild(list);
-        box.appendChild(exportBtn);
-        box.appendChild(pdfBtn);
-        box.style.display = 'block';
+      if (![1, 5, 10].includes(rewardPerDay)) {
+        select.value = 'custom';
+        customInput.style.display = 'inline-block';
+        customInput.value = rewardPerDay;
       } else {
-        box.style.display = 'none';
+        select.value = String(rewardPerDay);
       }
+
+      select.addEventListener('change', () => {
+        if (select.value === 'custom') {
+          customInput.style.display = 'inline-block';
+        } else {
+          customInput.style.display = 'none';
+          rewardPerDay = parseFloat(select.value);
+          localStorage.setItem(rewardKey, rewardPerDay);
+          renderChallenges();
+          toggleDetails(id);
+        }
+      });
+
+      customInput.addEventListener('change', () => {
+        rewardPerDay = parseFloat(customInput.value || 0);
+        localStorage.setItem(rewardKey, rewardPerDay);
+        renderChallenges();
+        toggleDetails(id);
+      });
     }
+
+    const list = document.createElement('ul');
+    challenge.items.forEach((item, i) => {
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = savedData[i] || false;
+      checkbox.onchange = () => {
+        savedData[i] = checkbox.checked;
+        localStorage.setItem(id, JSON.stringify(savedData));
+        renderChallenges();
+        toggleDetails(id); // rerender list
+      };
+      li.appendChild(checkbox);
+      li.appendChild(document.createTextNode(item.label));
+      list.appendChild(li);
+    });
+
+    const summary = document.createElement('div');
+    const sum = id === 'no_spend_30day'
+      ? savedData.filter(Boolean).length * rewardPerDay
+      : challenge.items.reduce((acc, item, i) =>
+          acc + (savedData[i] ? item.amount : 0), 0);
+
+    summary.className = 'summary';
+    summary.textContent = `💰 Saved: $${sum.toFixed(2)}`;
+
+    const exportBtn = document.createElement('button');
+    exportBtn.textContent = '📤 Export CSV';
+    exportBtn.onclick = () => {
+      let csv = 'Item,Completed\n';
+      challenge.items.forEach((item, i) => {
+        csv += `"${item.label}",${savedData[i] ? 'Yes' : 'No'}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${id}.csv`;
+      a.click();
+    };
+
+    const pdfBtn = document.createElement('a');
+    pdfBtn.href = challenge.pdf;
+    pdfBtn.target = '_blank';
+    pdfBtn.textContent = '🖨️ PDF';
+    pdfBtn.className = 'pdf-btn';
+
+    box.appendChild(summary);
+    box.appendChild(list);
+    box.appendChild(exportBtn);
+    box.appendChild(pdfBtn);
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
+
 
     function pickWeeklyChallenge() {
       const rand = Math.floor(Math.random() * challenges.length);
