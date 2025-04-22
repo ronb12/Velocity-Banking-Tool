@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>1099 Contractor Tax Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 950px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 15px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    .summary {
+      margin-top: 20px;
+      background: #e9f5ff;
+      padding: 15px;
+      border-radius: 6px;
+    }
+    .notice {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: -10px;
+      margin-bottom: 20px;
+    }
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    @media print {
+      input, select, button, .notice, .export-buttons {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>1099 Contractor Tax Calculator</h1>
+    <p class="notice">⚠️ Tax rates shown are for the <strong>2024–2025 tax year</strong>.</p>
+
+    <label>Total Income ($)</label>
+    <input type="number" id="income" placeholder="e.g. 1000" />
+
+    <label>Expenses ($)</label>
+    <input type="number" id="expenses" placeholder="e.g. 200" />
+
+    <label>State</label>
+    <select id="state"></select>
+
+    <button onclick="addEntry()">+ Add Entry</button>
+
+    <div class="export-buttons">
+      <button onclick="exportCSV()">📤 Export to CSV</button>
+      <button onclick="window.print()">🖨️ Export to PDF</button>
+      <button onclick="resetAll()">🔄 Reset All Entries</button>
+    </div>
+
+    <table id="entryTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Gross</th>
+          <th>Expenses</th>
+          <th>Net</th>
+          <th>SE Tax</th>
+          <th>Federal Tax</th>
+          <th>State Tax</th>
+          <th>Total Tax</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="summary" id="summaryBox">
+      <strong>Year-to-Date Summary</strong>
+      <p>Gross Income: $<span id="ytdGross">0.00</span></p>
+      <p>Expenses: $<span id="ytdExpenses">0.00</span></p>
+      <p>Net Income: $<span id="ytdNet">0.00</span></p>
+      <p>Self-Employment Tax: $<span id="ytdSE">0.00</span></p>
+      <p>Federal Tax: $<span id="ytdFederal">0.00</span></p>
+      <p>State Tax: $<span id="ytdState">0.00</span></p>
+      <hr>
+      <p><strong>Total Tax Owed:</strong> $<span id="ytdTotal">0.00</span></p>
+      <p><strong>Estimated Quarterly Payment:</strong> $<span id="ytdQuarterly">0.00</span></p>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'contractor_entries';
+
+    const stateRates = {
+      "Alabama": 5, "Alaska": 0, "Arizona": 4.5, "Arkansas": 4.9, "California": 9.3,
+      "Colorado": 4.4, "Connecticut": 6.99, "Delaware": 6.6, "Florida": 0,
+      "Georgia": 5.75, "Hawaii": 8.25, "Idaho": 5.8, "Illinois": 4.95,
+      "Indiana": 3.15, "Iowa": 5.7, "Kansas": 5.7, "Kentucky": 4.5,
+      "Louisiana": 4.25, "Maine": 7.15, "Maryland": 5.75, "Massachusetts": 5,
+      "Michigan": 4.25, "Minnesota": 6.8, "Mississippi": 5, "Missouri": 4.95,
+      "Montana": 5.9, "Nebraska": 5.84, "Nevada": 0, "New Hampshire": 0,
+      "New Jersey": 6.37, "New Mexico": 4.9, "New York": 6.85,
+      "North Carolina": 4.5, "North Dakota": 2.9, "Ohio": 3.99,
+      "Oklahoma": 4.75, "Oregon": 8.75, "Pennsylvania": 3.07,
+      "Rhode Island": 5.99, "South Carolina": 6.5, "South Dakota": 0,
+      "Tennessee": 0, "Texas": 0, "Utah": 4.85, "Vermont": 6.6,
+      "Virginia": 5.75, "Washington": 0, "West Virginia": 6.5,
+      "Wisconsin": 5.3, "Wyoming": 0, "District of Columbia": 6.5
+    };
+
+    const stateSelect = document.getElementById('state');
+    for (const state in stateRates) {
+      const option = document.createElement('option');
+      option.value = state;
+      option.textContent = state;
+      stateSelect.appendChild(option);
+    }
+
+    function calculateFederalTax(income) {
+      if (income <= 11000) return income * 0.1;
+      if (income <= 44725) return 1100 + (income - 11000) * 0.12;
+      if (income <= 95375) return 5147 + (income - 44725) * 0.22;
+      if (income <= 182100) return 16290 + (income - 95375) * 0.24;
+      return 37104 + (income - 182100) * 0.32;
+    }
+
+    function addEntry() {
+      const income = parseFloat(document.getElementById('income').value || 0);
+      const expenses = parseFloat(document.getElementById('expenses').value || 0);
+      const state = document.getElementById('state').value;
+      const stateRate = stateRates[state] || 0;
+
+      if (income === 0) return;
+
+      const net = Math.max(income - expenses, 0);
+      const seTax = net * 0.153;
+      const federalTax = calculateFederalTax(net);
+      const stateTax = net * (stateRate / 100);
+      const totalTax = seTax + federalTax + stateTax;
+
+      const entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      entries.push({ income, expenses, net, seTax, federalTax, stateTax, totalTax });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+
+      renderEntries();
+    }
+
+    function renderEntries() {
+      const tableBody = document.querySelector('#entryTable tbody');
+      tableBody.innerHTML = '';
+      const entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+      let gross = 0, exp = 0, net = 0, se = 0, fed = 0, state = 0, total = 0;
+
+      entries.forEach((e, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${i+1}</td>
+          <td>$${e.income.toFixed(2)}</td>
+          <td>$${e.expenses.toFixed(2)}</td>
+          <td>$${e.net.toFixed(2)}</td>
+          <td>$${e.seTax.toFixed(2)}</td>
+          <td>$${e.federalTax.toFixed(2)}</td>
+          <td>$${e.stateTax.toFixed(2)}</td>
+          <td><strong>$${e.totalTax.toFixed(2)}</strong></td>
+        `;
+        tableBody.appendChild(row);
+
+        gross += e.income;
+        exp += e.expenses;
+        net += e.net;
+        se += e.seTax;
+        fed += e.federalTax;
+        state += e.stateTax;
+        total += e.totalTax;
+      });
+
+      document.getElementById('ytdGross').textContent = gross.toFixed(2);
+      document.getElementById('ytdExpenses').textContent = exp.toFixed(2);
+      document.getElementById('ytdNet').textContent = net.toFixed(2);
+      document.getElementById('ytdSE').textContent = se.toFixed(2);
+      document.getElementById('ytdFederal').textContent = fed.toFixed(2);
+      document.getElementById('ytdState').textContent = state.toFixed(2);
+      document.getElementById('ytdTotal').textContent = total.toFixed(2);
+      document.getElementById('ytdQuarterly').textContent = (total / 4).toFixed(2);
+    }
+
+    function exportCSV() {
+      const entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if (entries.length === 0) return alert("No entries to export.");
+
+      let csv = 'Entry #,Gross,Expenses,Net,SE Tax,Federal Tax,State Tax,Total Tax\n';
+      entries.forEach((e, i) => {
+        csv += `${i+1},${e.income.toFixed(2)},${e.expenses.toFixed(2)},${e.net.toFixed(2)},${e.seTax.toFixed(2)},${e.federalTax.toFixed(2)},${e.stateTax.toFixed(2)},${e.totalTax.toFixed(2)}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '1099_tax_log.csv';
+      a.click();
+    }
+
+    function resetAll() {
+      if (confirm("This will delete all entries. Are you sure?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        renderEntries();
+      }
+    }
+
+    window.onload = renderEntries;
+  </script>
+</body>
+</html>
