@@ -27,7 +27,7 @@
     .tool-link {
       display: block;
       max-width: 400px;
-      margin: 20px auto;
+      margin: 15px auto;
       padding: 15px;
       font-size: 18px;
       background-color: #007bff;
@@ -41,10 +41,10 @@
       background-color: #0056b3;
     }
 
-    #visitCounter {
-      margin-top: 30px;
+    .counter {
+      margin-top: 20px;
       font-size: 14px;
-      color: #777;
+      color: #555;
     }
 
     footer {
@@ -77,8 +77,8 @@
   <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goal Tracker</a>
   <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
 
-  <div id="visitCounter">
-    👥 Visitors: <span id="visitorCount">Loading...</span>
+  <div class="counter">
+    👥 Visitors to this page: <span id="visitCount">Loading...</span>
   </div>
 
   <footer>
@@ -86,19 +86,15 @@
   </footer>
 
   <script>
-    function updateVisitorCounter() {
-      let count = parseInt(localStorage.getItem("visitCount") || "0");
-      if (!localStorage.getItem("visitedBefore")) {
-        count++;
-        localStorage.setItem("visitCount", count);
-        localStorage.setItem("visitedBefore", "true");
-      }
-      document.getElementById("visitorCount").textContent = count.toLocaleString();
-    }
-
-    window.onload = function () {
-      updateVisitorCounter();
-    };
+    // CountAPI visitor tracker
+    fetch('https://api.countapi.xyz/hit/ronb12-financial-tools/visits')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('visitCount').innerText = data.value.toLocaleString();
+      })
+      .catch(() => {
+        document.getElementById('visitCount').innerText = 'Unavailable';
+      });
   </script>
 
 </body>
