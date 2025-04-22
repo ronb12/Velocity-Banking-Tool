@@ -6,14 +6,12 @@
   <title>1099 IRS-Compliant Tax Calculator</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-    .container {
-      max-width: 980px; margin: auto; background: #fff; padding: 25px;
-      border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1);
-    }
+    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px;
+      border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
     h1 { text-align: center; }
-    label { font-weight: bold; display: block; margin-top: 12px; }
+    label { font-weight: bold; display: block; margin-top: 15px; }
     input, select, button {
-      width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 10px;
+      width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px;
       border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;
     }
     button { background: #007bff; color: white; cursor: pointer; }
@@ -21,65 +19,55 @@
     table {
       width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px;
     }
-    th, td {
-      border: 1px solid #ddd; padding: 8px; text-align: center;
-    }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background: #007bff; color: white; }
-    .summary, .auditBox {
-      background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px;
-    }
-    .alert {
-      background: #fff3cd; border-left: 5px solid #ffc107;
-      padding: 10px; margin-top: 10px; border-radius: 6px; display: none;
-    }
-    .back-btn {
-      display: inline-block; margin-bottom: 20px; padding: 10px 20px;
-      background: #007bff; color: white; text-decoration: none; border-radius: 6px;
-    }
-    .tooltip { font-size: 0.85em; color: #666; margin-top: -5px; margin-bottom: 10px; }
+    .summary { background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    .alert { background: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; margin-top: 10px; border-radius: 6px; display: none; }
+    .back { text-decoration: none; background: #007bff; color: white; padding: 10px 15px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
+    .tooltip { font-size: 0.85em; color: #555; margin-top: -10px; margin-bottom: 10px; }
+    .audit-box { margin-top: 10px; background: #fefefe; border: 1px solid #ccc; padding: 10px; border-radius: 8px; display: none; }
   </style>
 </head>
 <body>
 <div class="container">
-  <a class="back-btn" href="index.html">🔙 Back to Dashboard</a>
+  <a class="back" href="index.html">🔙 Back to Dashboard</a>
   <h1>1099 Contractor IRS-Compliant Calculator</h1>
 
   <label>Tax Year</label>
-  <select id="taxYear">
+  <select id="taxYear" onchange="updateMileageTooltip()">
     <option value="2025">2025</option>
     <option value="2024" selected>2024</option>
   </select>
 
   <label>Total Income ($)</label>
-  <input type="number" id="income" placeholder="e.g. 5000" />
+  <input type="number" id="income" />
 
   <label>Total Business Expenses ($)</label>
-  <input type="number" id="expenses" placeholder="e.g. 200" />
+  <input type="number" id="expenses" />
 
-  <label>Home Office Size (sq. ft.) 🛈</label>
-  <input type="number" id="homeSqft" placeholder="Max: 300" />
-  <div class="tooltip">IRS limit: 300 sqft × $5 (IRS Simplified Method)</div>
+  <label>Home Office Size (sq. ft.)</label>
+  <input type="number" id="homeSqft" />
+  <div class="tooltip">IRS limit: 300 sqft (standard $5/sqft)</div>
 
-  <label>Internet Use for Business (%) 🛈</label>
-  <input type="number" id="internetPercent" placeholder="e.g. 60" />
-  <div class="tooltip">IRS Pub 535: Enter % used for business</div>
+  <label>Internet Use for Business (%)</label>
+  <input type="number" id="internetPercent" />
+  <div class="tooltip">IRS Pub 535: Percent used for business</div>
 
-  <label>Miles Driven for Business 🛈</label>
-  <input type="number" id="miles" placeholder="e.g. 1200" />
-  <div class="tooltip">IRS rate: $0.67 (2024), $0.685 (2025) – IRS Notice 2023-03</div>
+  <label>Miles Driven for Business</label>
+  <input type="number" id="miles" />
+  <div class="tooltip" id="mileageTooltip">IRS: $0.67 (2024), $0.685 (2025) – IRS Notice 2023-03</div>
 
-  <label>Supply Costs ($) 🛈</label>
-  <input type="number" id="supplies" placeholder="e.g. 300" />
-  <div class="tooltip">IRS Pub 535: Business-related supplies only</div>
+  <label>Supply Costs ($)</label>
+  <input type="number" id="supplies" />
+  <div class="tooltip">IRS Pub 535: Deductible business-only supplies</div>
 
   <label>State</label>
   <select id="state"></select>
 
   <label>Estimated Tax Payments Made ($)</label>
-  <input type="number" id="payments" placeholder="e.g. 1000" />
+  <input type="number" id="payments" />
 
   <div class="alert" id="irsAlert"></div>
-
   <button onclick="addEntry()">+ Add Entry</button>
   <button onclick="runAudit()">🛡️ Run IRS Audit Check</button>
   <button onclick="exportCSV()">📤 Export CSV</button>
@@ -96,26 +84,141 @@
   </table>
 
   <div class="summary" id="summaryBox"></div>
-  <div class="auditBox" id="auditBox"></div>
+  <div class="audit-box" id="auditBox"></div>
 </div>
 
 <script>
-  const STORAGE_KEY = "irs_tax_log";
-
+  const STORAGE_KEY = "contractor_tax_log";
   const mileageRates = { 2024: 0.67, 2025: 0.685 };
   const taxBrackets = {
-    2024: i => i <= 11000 ? i * 0.1 : i <= 44725 ? 1100 + (i - 11000) * 0.12 : 5147 + (i - 44725) * 0.22,
-    2025: i => i <= 11300 ? i * 0.1 : i <= 45675 ? 1130 + (i - 11300) * 0.12 : 5211 + (i - 45675) * 0.22
+    2024: income => income <= 11000 ? income * 0.1 : income <= 44725 ? 1100 + (income - 11000) * 0.12 : 5147 + (income - 44725) * 0.22,
+    2025: income => income <= 11300 ? income * 0.1 : income <= 45675 ? 1130 + (income - 11300) * 0.12 : 5211 + (income - 45675) * 0.22
+  };
+  const states = {
+    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3, "Colorado": 4.4,
+    "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75, "Hawaii": 6.4, "Idaho": 5.8,
+    "Illinois": 4.95, "Indiana": 3.15, "Iowa": 5, "Kansas": 5.7, "Kentucky": 4.5, "Louisiana": 4.25,
+    "Maine": 5.8, "Maryland": 4.75, "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 5.35,
+    "Mississippi": 5, "Missouri": 4.95, "Montana": 6.75, "Nebraska": 5.84, "Nevada": 0,
+    "New Hampshire": 0, "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85,
+    "North Carolina": 4.99, "North Dakota": 2.04, "Ohio": 3.5, "Oklahoma": 4.75, "Oregon": 6.75,
+    "Pennsylvania": 3.07, "Rhode Island": 3.75, "South Carolina": 3.15, "South Dakota": 0,
+    "Tennessee": 0, "Texas": 0, "Utah": 4.65, "Vermont": 6.6, "Virginia": 5.75, "Washington": 0,
+    "West Virginia": 6.5, "Wisconsin": 5.3, "Wyoming": 0, "District of Columbia": 8.5
   };
 
-  const states = {
-    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3,
-    "Colorado": 4.4, "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75,
-    "Hawaii": 6.4, "Idaho": 5.8, "Illinois": 4.95, "Indiana": 3.15, "Iowa": 5,
-    "Kansas": 5.7, "Kentucky": 4.5, "Louisiana": 4.25, "Maine": 5.8, "Maryland": 4.75,
-    "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 5.35, "Mississippi": 5,
-    "Missouri": 4.95, "Montana": 6.75, "Nebraska": 5.84, "Nevada": 0, "New Hampshire": 0,
-    "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85, "North Carolina": 4.99,
-    "North Dakota": 2.04, "Ohio": 3.5, "Oklahoma": 4.75, "Oregon": 6.75,
-    "Pennsylvania": 3.07, "Rhode Island": 3.75, "South Carolina": 3.15,
-    "South Dakota":
+  const stateSel = document.getElementById("state");
+  Object.keys(states).forEach(state => {
+    const opt = document.createElement("option");
+    opt.value = state;
+    opt.textContent = state;
+    stateSel.appendChild(opt);
+  });
+
+  function updateMileageTooltip() {
+    const year = document.getElementById("taxYear").value;
+    document.getElementById("mileageTooltip").textContent = `IRS: $${mileageRates[year]} per mile – IRS Notice 2023-03`;
+  }
+
+  function getDeductions(year, sqft, internetPct, miles, supplies) {
+    const home = Math.min(sqft, 300) * 5;
+    const internet = (internetPct / 100) * 720;
+    const mileage = miles * mileageRates[year];
+    return { total: home + internet + mileage + supplies, breakdown: { home, internet, mileage, supplies } };
+  }
+
+  function addEntry() {
+    const year = document.getElementById("taxYear").value;
+    const income = parseFloat(document.getElementById("income").value) || 0;
+    const expenses = parseFloat(document.getElementById("expenses").value) || 0;
+    const sqft = parseFloat(document.getElementById("homeSqft").value) || 0;
+    const internet = parseFloat(document.getElementById("internetPercent").value) || 0;
+    const miles = parseFloat(document.getElementById("miles").value) || 0;
+    const supplies = parseFloat(document.getElementById("supplies").value) || 0;
+    const state = document.getElementById("state").value;
+    const paid = parseFloat(document.getElementById("payments").value) || 0;
+
+    const { total: deductions } = getDeductions(year, sqft, internet, miles, supplies);
+    const net = income - expenses - deductions;
+    const se = net * 0.153;
+    const fed = taxBrackets[year](net);
+    const stateTax = net * (states[state] / 100);
+    const total = se + fed + stateTax;
+    const owed = total - paid;
+
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    logs.push({ income, expenses, deductions, net, se, fed, stateTax, total, paid, owed, sqft, internet, miles });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.querySelector("tbody");
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    tbody.innerHTML = "";
+    let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
+
+    logs.forEach((e, i) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${i+1}</td><td>$${e.income.toFixed(2)}</td><td>$${e.expenses.toFixed(2)}</td>
+        <td>$${e.deductions.toFixed(2)}</td><td>$${e.net.toFixed(2)}</td>
+        <td>$${e.se.toFixed(2)}</td><td>$${e.fed.toFixed(2)}</td>
+        <td>$${e.stateTax.toFixed(2)}</td><td>$${e.total.toFixed(2)}</td>
+        <td>$${e.paid.toFixed(2)}</td><td><strong>$${e.owed.toFixed(2)}</strong></td>
+        <td><button onclick="deleteEntry(${i})">❌</button></td>`;
+      tbody.appendChild(row);
+      Object.keys(totals).forEach(k => totals[k] += e[k]);
+    });
+
+    document.getElementById("summaryBox").innerHTML = `
+      <strong>Year-to-Date:</strong><br>
+      Gross: $${totals.income.toFixed(2)} | Expenses: $${totals.expenses.toFixed(2)} |
+      Deductions: $${totals.deductions.toFixed(2)} | Net: $${totals.net.toFixed(2)} | Owed: $${totals.owed.toFixed(2)}
+    `;
+  }
+
+  function deleteEntry(i) {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    logs.splice(i, 1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+    renderTable();
+  }
+
+  function runAudit() {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    let issues = [];
+    logs.forEach((e, i) => {
+      let msg = "";
+      if (e.net < 0) msg += `Entry ${i+1}: ❌ Net income is negative. `;
+      if (e.sqft > 300) msg += `Entry ${i+1}: ❌ Home office over 300 sqft (IRS max). `;
+      if (e.internet > 100) msg += `Entry ${i+1}: ❌ Internet use > 100% is invalid. `;
+      if (msg) issues.push(msg);
+    });
+    const box = document.getElementById("auditBox");
+    box.style.display = "block";
+    box.innerHTML = issues.length
+      ? `<strong>🚨 Audit Warnings:</strong><br>${issues.join("<br>")}`
+      : "✅ All entries pass IRS audit checks.";
+  }
+
+  function exportCSV() {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    let csv = "Income,Expenses,Deductions,Net,SE,Federal,State,Total,Paid,Owed\n";
+    logs.forEach(e => {
+      csv += `${e.income},${e.expenses},${e.deductions},${e.net},${e.se},${e.fed},${e.stateTax},${e.total},${e.paid},${e.owed}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "irs_compliant_log.csv";
+    a.click();
+  }
+
+  window.onload = () => {
+    renderTable();
+    updateMileageTooltip();
+  };
+</script>
+</body>
+</html>
