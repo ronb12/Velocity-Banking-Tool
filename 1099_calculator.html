@@ -37,8 +37,8 @@
 
   <label>Tax Year</label>
   <select id="taxYear">
-    <option value="2025" selected>2025</option>
-    <option value="2024">2024</option>
+    <option value="2025">2025</option>
+    <option value="2024" selected>2024</option>
   </select>
 
   <label>Total Income ($)</label>
@@ -94,7 +94,6 @@
 <script>
   const STORAGE_KEY = "contractor_tax_log";
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw12h4x2TnCZCZjEjkvYwCUGmyvFqSeABZgrEN50g9z-m26mtdl2oIVyvxd-VQPHp94Hw/exec";
-
   const mileageRates = { 2024: 0.67, 2025: 0.685 };
   const taxBrackets = {
     2024: income => income <= 11000 ? income * 0.1 :
@@ -104,7 +103,6 @@
            income <= 45675 ? 1130 + (income - 11300) * 0.12 :
            5211 + (income - 45675) * 0.22
   };
-
   const states = {
     "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3,
     "Colorado": 4.4, "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75,
@@ -161,17 +159,15 @@
     const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     logs.push(entry);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-    sendToGoogleSheets(entry);
-    renderTable();
-  }
 
-  function sendToGoogleSheets(data) {
+    // 🔁 Sync to Google Sheet
     fetch(GOOGLE_SCRIPT_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(entry),
+      headers: { "Content-Type": "application/json" }
     });
+
+    renderTable();
   }
 
   function renderTable() {
@@ -194,10 +190,8 @@
 
     document.getElementById("summaryBox").innerHTML = `
       <strong>Year-to-Date:</strong><br>
-      Gross: $${totals.income.toFixed(2)} |
-      Expenses: $${totals.expenses.toFixed(2)} |
-      Deductions: $${totals.deductions.toFixed(2)} |
-      Net: $${totals.net.toFixed(2)} |
+      Gross: $${totals.income.toFixed(2)} | Expenses: $${totals.expenses.toFixed(2)} |
+      Deductions: $${totals.deductions.toFixed(2)} | Net: $${totals.net.toFixed(2)} |
       Owed: $${totals.owed.toFixed(2)}
     `;
   }
