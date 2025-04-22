@@ -4,19 +4,297 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>1099 Contractor Tax Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 960px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 12px;
+      display: block;
+    }
+    input, select, button {
+      padding: 10px;
+      width: 100%;
+      margin-top: 5px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .deductions label, .income-type label {
+      font-weight: normal;
+      display: inline-block;
+      width: auto;
+      margin-right: 15px;
+    }
+    .notice {
+      font-size: 0.9em;
+      color: #555;
+      margin-bottom: 15px;
+    }
+    .summary, .export-buttons {
+      margin-top: 25px;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    #irsAlert {
+      background: #fff3cd;
+      color: #856404;
+      padding: 10px;
+      border-left: 5px solid #ffc107;
+      display: none;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+  </style>
 </head>
 <body>
-  <h1>🚧 Your Full 1099 Contractor Tax Calculator with All Features is Ready!</h1>
-  <p>This version includes:</p>
-  <ul>
-    <li>✅ All 50 States + DC (2024 & 2025)</li>
-    <li>✅ Deduction Toggles (Mileage, Home Office %, Supplies, Internet)</li>
-    <li>✅ Income Type (1099-NEC, 1099-K, Cash)</li>
-    <li>✅ IRS Rule Alert for $400 threshold</li>
-    <li>✅ Refund vs Amount Owed Simulation</li>
-    <li>✅ Quarterly Tax Reminder Tool</li>
-    <li>✅ CSV Export, PDF Print, Reset, LocalStorage</li>
-  </ul>
-  <p>Please open the actual <code>1099_calculator.html</code> file to use the full calculator with code.</p>
+  <div class="container">
+    <h1>🧾 1099 Contractor Tax Calculator</h1>
+    <p class="notice">Enter your income, deductions, and select your state to calculate estimated taxes.</p>
+
+    <label for="taxYear">Tax Year</label>
+    <select id="taxYear">
+      <option value="2025" selected>2025</option>
+      <option value="2024">2024</option>
+    </select>
+
+    <label for="income">Total Gross Income ($)</label>
+    <input type="number" id="income" placeholder="e.g. 12000" />
+
+    <label for="expenses">Business Expenses ($)</label>
+    <input type="number" id="expenses" placeholder="e.g. 300" />
+
+    <label for="incomeType">Income Type</label>
+    <div class="income-type">
+      <label><input type="radio" name="incomeType" value="1099-NEC" checked> 1099-NEC</label>
+      <label><input type="radio" name="incomeType" value="1099-K"> 1099-K</label>
+      <label><input type="radio" name="incomeType" value="Cash"> Cash</label>
+    </div>
+
+    <label for="state">State</label>
+    <select id="state"></select>
+
+    <label>Optional Deductions</label>
+    <div class="deductions">
+      <label><input type="checkbox" class="deduction" value="home_office"> Home Office (15%)</label>
+      <label><input type="checkbox" class="deduction" value="internet"> Internet ($60)</label>
+      <label><input type="checkbox" class="deduction" value="mileage"> Mileage ($655)</label>
+      <label><input type="checkbox" class="deduction" value="supplies"> Supplies ($200)</label>
+    </div>
+
+    <label for="paymentsMade">Estimated Taxes Paid So Far ($)</label>
+    <input type="number" id="paymentsMade" placeholder="Optional (for refund/owed calc)" />
+
+    <div id="irsAlert"></div>
+
+    <button onclick="addEntry()">+ Add Entry</button>
+    <div class="export-buttons">
+      <button onclick="exportCSV()">📤 Export to CSV</button>
+      <button onclick="window.print()">🖨️ Print to PDF</button>
+      <button onclick="resetAll()">🔄 Reset All</button>
+    </div>
+
+    <table id="entryTable">
+      <thead>
+        <tr>
+          <th>#</th><th>Gross</th><th>Expenses</th><th>Deductions</th>
+          <th>Net</th><th>SE Tax</th><th>Federal</th><th>State</th>
+          <th>Total Tax</th><th>Paid</th><th>Owed/Refund</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="summary">
+      <h3>📊 Year-to-Date Summary</h3>
+      <p><strong>Gross Income:</strong> $<span id="ytdGross">0.00</span></p>
+      <p><strong>Expenses:</strong> $<span id="ytdExpenses">0.00</span> | <strong>Deductions:</strong> $<span id="ytdDeductions">0.00</span></p>
+      <p><strong>Net Income:</strong> $<span id="ytdNet">0.00</span></p>
+      <p><strong>Total Tax:</strong> $<span id="ytdTotalTax">0.00</span></p>
+      <p><strong>Quarterly Payment:</strong> $<span id="ytdQuarterly">0.00</span></p>
+      <p><strong>Payments Made:</strong> $<span id="ytdPaid">0.00</span> | <strong>Refund/Owed:</strong> $<span id="ytdBalance">0.00</span></p>
+    </div>
+  </div>
+
+  <script>
+    const STATES = {
+      "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3,
+      "Colorado": 4.4, "Connecticut": 5, "Delaware": 5.5, "Florida": 0, "Georgia": 5.75,
+      "Hawaii": 6, "Idaho": 5.8, "Illinois": 4.95, "Indiana": 3.23, "Iowa": 6,
+      "Kansas": 5.7, "Kentucky": 5, "Louisiana": 4.25, "Maine": 5.8, "Maryland": 4.75,
+      "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 6.8, "Mississippi": 5,
+      "Missouri": 4.95, "Montana": 5.9, "Nebraska": 5.84, "Nevada": 0, "New Hampshire": 0,
+      "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85, "North Carolina": 4.75,
+      "North Dakota": 2.9, "Ohio": 3.99, "Oklahoma": 4.75, "Oregon": 9,
+      "Pennsylvania": 3.07, "Rhode Island": 5.99, "South Carolina": 6.5, "South Dakota": 0,
+      "Tennessee": 0, "Texas": 0, "Utah": 4.65, "Vermont": 6.6, "Virginia": 5.75,
+      "Washington": 0, "West Virginia": 5.12, "Wisconsin": 5.3, "Wyoming": 0,
+      "District of Columbia": 8.5
+    };
+
+    window.onload = () => {
+      Object.keys(STATES).forEach(state => {
+        const option = document.createElement("option");
+        option.value = state;
+        option.textContent = state;
+        document.getElementById("state").appendChild(option);
+      });
+    };
+
+    function addEntry() {
+      const year = document.getElementById('taxYear').value;
+      const gross = parseFloat(document.getElementById('income').value || 0);
+      const expenses = parseFloat(document.getElementById('expenses').value || 0);
+      const state = document.getElementById('state').value;
+      const payments = parseFloat(document.getElementById('paymentsMade').value || 0);
+      const deductions = getDeductions(gross);
+
+      const net = Math.max(0, gross - expenses - deductions);
+      const seTax = +(net * 0.153).toFixed(2);
+      const fedTax = getFederalTax(net, year);
+      const stateTax = +(net * (STATES[state] || 0) / 100).toFixed(2);
+      const totalTax = +(seTax + fedTax + stateTax).toFixed(2);
+      const refundOrOwed = +(payments - totalTax).toFixed(2);
+
+      const alert = document.getElementById('irsAlert');
+      alert.style.display = net > 0 && net <= 400 ? 'block' : 'none';
+      alert.innerHTML = `⚠️ IRS ALERT: If your net income is over $400, you're required to file and pay SE tax.`;
+
+      const entry = {
+        gross, expenses, deductions, net, seTax, fedTax, stateTax, totalTax, payments, refundOrOwed
+      };
+
+      const data = JSON.parse(localStorage.getItem("contractor1099") || "[]");
+      data.push(entry);
+      localStorage.setItem("contractor1099", JSON.stringify(data));
+      renderTable();
+    }
+
+    function getDeductions(gross) {
+      let total = 0;
+      document.querySelectorAll('.deduction:checked').forEach(d => {
+        if (d.value === 'home_office') total += gross * 0.15;
+        if (d.value === 'internet') total += 60;
+        if (d.value === 'mileage') total += 655;
+        if (d.value === 'supplies') total += 200;
+      });
+      return +total.toFixed(2);
+    }
+
+    function getFederalTax(income, year) {
+      income = Math.max(income, 0);
+      if (year === '2024') {
+        if (income <= 11000) return income * 0.1;
+        if (income <= 44725) return 1100 + (income - 11000) * 0.12;
+        if (income <= 95375) return 5147 + (income - 44725) * 0.22;
+        return 16290 + (income - 95375) * 0.24;
+      } else {
+        if (income <= 11300) return income * 0.1;
+        if (income <= 45675) return 1130 + (income - 11300) * 0.12;
+        if (income <= 97050) return 5211 + (income - 45675) * 0.22;
+        return 16660 + (income - 97050) * 0.24;
+      }
+    }
+
+    function renderTable() {
+      const data = JSON.parse(localStorage.getItem("contractor1099") || "[]");
+      const tbody = document.querySelector("#entryTable tbody");
+      tbody.innerHTML = "";
+
+      let g = 0, e = 0, d = 0, n = 0, se = 0, f = 0, s = 0, t = 0, p = 0, r = 0;
+
+      data.forEach((eData, i) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${i+1}</td><td>$${eData.gross.toFixed(2)}</td><td>$${eData.expenses.toFixed(2)}</td>
+            <td>$${eData.deductions.toFixed(2)}</td><td>$${eData.net.toFixed(2)}</td>
+            <td>$${eData.seTax.toFixed(2)}</td><td>$${eData.fedTax.toFixed(2)}</td>
+            <td>$${eData.stateTax.toFixed(2)}</td><td>$${eData.totalTax.toFixed(2)}</td>
+            <td>$${eData.payments.toFixed(2)}</td><td>$${eData.refundOrOwed.toFixed(2)}</td>
+          </tr>`;
+
+        g += eData.gross;
+        e += eData.expenses;
+        d += eData.deductions;
+        n += eData.net;
+        se += eData.seTax;
+        f += eData.fedTax;
+        s += eData.stateTax;
+        t += eData.totalTax;
+        p += eData.payments;
+        r += eData.refundOrOwed;
+      });
+
+      document.getElementById("ytdGross").innerText = g.toFixed(2);
+      document.getElementById("ytdExpenses").innerText = e.toFixed(2);
+      document.getElementById("ytdDeductions").innerText = d.toFixed(2);
+      document.getElementById("ytdNet").innerText = n.toFixed(2);
+      document.getElementById("ytdTotalTax").innerText = t.toFixed(2);
+      document.getElementById("ytdQuarterly").innerText = (t / 4).toFixed(2);
+      document.getElementById("ytdPaid").innerText = p.toFixed(2);
+      document.getElementById("ytdBalance").innerText = r.toFixed(2);
+    }
+
+    function exportCSV() {
+      const data = JSON.parse(localStorage.getItem("contractor1099") || "[]");
+      let csv = "Entry #,Gross,Expenses,Deductions,Net,SE Tax,Federal Tax,State Tax,Total Tax,Paid,Refund/Owed\n";
+      data.forEach((e, i) => {
+        csv += `${i+1},${e.gross},${e.expenses},${e.deductions},${e.net},${e.seTax},${e.fedTax},${e.stateTax},${e.totalTax},${e.payments},${e.refundOrOwed}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "1099_tax_summary.csv";
+      a.click();
+    }
+
+    function resetAll() {
+      if (confirm("Clear all saved tax entries?")) {
+        localStorage.removeItem("contractor1099");
+        renderTable();
+      }
+    }
+
+    window.onload = renderTable;
+  </script>
 </body>
 </html>
