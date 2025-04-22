@@ -186,23 +186,43 @@
   }
 
   function runAudit() {
-    const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
-    const audit = document.getElementById("auditBox");
-    let summary = "";
+  const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
+  const audit = document.getElementById("auditBox");
+  let summary = "";
 
-    data.forEach((e, i) => {
-      const issues = [];
-      if (e.deductions > e.income) issues.push("deductions > income");
-      if (e.net < 0) issues.push("net negative");
-      if (e.deductions > 20000) issues.push("unusual deductions");
+  data.forEach((e, i) => {
+    const issues = [];
 
-      if (issues.length) {
-        summary += `🚨 Entry ${i+1}: ${issues.join(", ")}<br>`;
-      }
-    });
+    if (e.deductions > e.income) issues.push("Deductions exceed income");
+    if (e.net < 0) issues.push("Net income is negative");
+    if (e.deductions > 20000) issues.push("Unusually high deductions");
 
-    audit.innerHTML = summary ? `<strong>Audit Summary</strong><br>${summary}` : "✅ All entries pass IRS audit checks.";
-  }
+    // NEW VALIDATION LOGIC
+    const year = document.getElementById("taxYear").value;
+    const mileageCap = 100000; // optional flag limit
+    const maxInternetPct = 100;
+    const maxHomeSqft = 300;
+
+    const internetInput = parseFloat(document.getElementById("internetPercent").value) || 0;
+    const homeSqftInput = parseFloat(document.getElementById("homeSqft").value) || 0;
+    const milesInput = parseFloat(document.getElementById("miles").value) || 0;
+
+    if (internetInput > maxInternetPct)
+      issues.push(`Internet usage exceeds 100% (${internetInput}%)`);
+    if (homeSqftInput > maxHomeSqft)
+      issues.push(`Home office exceeds IRS limit of 300 sqft (${homeSqftInput} sqft)`);
+    if (milesInput > mileageCap)
+      issues.push(`Miles driven unusually high (${milesInput} miles)`);
+
+    if (issues.length) {
+      summary += `🚨 Entry ${i + 1}: ${issues.join(", ")}<br>`;
+    }
+  });
+
+  audit.innerHTML = summary
+    ? `<strong>Audit Summary</strong><br>${summary}`
+    : "✅ All entries pass IRS audit checks.";
+}
 
   function exportCSV() {
     const logs = JSON.parse(localStorage.getItem("tax_entries") || "[]");
