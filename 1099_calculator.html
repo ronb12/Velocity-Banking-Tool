@@ -157,19 +157,48 @@
   }
 
   function renderTable() {
-    const tbody = document.querySelector("tbody");
-    const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
-    tbody.innerHTML = "";
-    let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
+  const tbody = document.querySelector("tbody");
+  const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
+  tbody.innerHTML = "";
+  let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
 
-    data.forEach((e, i) => {
-      tbody.innerHTML += `<tr><td>${i+1}</td>
-      <td>$${e.income.toFixed(2)}</td><td>$${e.expenses.toFixed(2)}</td><td>$${e.deductions.toFixed(2)}</td>
-      <td>$${e.net.toFixed(2)}</td><td>$${e.se.toFixed(2)}</td><td>$${e.fed.toFixed(2)}</td>
-      <td>$${e.stateTax.toFixed(2)}</td><td>$${e.total.toFixed(2)}</td><td>$${e.paid.toFixed(2)}</td>
-      <td>$${e.owed.toFixed(2)}</td><td><button onclick="del(${i})">❌</button></td></tr>`;
-      for (const k in totals) totals[k] += e[k];
-    });
+  data.forEach((e, i) => {
+    tbody.innerHTML += `<tr>
+      <td>${i + 1}</td>
+      <td>$${e.income.toFixed(2)}</td>
+      <td>$${e.expenses.toFixed(2)}</td>
+      <td>$${e.deductions.toFixed(2)}</td>
+      <td>$${e.net.toFixed(2)}</td>
+      <td>$${e.se.toFixed(2)}</td>
+      <td>$${e.fed.toFixed(2)}</td>
+      <td>$${e.stateTax.toFixed(2)}</td>
+      <td>$${e.total.toFixed(2)}</td>
+      <td>$${e.paid.toFixed(2)}</td>
+      <td>$${e.owed.toFixed(2)}</td>
+      <td>
+        <button onclick="startEdit(${i})">✏️</button>
+      </td>
+      <td>
+        <button onclick="del(${i})">❌</button>
+      </td>
+    </tr>`;
+
+    for (const k in totals) totals[k] += e[k];
+  });
+
+  document.getElementById("summaryBox").innerHTML = `
+    <strong>YTD Summary:</strong><br>
+    Gross: $${totals.income.toFixed(2)} |
+    Expenses: $${totals.expenses.toFixed(2)} |
+    Deductions: $${totals.deductions.toFixed(2)} |
+    Net: $${totals.net.toFixed(2)}<br>
+    SE: $${totals.se.toFixed(2)} |
+    Fed: $${totals.fed.toFixed(2)} |
+    State: $${totals.stateTax.toFixed(2)}<br>
+    Total Tax: $${totals.total.toFixed(2)} |
+    Paid: $${totals.paid.toFixed(2)} |
+    Owed: $${totals.owed.toFixed(2)}`;
+}
 
     document.getElementById("summaryBox").innerHTML = `
     <strong>YTD Summary:</strong><br>
