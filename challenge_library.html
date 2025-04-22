@@ -146,7 +146,15 @@
 
     function loadLibrary() {
       const container = document.getElementById('challengeContainer');
-      container.innerHTML = ''; // Clear before rendering
+      const openStates = {};
+
+      // Save open states before re-render
+      document.querySelectorAll('details').forEach((el, i) => {
+        const id = challenges[i]?.id;
+        if (id) openStates[id] = el.open;
+      });
+
+      container.innerHTML = ''; // Clear
 
       challenges.forEach(challenge => {
         const savedData = JSON.parse(localStorage.getItem(challenge.id) || '[]');
@@ -154,6 +162,8 @@
         const totalSaved = checked.reduce((sum, done, i) => done ? sum + challenge.items[i].amount : sum, 0);
 
         const details = document.createElement('details');
+        if (openStates[challenge.id]) details.open = true;
+
         const summary = document.createElement('summary');
         summary.textContent = challenge.title;
 
@@ -169,7 +179,7 @@
           checkbox.onchange = () => {
             checked[i] = checkbox.checked;
             localStorage.setItem(challenge.id, JSON.stringify(checked));
-            loadLibrary(); // Re-render stats
+            loadLibrary();
           };
           const label = document.createElement('label');
           label.textContent = item.label;
