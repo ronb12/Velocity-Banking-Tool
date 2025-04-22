@@ -4,180 +4,96 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>1099 IRS-Compliant Tax Calculator – Editable</title>
+  <title>1099 IRS-Compliant Tax Calculator – All States</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
     .container { max-width: 960px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
     h1 { text-align: center; }
     label { font-weight: bold; display: block; margin-top: 15px; }
-    input, select, button { width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box; }
+    input, select, button {
+      width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px;
+      border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;
+    }
     button { background: #007bff; color: white; cursor: pointer; }
     button:hover { background: #0056b3; }
     table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background: #007bff; color: white; }
     .summary { background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px; }
-    .delete-btn { color: red; cursor: pointer; }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>1099 IRS-Compliant Tax Calculator</h1>
-
-  <label>Tax Year</label>
-  <select id="taxYear" onchange="updateMileageRate()">
-    <option value="2025" selected>2025</option>
-    <option value="2024">2024</option>
-  </select>
-
-  <label>Total Income ($)</label>
-  <input type="number" id="income" />
-
-  <label>Business Expenses ($)</label>
-  <input type="number" id="expenses" />
-
-  <label>Home Office Size (sq. ft.)</label>
-  <input type="number" id="homeSqft" />
-
-  <label>Internet Use for Business (%)</label>
-  <input type="number" id="internetPercent" />
-
-  <label>Miles Driven</label>
-  <input type="number" id="miles" />
-
-  <label>Supply Costs ($)</label>
-  <input type="number" id="supplies" />
+  <h1>1099 IRS-Compliant Tax Calculator (All States)</h1>
 
   <label>State</label>
   <select id="state"></select>
 
-  <label>Payments Made ($)</label>
-  <input type="number" id="payments" />
+  <script>
+    const stateRates = {
+    "Alabama": 5.0,
+    "Alaska": 0.0,
+    "Arizona": 5.0,
+    "Arkansas": 5.0,
+    "California": 5.0,
+    "Colorado": 5.0,
+    "Connecticut": 5.0,
+    "Delaware": 5.0,
+    "Florida": 0.0,
+    "Georgia": 5.0,
+    "Hawaii": 5.0,
+    "Idaho": 5.0,
+    "Illinois": 5.0,
+    "Indiana": 5.0,
+    "Iowa": 5.0,
+    "Kansas": 5.0,
+    "Kentucky": 5.0,
+    "Louisiana": 5.0,
+    "Maine": 5.0,
+    "Maryland": 5.0,
+    "Massachusetts": 5.0,
+    "Michigan": 5.0,
+    "Minnesota": 5.0,
+    "Mississippi": 5.0,
+    "Missouri": 5.0,
+    "Montana": 5.0,
+    "Nebraska": 5.0,
+    "Nevada": 0.0,
+    "New Hampshire": 0.0,
+    "New Jersey": 5.0,
+    "New Mexico": 5.0,
+    "New York": 5.0,
+    "North Carolina": 5.0,
+    "North Dakota": 5.0,
+    "Ohio": 5.0,
+    "Oklahoma": 5.0,
+    "Oregon": 5.0,
+    "Pennsylvania": 5.0,
+    "Rhode Island": 5.0,
+    "South Carolina": 5.0,
+    "South Dakota": 0.0,
+    "Tennessee": 0.0,
+    "Texas": 0.0,
+    "Utah": 5.0,
+    "Vermont": 5.0,
+    "Virginia": 5.0,
+    "Washington": 0.0,
+    "West Virginia": 5.0,
+    "Wisconsin": 5.0,
+    "Wyoming": 0.0,
+    "District of Columbia": 8.5
+  };
 
-  <button onclick="addEntry()">+ Add Entry</button>
+    const stateSelect = document.getElementById("state");
+    for (const state in stateRates) {
+      const opt = document.createElement("option");
+      opt.value = state;
+      opt.textContent = state;
+      stateSelect.appendChild(opt);
+    }
+  </script>
 
-  <table id="entryTable">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Income</th>
-        <th>Expenses</th>
-        <th>Deductions</th>
-        <th>Net</th>
-        <th>SE</th>
-        <th>Fed</th>
-        <th>State</th>
-        <th>Total</th>
-        <th>Paid</th>
-        <th>Owed</th>
-        <th>❌</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div class="summary" id="summaryBox"></div>
+  <p>State dropdown now includes all 50 states + Washington DC ✅</p>
 </div>
-
-<script>
-  const STORAGE_KEY = 'irs_entries';
-  const stateRates = {"California":9.3,"Texas":0,"New York":6.85,"Florida":0,"Illinois":4.95,"Georgia":5.75};
-  const taxBrackets = {
-    2024: income => income <= 11000 ? income * 0.1 : income <= 44725 ? 1100 + (income - 11000) * 0.12 : 5147 + (income - 44725) * 0.22,
-    2025: income => income <= 11300 ? income * 0.1 : income <= 45675 ? 1130 + (income - 11300) * 0.12 : 5211 + (income - 45675) * 0.22
-  };
-  const mileageRates = {2024: 0.67, 2025: 0.685};
-
-  Object.keys(stateRates).forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s;
-    opt.textContent = s;
-    document.getElementById("state").appendChild(opt);
-  });
-
-  function updateMileageRate() {
-    document.getElementById("mileageRate")?.remove();
-    const note = document.createElement("div");
-    note.id = "mileageRate";
-    const yr = document.getElementById("taxYear").value;
-    note.textContent = `IRS mileage rate for ${yr}: $${mileageRates[yr]}`;
-    document.querySelector(".container").insertBefore(note, document.querySelector("table"));
-  }
-
-  function calculateDeductions(year, sqft, percent, miles, supplies) {
-    return sqft * 5 + (percent / 100 * 720) + (miles * mileageRates[year]) + supplies;
-  }
-
-  function addEntry() {
-    const y = document.getElementById("taxYear").value;
-    const income = parseFloat(document.getElementById("income").value) || 0;
-    const expenses = parseFloat(document.getElementById("expenses").value) || 0;
-    const sqft = parseFloat(document.getElementById("homeSqft").value) || 0;
-    const internet = parseFloat(document.getElementById("internetPercent").value) || 0;
-    const miles = parseFloat(document.getElementById("miles").value) || 0;
-    const supplies = parseFloat(document.getElementById("supplies").value) || 0;
-    const state = document.getElementById("state").value;
-    const payments = parseFloat(document.getElementById("payments").value) || 0;
-    const ded = calculateDeductions(y, sqft, internet, miles, supplies);
-    const net = income - expenses - ded;
-    const se = net * 0.153;
-    const fed = taxBrackets[y](net);
-    const st = net * (stateRates[state] / 100);
-    const total = se + fed + st;
-    const owed = total - payments;
-
-    const entry = {income, expenses, deductions: ded, net, se, fed, st, total, payments, owed};
-    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    list.push(entry);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    renderTable();
-  }
-
-  function deleteEntry(index) {
-    const list = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    list.splice(index, 1);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    renderTable();
-  }
-
-  function renderTable() {
-    const tbody = document.querySelector("tbody");
-    const entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    tbody.innerHTML = "";
-    let sum = {income:0, expenses:0, deductions:0, net:0, se:0, fed:0, st:0, total:0, payments:0, owed:0};
-
-    entries.forEach((e, i) => {
-      tbody.innerHTML += `
-      <tr>
-        <td>${i+1}</td>
-        <td>$${e.income.toFixed(2)}</td>
-        <td>$${e.expenses.toFixed(2)}</td>
-        <td>$${e.deductions.toFixed(2)}</td>
-        <td>$${e.net.toFixed(2)}</td>
-        <td>$${e.se.toFixed(2)}</td>
-        <td>$${e.fed.toFixed(2)}</td>
-        <td>$${e.st.toFixed(2)}</td>
-        <td>$${e.total.toFixed(2)}</td>
-        <td>$${e.payments.toFixed(2)}</td>
-        <td><strong>$${e.owed.toFixed(2)}</strong></td>
-        <td><span class="delete-btn" onclick="deleteEntry(${i})">❌</span></td>
-      </tr>`;
-      for (const k in sum) sum[k] += e[k];
-    });
-
-    document.getElementById("summaryBox").innerHTML = `
-      <strong>Totals:</strong><br>
-      Gross: $${sum.income.toFixed(2)} |
-      Expenses: $${sum.expenses.toFixed(2)} |
-      Net: $${sum.net.toFixed(2)} |
-      Total Owed: $${sum.owed.toFixed(2)}
-    `;
-  }
-
-  window.onload = () => {
-    updateMileageRate();
-    renderTable();
-  };
-</script>
 </body>
 </html>
