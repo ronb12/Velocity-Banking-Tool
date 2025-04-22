@@ -1,6 +1,4 @@
-# Regenerate and insert full working HTML with all features: editable entries and working state dropdown
 
-full_html = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -273,9 +271,11 @@ function deleteRow(i) {
 
 function exportCSV() {
   const data = JSON.parse(localStorage.getItem("taxdata") || "[]");
-  let csv = "Gross,Expenses,Net,SE,Federal,State,Total,Paid,Owed\n";
+  let csv = "Gross,Expenses,Net,SE,Federal,State,Total,Paid,Owed
+";
   data.forEach(r => {
-    csv += `${r.gross},${r.expenses},${r.net},${r.se},${r.fed},${r.stateTax},${r.total},${r.paid},${r.owed}\n`;
+    csv += `${r.gross},${r.expenses},${r.net},${r.se},${r.fed},${r.stateTax},${r.total},${r.paid},${r.owed}
+`;
   });
   const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
@@ -298,11 +298,3 @@ window.onload = () => {
 </script>
 </body>
 </html>
-"""
-
-# Write the complete HTML to a downloadable file
-final_fixed_path = "/mnt/data/1099_Calculator_Fixed_Editable_Complete.html"
-with open(final_fixed_path, "w") as f:
-    f.write(full_html)
-
-final_fixed_path
