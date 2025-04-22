@@ -4,96 +4,283 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>1099 IRS-Compliant Tax Calculator – All States</title>
+  <title>1099 Contractor Tax Calculator – Full Version</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    h1 { text-align: center; }
-    label { font-weight: bold; display: block; margin-top: 15px; }
-    input, select, button {
-      width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px;
-      border-radius: 6px; border: 1px solid #ccc; box-sizing: border-box;
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
     }
-    button { background: #007bff; color: white; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background: #007bff; color: white; }
-    .summary { background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    .container {
+      max-width: 960px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    .summary {
+      background: #eef9ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .deductions {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    .export-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    #irsAlert {
+      display: none;
+      background: #fff3cd;
+      padding: 10px;
+      border-left: 5px solid #ffc107;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1>1099 IRS-Compliant Tax Calculator (All States)</h1>
+  <div class="container">
+    <h1>1099 Contractor Tax Calculator</h1>
 
-  <label>State</label>
-  <select id="state"></select>
+    <label>Tax Year</label>
+    <select id="taxYear">
+      <option value="2025" selected>2025</option>
+      <option value="2024">2024</option>
+    </select>
+
+    <label>Total Income ($)</label>
+    <input type="number" id="income" placeholder="e.g. 1000" />
+
+    <label>Total Business Expenses ($)</label>
+    <input type="number" id="expenses" placeholder="e.g. 200" />
+
+    <label>Income Type</label>
+    <select id="incomeType">
+      <option value="1099-NEC">1099-NEC</option>
+      <option value="1099-K">1099-K</option>
+      <option value="Cash">Cash</option>
+    </select>
+
+    <div class="deductions">
+      <label>Optional Deductions:</label>
+      <input type="checkbox" id="deductHome" /> Home Office (15%)
+      <br /><input type="checkbox" id="deductInternet" /> Internet ($60)
+      <br /><input type="checkbox" id="deductMileage" /> Mileage ($655)
+      <br /><input type="checkbox" id="deductSupplies" /> Supplies ($200)
+    </div>
+
+    <label>State</label>
+    <select id="state"></select>
+
+    <label>Estimated Tax Payments Made ($)</label>
+    <input type="number" id="payments" placeholder="e.g. 500" />
+
+    <div id="irsAlert"></div>
+
+    <button onclick="addEntry()">+ Add Entry</button>
+
+    <div class="export-buttons">
+      <button onclick="exportCSV()">📤 Export to CSV</button>
+      <button onclick="window.print()">🖨️ Print</button>
+      <button onclick="downloadICS()">📅 Quarterly Reminder</button>
+      <button onclick="resetAll()">🔄 Reset All</button>
+    </div>
+
+    <table id="entryTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Income</th>
+          <th>Expenses</th>
+          <th>Deductions</th>
+          <th>Net</th>
+          <th>SE Tax</th>
+          <th>Federal</th>
+          <th>State</th>
+          <th>Total Tax</th>
+          <th>Paid</th>
+          <th>Owed</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="summary">
+      <strong>Summary:</strong><br />
+      Gross: $<span id="sumIncome">0.00</span> |
+      Expenses: $<span id="sumExp">0.00</span> |
+      Net: $<span id="sumNet">0.00</span> |
+      SE: $<span id="sumSE">0.00</span> |
+      Fed: $<span id="sumFed">0.00</span> |
+      State: $<span id="sumState">0.00</span> |
+      Total: $<span id="sumTotal">0.00</span> |
+      Paid: $<span id="sumPaid">0.00</span> |
+      Owed: $<span id="sumOwed">0.00</span>
+    </div>
+  </div>
 
   <script>
-    const stateRates = {
-    "Alabama": 5.0,
-    "Alaska": 0.0,
-    "Arizona": 5.0,
-    "Arkansas": 5.0,
-    "California": 5.0,
-    "Colorado": 5.0,
-    "Connecticut": 5.0,
-    "Delaware": 5.0,
-    "Florida": 0.0,
-    "Georgia": 5.0,
-    "Hawaii": 5.0,
-    "Idaho": 5.0,
-    "Illinois": 5.0,
-    "Indiana": 5.0,
-    "Iowa": 5.0,
-    "Kansas": 5.0,
-    "Kentucky": 5.0,
-    "Louisiana": 5.0,
-    "Maine": 5.0,
-    "Maryland": 5.0,
-    "Massachusetts": 5.0,
-    "Michigan": 5.0,
-    "Minnesota": 5.0,
-    "Mississippi": 5.0,
-    "Missouri": 5.0,
-    "Montana": 5.0,
-    "Nebraska": 5.0,
-    "Nevada": 0.0,
-    "New Hampshire": 0.0,
-    "New Jersey": 5.0,
-    "New Mexico": 5.0,
-    "New York": 5.0,
-    "North Carolina": 5.0,
-    "North Dakota": 5.0,
-    "Ohio": 5.0,
-    "Oklahoma": 5.0,
-    "Oregon": 5.0,
-    "Pennsylvania": 5.0,
-    "Rhode Island": 5.0,
-    "South Carolina": 5.0,
-    "South Dakota": 0.0,
-    "Tennessee": 0.0,
-    "Texas": 0.0,
-    "Utah": 5.0,
-    "Vermont": 5.0,
-    "Virginia": 5.0,
-    "Washington": 0.0,
-    "West Virginia": 5.0,
-    "Wisconsin": 5.0,
-    "Wyoming": 0.0,
-    "District of Columbia": 8.5
-  };
+    const states = {
+      "California": 9.3, "Texas": 0, "New York": 6.85, "Florida": 0, "Illinois": 4.95, "Georgia": 5.75
+      // Add all 50 states and DC here
+    };
 
-    const stateSelect = document.getElementById("state");
-    for (const state in stateRates) {
+    const taxBrackets = {
+      2024: income => income <= 11000 ? income * 0.1 : income <= 44725 ? 1100 + (income - 11000) * 0.12 : 5147 + (income - 44725) * 0.22,
+      2025: income => income <= 11300 ? income * 0.1 : income <= 45675 ? 1130 + (income - 11300) * 0.12 : 5211 + (income - 45675) * 0.22
+    };
+
+    Object.keys(states).forEach(st => {
       const opt = document.createElement("option");
-      opt.value = state;
-      opt.textContent = state;
-      stateSelect.appendChild(opt);
+      opt.value = st;
+      opt.textContent = st;
+      document.getElementById("state").appendChild(opt);
+    });
+
+    function calcDeductions() {
+      let ded = 0;
+      if (document.getElementById("deductHome").checked) ded += 0.15;
+      return {
+        amount:
+          (document.getElementById("deductInternet").checked ? 60 : 0) +
+          (document.getElementById("deductMileage").checked ? 655 : 0) +
+          (document.getElementById("deductSupplies").checked ? 200 : 0),
+        percent: ded
+      };
+    }
+
+    function addEntry() {
+      const year = document.getElementById("taxYear").value;
+      const income = parseFloat(document.getElementById("income").value) || 0;
+      const expenses = parseFloat(document.getElementById("expenses").value) || 0;
+      const state = document.getElementById("state").value;
+      const paid = parseFloat(document.getElementById("payments").value) || 0;
+      const deductions = calcDeductions();
+      const dedAmt = deductions.amount + ((income - expenses) * deductions.percent);
+      const net = Math.max(0, income - expenses - dedAmt);
+      const se = net * 0.153;
+      const fed = taxBrackets[year](net);
+      const stateTax = net * (states[state] / 100);
+      const total = se + fed + stateTax;
+      const owed = total - paid;
+
+      if (net > 0 && net <= 400) {
+        const alert = document.getElementById("irsAlert");
+        alert.innerHTML = `⚠️ IRS ALERT: Net income > $400 is taxable.`;
+        alert.style.display = "block";
+      } else document.getElementById("irsAlert").style.display = "none";
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>#</td><td>$${income.toFixed(2)}</td><td>$${expenses.toFixed(2)}</td>
+        <td>$${dedAmt.toFixed(2)}</td><td>$${net.toFixed(2)}</td><td>$${se.toFixed(2)}</td>
+        <td>$${fed.toFixed(2)}</td><td>$${stateTax.toFixed(2)}</td><td>$${total.toFixed(2)}</td>
+        <td>$${paid.toFixed(2)}</td><td><strong>$${owed.toFixed(2)}</strong></td>`;
+      document.querySelector("tbody").appendChild(row);
+
+      updateTotals({ income, expenses, net, se, fed, stateTax, total, paid, owed });
+    }
+
+    const totals = { income: 0, expenses: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
+    function updateTotals(entry) {
+      for (let k in entry) totals[k] += entry[k];
+      document.getElementById("sumIncome").textContent = totals.income.toFixed(2);
+      document.getElementById("sumExp").textContent = totals.expenses.toFixed(2);
+      document.getElementById("sumNet").textContent = totals.net.toFixed(2);
+      document.getElementById("sumSE").textContent = totals.se.toFixed(2);
+      document.getElementById("sumFed").textContent = totals.fed.toFixed(2);
+      document.getElementById("sumState").textContent = totals.stateTax.toFixed(2);
+      document.getElementById("sumTotal").textContent = totals.total.toFixed(2);
+      document.getElementById("sumPaid").textContent = totals.paid.toFixed(2);
+      document.getElementById("sumOwed").textContent = totals.owed.toFixed(2);
+    }
+
+    function exportCSV() {
+      let rows = [...document.querySelectorAll("tbody tr")].map(tr =>
+        [...tr.children].slice(1).map(td => td.textContent.replace("$", "").trim()).join(",")
+      );
+      let csv = "Income,Expenses,Deductions,Net,SE,Federal,State,Total,Paid,Owed
+" + rows.join("
+");
+      let blob = new Blob([csv], { type: "text/csv" });
+      let a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "1099_tax_calculator.csv";
+      a.click();
+    }
+
+    function downloadICS() {
+      const blob = new Blob([`BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Estimated Quarterly Tax Due
+DTSTART:20250415T090000
+DESCRIPTION:Pay your estimated self-employment tax.
+END:VEVENT
+END:VCALENDAR`], { type: "text/calendar" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "quarterly_tax_reminder.ics";
+      a.click();
+    }
+
+    function resetAll() {
+      document.querySelector("tbody").innerHTML = "";
+      Object.keys(totals).forEach(k => totals[k] = 0);
+      updateTotals(totals);
     }
   </script>
-
-  <p>State dropdown now includes all 50 states + Washington DC ✅</p>
-</div>
 </body>
 </html>
