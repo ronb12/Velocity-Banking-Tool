@@ -41,6 +41,12 @@
       background-color: #0056b3;
     }
 
+    #visitCounter {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #777;
+    }
+
     footer {
       margin-top: 50px;
       font-size: 14px;
@@ -71,9 +77,29 @@
   <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goal Tracker</a>
   <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
 
+  <div id="visitCounter">
+    👥 Visitors: <span id="visitorCount">Loading...</span>
+  </div>
+
   <footer>
     Created by Ronell Bradley • <a href="https://github.com/ronb12" target="_blank">GitHub</a>
   </footer>
+
+  <script>
+    function updateVisitorCounter() {
+      let count = parseInt(localStorage.getItem("visitCount") || "0");
+      if (!localStorage.getItem("visitedBefore")) {
+        count++;
+        localStorage.setItem("visitCount", count);
+        localStorage.setItem("visitedBefore", "true");
+      }
+      document.getElementById("visitorCount").textContent = count.toLocaleString();
+    }
+
+    window.onload = function () {
+      updateVisitorCounter();
+    };
+  </script>
 
 </body>
 </html>
