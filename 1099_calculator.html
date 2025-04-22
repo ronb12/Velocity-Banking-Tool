@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>1099 Contractor Tax Calculator – Full Version</title>
+  <title>1099 Contractor Tax Calculator – Working Version</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -129,13 +129,38 @@
 
     <div id="irsAlert"></div>
 
-    <button onclick="alert('Functionality coming shortly')">+ Add Entry</button>
+    <button onclick="addEntry()">+ Add Entry</button>
 
-    <div class="export-buttons">
-      <button onclick="alert('Export coming soon')">📤 Export to CSV</button>
-      <button onclick="window.print()">🖨️ Print</button>
-      <button onclick="alert('Download reminder coming soon')">📅 Quarterly Reminder</button>
-      <button onclick="alert('Reset function coming soon')">🔄 Reset All</button>
+    <table id="entryTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Income</th>
+          <th>Expenses</th>
+          <th>Deductions</th>
+          <th>Net</th>
+          <th>SE Tax</th>
+          <th>Federal</th>
+          <th>State</th>
+          <th>Total Tax</th>
+          <th>Paid</th>
+          <th>Owed</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="summary">
+      <strong>Summary:</strong><br />
+      Gross: $<span id="sumIncome">0.00</span> |
+      Expenses: $<span id="sumExp">0.00</span> |
+      Net: $<span id="sumNet">0.00</span> |
+      SE: $<span id="sumSE">0.00</span> |
+      Fed: $<span id="sumFed">0.00</span> |
+      State: $<span id="sumState">0.00</span> |
+      Total: $<span id="sumTotal">0.00</span> |
+      Paid: $<span id="sumPaid">0.00</span> |
+      Owed: $<span id="sumOwed">0.00</span>
     </div>
   </div>
 
@@ -154,12 +179,72 @@
       "West Virginia": 5.12, "Wisconsin": 5.3, "Wyoming": 0, "District of Columbia": 8.5
     };
 
-    const stateSelect = document.getElementById("state");
+    const taxBrackets = {
+      2024: income => income <= 11000 ? income * 0.1 : income <= 44725 ? 1100 + (income - 11000) * 0.12 : 5147 + (income - 44725) * 0.22,
+      2025: income => income <= 11300 ? income * 0.1 : income <= 45675 ? 1130 + (income - 11300) * 0.12 : 5211 + (income - 45675) * 0.22
+    };
+
     for (const state in states) {
       const option = document.createElement("option");
       option.value = state;
       option.text = state;
-      stateSelect.appendChild(option);
+      document.getElementById("state").appendChild(option);
+    }
+
+    const totals = { income: 0, expenses: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
+
+    function addEntry() {
+      const year = document.getElementById("taxYear").value;
+      const income = parseFloat(document.getElementById("income").value) || 0;
+      const expenses = parseFloat(document.getElementById("expenses").value) || 0;
+      const state = document.getElementById("state").value;
+      const paid = parseFloat(document.getElementById("payments").value) || 0;
+
+      let ded = 0;
+      if (document.getElementById("deductHome").checked) ded += 0.15;
+      const dedAmt =
+        (document.getElementById("deductInternet").checked ? 60 : 0) +
+        (document.getElementById("deductMileage").checked ? 655 : 0) +
+        (document.getElementById("deductSupplies").checked ? 200 : 0) +
+        ((income - expenses) * ded);
+
+      const net = Math.max(0, income - expenses - dedAmt);
+      const se = net * 0.153;
+      const fed = taxBrackets[year](net);
+      const stateTax = net * (states[state] / 100);
+      const total = se + fed + stateTax;
+      const owed = total - paid;
+
+      if (net > 0 && net <= 400) {
+        const alert = document.getElementById("irsAlert");
+        alert.innerHTML = `⚠️ IRS ALERT: Net income > $400 is taxable.`;
+        alert.style.display = "block";
+      } else {
+        document.getElementById("irsAlert").style.display = "none";
+      }
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>#</td><td>$${income.toFixed(2)}</td><td>$${expenses.toFixed(2)}</td>
+        <td>$${dedAmt.toFixed(2)}</td><td>$${net.toFixed(2)}</td><td>$${se.toFixed(2)}</td>
+        <td>$${fed.toFixed(2)}</td><td>$${stateTax.toFixed(2)}</td><td>$${total.toFixed(2)}</td>
+        <td>$${paid.toFixed(2)}</td><td><strong>$${owed.toFixed(2)}</strong></td>`;
+      document.querySelector("tbody").appendChild(row);
+
+      updateTotals({ income, expenses, net, se, fed, stateTax, total, paid, owed });
+    }
+
+    function updateTotals(entry) {
+      for (let k in entry) totals[k] += entry[k];
+      document.getElementById("sumIncome").textContent = totals.income.toFixed(2);
+      document.getElementById("sumExp").textContent = totals.expenses.toFixed(2);
+      document.getElementById("sumNet").textContent = totals.net.toFixed(2);
+      document.getElementById("sumSE").textContent = totals.se.toFixed(2);
+      document.getElementById("sumFed").textContent = totals.fed.toFixed(2);
+      document.getElementById("sumState").textContent = totals.stateTax.toFixed(2);
+      document.getElementById("sumTotal").textContent = totals.total.toFixed(2);
+      document.getElementById("sumPaid").textContent = totals.paid.toFixed(2);
+      document.getElementById("sumOwed").textContent = totals.owed.toFixed(2);
     }
   </script>
 </body>
