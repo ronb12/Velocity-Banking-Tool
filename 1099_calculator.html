@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>1099 IRS-Compliant Tax Calculator</title>
+  <title>1099 Contractor IRS-Compliant Calculator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
     .container { max-width: 960px; margin: auto; background: #fff; padding: 30px;
@@ -26,10 +27,9 @@
     }
     .alert { background: #fff3cd; border-left: 5px solid #ffc107;
       padding: 10px; margin-top: 10px; border-radius: 6px; display: none; }
-    .back-link {
-      display: inline-block; margin-bottom: 20px; padding: 10px 20px;
-      background: #007bff; color: white; border-radius: 6px; text-decoration: none;
-    }
+    .export-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .back-link { display: inline-block; margin-bottom: 15px; text-decoration: none;
+      background: #007bff; color: white; padding: 8px 16px; border-radius: 6px; }
   </style>
 </head>
 <body>
@@ -39,39 +39,42 @@
 
   <label>Tax Year</label>
   <select id="taxYear">
-    <option value="2025" selected>2025</option>
-    <option value="2024">2024</option>
+    <option value="2025">2025</option>
+    <option value="2024" selected>2024</option>
   </select>
 
   <label>Total Income ($)</label>
-  <input type="number" id="income" placeholder="e.g. 10000" />
+  <input type="number" id="income" />
 
   <label>Total Business Expenses ($)</label>
-  <input type="number" id="expenses" placeholder="e.g. 200" />
+  <input type="number" id="expenses" />
 
   <label>Home Office Size (sq. ft.) 🛈</label>
-  <input type="number" id="homeSqft" placeholder="e.g. 100 (max 300)" />
+  <input type="number" id="homeSqft" />
 
   <label>Internet Use for Business (%) 🛈</label>
-  <input type="number" id="internetPercent" placeholder="e.g. 50" />
+  <input type="number" id="internetPercent" />
 
   <label>Miles Driven for Business 🛈</label>
-  <input type="number" id="miles" placeholder="e.g. 1200" />
+  <input type="number" id="miles" />
 
   <label>Supply Costs ($) 🛈</label>
-  <input type="number" id="supplies" placeholder="e.g. 300" />
+  <input type="number" id="supplies" />
 
   <label>State</label>
   <select id="state"></select>
 
   <label>Estimated Tax Payments Made ($)</label>
-  <input type="number" id="payments" placeholder="e.g. 500" />
+  <input type="number" id="payments" />
 
   <div class="alert" id="irsAlert"></div>
 
-  <button onclick="addEntry()">+ Add Entry</button>
-  <button onclick="runAudit()">🛡️ Run IRS Audit Check</button>
-  <button onclick="exportCSV()">📤 Export CSV</button>
+  <div class="export-buttons">
+    <button onclick="addEntry()">+ Add Entry</button>
+    <button onclick="runAudit()">🛡️ Run IRS Audit Check</button>
+    <button onclick="exportCSV()">📤 Export CSV</button>
+    <button onclick="exportPDF()">📄 Export to PDF</button>
+  </div>
 
   <table id="entryTable">
     <thead>
@@ -85,7 +88,6 @@
   </table>
 
   <div class="summary" id="summaryBox"></div>
-  <div class="summary" id="auditSummary"></div>
 </div>
 
 <script>
@@ -93,12 +95,8 @@
 
   const mileageRates = { 2024: 0.67, 2025: 0.685 };
   const taxBrackets = {
-    2024: income => income <= 11000 ? income * 0.1 :
-           income <= 44725 ? 1100 + (income - 11000) * 0.12 :
-           5147 + (income - 44725) * 0.22,
-    2025: income => income <= 11300 ? income * 0.1 :
-           income <= 45675 ? 1130 + (income - 11300) * 0.12 :
-           5211 + (income - 45675) * 0.22
+    2024: i => i <= 11000 ? i * 0.1 : i <= 44725 ? 1100 + (i - 11000) * 0.12 : 5147 + (i - 44725) * 0.22,
+    2025: i => i <= 11300 ? i * 0.1 : i <= 45675 ? 1130 + (i - 11300) * 0.12 : 5211 + (i - 45675) * 0.22
   };
 
   const states = {
@@ -128,7 +126,7 @@
     const homeOffice = Math.min(sqft, 300) * 5;
     const internet = (internetPct / 100) * 720;
     const mileage = miles * mileageRates[year];
-    return { total: homeOffice + internet + mileage + supplies, breakdown: { homeOffice, internet, mileage, supplies } };
+    return homeOffice + internet + mileage + supplies;
   }
 
   function addEntry() {
@@ -142,7 +140,7 @@
     const state = document.getElementById("state").value;
     const paid = parseFloat(document.getElementById("payments").value) || 0;
 
-    const { total: deductions } = getDeductions(year, sqft, internet, miles, supplies);
+    const deductions = getDeductions(year, sqft, internet, miles, supplies);
     const net = income - expenses - deductions;
     const se = net * 0.153;
     const fed = taxBrackets[year](net);
@@ -150,11 +148,10 @@
     const total = se + fed + stateTax;
     const owed = total - paid;
 
-    const alertBox = document.getElementById("irsAlert");
-    alertBox.style.display = (net > 400) ? "none" : "block";
-    alertBox.innerHTML = "⚠️ IRS Alert: Self-employment income under $400 is not taxable for SE tax.";
+    document.getElementById("irsAlert").style.display = (net > 400) ? "none" : "block";
+    document.getElementById("irsAlert").innerHTML = "⚠️ IRS Alert: Net self-employment income under $400 is not taxed.";
 
-    const entry = { income, expenses, deductions, net, se, fed, stateTax, total, paid, owed, sqft, internet, miles, supplies };
+    const entry = { income, expenses, deductions, net, se, fed, stateTax, total, paid, owed };
     const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     logs.push(entry);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
@@ -171,9 +168,9 @@
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${i+1}</td><td>$${e.income.toFixed(2)}</td><td>$${e.expenses.toFixed(2)}</td>
-        <td>$${e.deductions.toFixed(2)}</td><td>$${e.net.toFixed(2)}</td><td>$${e.se.toFixed(2)}</td>
-        <td>$${e.fed.toFixed(2)}</td><td>$${e.stateTax.toFixed(2)}</td><td>$${e.total.toFixed(2)}</td>
-        <td>$${e.paid.toFixed(2)}</td><td><strong>$${e.owed.toFixed(2)}</strong></td>
+        <td>$${e.deductions.toFixed(2)}</td><td>$${e.net.toFixed(2)}</td>
+        <td>$${e.se.toFixed(2)}</td><td>$${e.fed.toFixed(2)}</td><td>$${e.stateTax.toFixed(2)}</td>
+        <td>$${e.total.toFixed(2)}</td><td>$${e.paid.toFixed(2)}</td><td><strong>$${e.owed.toFixed(2)}</strong></td>
         <td><button onclick="deleteEntry(${i})">❌</button></td>`;
       tbody.appendChild(row);
       Object.keys(totals).forEach(k => totals[k] += e[k]);
@@ -183,7 +180,6 @@
       <strong>Year-to-Date:</strong><br>
       Gross: $${totals.income.toFixed(2)} |
       Expenses: $${totals.expenses.toFixed(2)} |
-      Deductions: $${totals.deductions.toFixed(2)} |
       Net: $${totals.net.toFixed(2)} |
       Owed: $${totals.owed.toFixed(2)}
     `;
@@ -194,21 +190,6 @@
     logs.splice(index, 1);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
     renderTable();
-  }
-
-  function runAudit() {
-    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    const messages = [];
-    logs.forEach((e, i) => {
-      if (e.net < 0) messages.push(`🚨 Entry ${i+1}: Negative net income`);
-      if (e.sqft > 300) messages.push(`🚨 Entry ${i+1}: Home office exceeds 300 sqft limit`);
-      if (e.internet > 100) messages.push(`🚨 Entry ${i+1}: Internet usage over 100%`);
-      if (e.miles > 100000) messages.push(`🚨 Entry ${i+1}: Mileage unrealistic (check input)`);
-    });
-
-    document.getElementById("auditSummary").innerHTML = messages.length
-      ? `<strong>Audit Summary</strong><br>${messages.join('<br>')}`
-      : '✅ All entries pass IRS audit checks.';
   }
 
   function exportCSV() {
@@ -222,6 +203,27 @@
     a.href = URL.createObjectURL(blob);
     a.download = "1099_tax_log.csv";
     a.click();
+  }
+
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("1099 Contractor Tax Summary", 14, 15);
+    const table = document.getElementById("entryTable");
+    let rowY = 25;
+    [...table.rows].forEach((row, rowIndex) => {
+      let x = 10;
+      [...row.cells].forEach(cell => {
+        doc.text(cell.textContent.trim(), x, rowY);
+        x += 25;
+      });
+      rowY += 7;
+    });
+    doc.save("1099_tax_summary.pdf");
+  }
+
+  function runAudit() {
+    alert("✅ Audit feature coming next! Stay tuned!");
   }
 
   window.onload = renderTable;
