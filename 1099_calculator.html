@@ -237,9 +237,14 @@
   }
 
   function resetAll() {
+  if (confirm("Clear all entries?")) {
     localStorage.removeItem("tax_entries");
-    renderTable();
+    document.querySelector("tbody").innerHTML = "";
+    document.getElementById("summaryBox").innerHTML = "";
+    document.getElementById("auditBox").innerHTML = "";
+    document.getElementById("irsAlert").style.display = "none";
   }
+}
 
   window.onload = renderTable;
 </script>
