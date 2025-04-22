@@ -6,8 +6,7 @@
   <title>1099 IRS-Compliant Tax Calculator</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px;
-      border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    .container { max-width: 1000px; margin: auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
     h1 { text-align: center; }
     label { font-weight: bold; display: block; margin-top: 15px; }
     input, select, button {
@@ -16,27 +15,24 @@
     }
     button { background: #007bff; color: white; cursor: pointer; }
     button:hover { background: #0056b3; }
-    table {
-      width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px;
-    }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background: #007bff; color: white; }
     .summary { background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px; }
     .alert { background: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; margin-top: 10px; border-radius: 6px; display: none; }
-    .back { text-decoration: none; background: #007bff; color: white; padding: 10px 15px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
-    .tooltip { font-size: 0.85em; color: #555; margin-top: -10px; margin-bottom: 10px; }
-    .audit-box { margin-top: 10px; background: #fefefe; border: 1px solid #ccc; padding: 10px; border-radius: 8px; display: none; }
+    .tooltip { font-size: 0.9em; color: #555; margin-top: -8px; margin-bottom: 10px; }
+    .back-link { display: inline-block; margin-bottom: 15px; background: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; }
   </style>
 </head>
 <body>
 <div class="container">
-  <a class="back" href="index.html">🔙 Back to Dashboard</a>
+  <a href="index.html" class="back-link">🔙 Back to Dashboard</a>
   <h1>1099 Contractor IRS-Compliant Calculator</h1>
 
   <label>Tax Year</label>
-  <select id="taxYear" onchange="updateMileageTooltip()">
+  <select id="taxYear">
     <option value="2025">2025</option>
-    <option value="2024" selected>2024</option>
+    <option value="2024">2024</option>
   </select>
 
   <label>Total Income ($)</label>
@@ -55,7 +51,7 @@
 
   <label>Miles Driven for Business</label>
   <input type="number" id="miles" />
-  <div class="tooltip" id="mileageTooltip">IRS: $0.67 (2024), $0.685 (2025) – IRS Notice 2023-03</div>
+  <div class="tooltip">IRS: $0.67 (2024), $0.685 (2025) — IRS Notice 2023-03</div>
 
   <label>Supply Costs ($)</label>
   <input type="number" id="supplies" />
@@ -68,43 +64,49 @@
   <input type="number" id="payments" />
 
   <div class="alert" id="irsAlert"></div>
+
   <button onclick="addEntry()">+ Add Entry</button>
-  <button onclick="runAudit()">🛡️ Run IRS Audit Check</button>
+  <button onclick="auditCheck()">🛡️ Run IRS Audit Check</button>
   <button onclick="exportCSV()">📤 Export CSV</button>
   <button onclick="window.print()">🖨️ Export PDF</button>
 
   <table id="entryTable">
     <thead>
       <tr>
-        <th>#</th><th>Income</th><th>Expenses</th><th>Deductions</th><th>Net</th>
-        <th>SE Tax</th><th>Federal</th><th>State</th><th>Total</th><th>Paid</th><th>Owed</th><th>❌</th>
+        <th>#</th><th>Income</th><th>Expenses</th><th>Deductions</th>
+        <th>Net</th><th>SE Tax</th><th>Federal</th><th>State</th>
+        <th>Total</th><th>Paid</th><th>Owed</th><th>❌</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <div class="summary" id="summaryBox"></div>
-  <div class="audit-box" id="auditBox"></div>
+  <div class="summary" id="auditBox"></div>
 </div>
 
 <script>
   const STORAGE_KEY = "contractor_tax_log";
+
   const mileageRates = { 2024: 0.67, 2025: 0.685 };
   const taxBrackets = {
     2024: income => income <= 11000 ? income * 0.1 : income <= 44725 ? 1100 + (income - 11000) * 0.12 : 5147 + (income - 44725) * 0.22,
     2025: income => income <= 11300 ? income * 0.1 : income <= 45675 ? 1130 + (income - 11300) * 0.12 : 5211 + (income - 45675) * 0.22
   };
+
   const states = {
-    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3, "Colorado": 4.4,
-    "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75, "Hawaii": 6.4, "Idaho": 5.8,
-    "Illinois": 4.95, "Indiana": 3.15, "Iowa": 5, "Kansas": 5.7, "Kentucky": 4.5, "Louisiana": 4.25,
-    "Maine": 5.8, "Maryland": 4.75, "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 5.35,
-    "Mississippi": 5, "Missouri": 4.95, "Montana": 6.75, "Nebraska": 5.84, "Nevada": 0,
-    "New Hampshire": 0, "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85,
-    "North Carolina": 4.99, "North Dakota": 2.04, "Ohio": 3.5, "Oklahoma": 4.75, "Oregon": 6.75,
-    "Pennsylvania": 3.07, "Rhode Island": 3.75, "South Carolina": 3.15, "South Dakota": 0,
-    "Tennessee": 0, "Texas": 0, "Utah": 4.65, "Vermont": 6.6, "Virginia": 5.75, "Washington": 0,
-    "West Virginia": 6.5, "Wisconsin": 5.3, "Wyoming": 0, "District of Columbia": 8.5
+    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3,
+    "Colorado": 4.4, "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75,
+    "Hawaii": 6.4, "Idaho": 5.8, "Illinois": 4.95, "Indiana": 3.15, "Iowa": 5,
+    "Kansas": 5.7, "Kentucky": 4.5, "Louisiana": 4.25, "Maine": 5.8, "Maryland": 4.75,
+    "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 5.35, "Mississippi": 5,
+    "Missouri": 4.95, "Montana": 6.75, "Nebraska": 5.84, "Nevada": 0, "New Hampshire": 0,
+    "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85, "North Carolina": 4.99,
+    "North Dakota": 2.04, "Ohio": 3.5, "Oklahoma": 4.75, "Oregon": 6.75,
+    "Pennsylvania": 3.07, "Rhode Island": 3.75, "South Carolina": 3.15,
+    "South Dakota": 0, "Tennessee": 0, "Texas": 0, "Utah": 4.65, "Vermont": 6.6,
+    "Virginia": 5.75, "Washington": 0, "West Virginia": 6.5, "Wisconsin": 5.3,
+    "Wyoming": 0, "District of Columbia": 8.5
   };
 
   const stateSel = document.getElementById("state");
@@ -115,16 +117,11 @@
     stateSel.appendChild(opt);
   });
 
-  function updateMileageTooltip() {
-    const year = document.getElementById("taxYear").value;
-    document.getElementById("mileageTooltip").textContent = `IRS: $${mileageRates[year]} per mile – IRS Notice 2023-03`;
-  }
-
   function getDeductions(year, sqft, internetPct, miles, supplies) {
-    const home = Math.min(sqft, 300) * 5;
+    const homeOffice = Math.min(sqft, 300) * 5;
     const internet = (internetPct / 100) * 720;
     const mileage = miles * mileageRates[year];
-    return { total: home + internet + mileage + supplies, breakdown: { home, internet, mileage, supplies } };
+    return { total: homeOffice + internet + mileage + supplies, breakdown: { homeOffice, internet, mileage, supplies } };
   }
 
   function addEntry() {
@@ -146,8 +143,13 @@
     const total = se + fed + stateTax;
     const owed = total - paid;
 
+    const alertBox = document.getElementById("irsAlert");
+    alertBox.style.display = (net > 400) ? "none" : "block";
+    alertBox.innerHTML = "⚠️ IRS Alert: Self-employment income under $400 may not require SE tax.";
+
+    const entry = { income, expenses, deductions, net, se, fed, stateTax, total, paid, owed };
     const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    logs.push({ income, expenses, deductions, net, se, fed, stateTax, total, paid, owed, sqft, internet, miles });
+    logs.push(entry);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
     renderTable();
   }
@@ -178,28 +180,11 @@
     `;
   }
 
-  function deleteEntry(i) {
+  function deleteEntry(index) {
     const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    logs.splice(i, 1);
+    logs.splice(index, 1);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
     renderTable();
-  }
-
-  function runAudit() {
-    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    let issues = [];
-    logs.forEach((e, i) => {
-      let msg = "";
-      if (e.net < 0) msg += `Entry ${i+1}: ❌ Net income is negative. `;
-      if (e.sqft > 300) msg += `Entry ${i+1}: ❌ Home office over 300 sqft (IRS max). `;
-      if (e.internet > 100) msg += `Entry ${i+1}: ❌ Internet use > 100% is invalid. `;
-      if (msg) issues.push(msg);
-    });
-    const box = document.getElementById("auditBox");
-    box.style.display = "block";
-    box.innerHTML = issues.length
-      ? `<strong>🚨 Audit Warnings:</strong><br>${issues.join("<br>")}`
-      : "✅ All entries pass IRS audit checks.";
   }
 
   function exportCSV() {
@@ -211,14 +196,23 @@
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "irs_compliant_log.csv";
+    a.download = "1099_tax_log.csv";
     a.click();
   }
 
-  window.onload = () => {
-    renderTable();
-    updateMileageTooltip();
-  };
+  function auditCheck() {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const audit = logs.map((e, i) => {
+      let issues = [];
+      if (e.net < 0) issues.push("Negative net income");
+      if (e.deductions > e.income) issues.push("Deductions exceed income");
+      return issues.length ? `🚨 Entry ${i+1}: ${issues.join(', ')}` : null;
+    }).filter(Boolean);
+    const out = audit.length ? audit.join("<br>") : "✅ All entries pass IRS audit checks.";
+    document.getElementById("auditBox").innerHTML = "<strong>Audit Summary</strong><br>" + out;
+  }
+
+  window.onload = renderTable;
 </script>
 </body>
 </html>
