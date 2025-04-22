@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -271,11 +270,9 @@ function deleteRow(i) {
 
 function exportCSV() {
   const data = JSON.parse(localStorage.getItem("taxdata") || "[]");
-  let csv = "Gross,Expenses,Net,SE,Federal,State,Total,Paid,Owed
-";
+  let csv = "Gross,Expenses,Net,SE,Federal,State,Total,Paid,Owed\n";
   data.forEach(r => {
-    csv += `${r.gross},${r.expenses},${r.net},${r.se},${r.fed},${r.stateTax},${r.total},${r.paid},${r.owed}
-`;
+    csv += `${r.gross},${r.expenses},${r.net},${r.se},${r.fed},${r.stateTax},${r.total},${r.paid},${r.owed}\n`;
   });
   const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
@@ -298,3 +295,4 @@ window.onload = () => {
 </script>
 </body>
 </html>
+"""
