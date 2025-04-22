@@ -104,20 +104,20 @@
     2024: i => i <= 11000 ? i * 0.1 : i <= 44725 ? 1100 + (i - 11000) * 0.12 : 5147 + (i - 44725) * 0.22,
     2025: i => i <= 11300 ? i * 0.1 : i <= 45675 ? 1130 + (i - 11300) * 0.12 : 5211 + (i - 45675) * 0.22
   };
-  const states = { "Alabama":5,"Alaska":0,"Arizona":2.5,"Arkansas":4.9,"California":9.3,"Colorado":4.4,"Connecticut":5,
-    "Delaware":5.5,"Florida":0,"Georgia":5.75,"Hawaii":6,"Idaho":5.8,"Illinois":4.95,"Indiana":3.23,"Iowa":6,
-    "Kansas":5.7,"Kentucky":5,"Louisiana":4.25,"Maine":5.8,"Maryland":4.75,"Massachusetts":5,"Michigan":4.25,
-    "Minnesota":6.8,"Mississippi":5,"Missouri":4.95,"Montana":5.9,"Nebraska":5.84,"Nevada":0,"New Hampshire":0,
-    "New Jersey":5.525,"New Mexico":4.9,"New York":6.85,"North Carolina":4.75,"North Dakota":2.9,"Ohio":3.99,
-    "Oklahoma":4.75,"Oregon":9,"Pennsylvania":3.07,"Rhode Island":5.99,"South Carolina":6.5,"South Dakota":0,
-    "Tennessee":0,"Texas":0,"Utah":4.65,"Vermont":6.6,"Virginia":5.75,"Washington":0,"West Virginia":5.12,
-    "Wisconsin":5.3,"Wyoming":0,"District of Columbia":8.5 };
-
-  Object.keys(states).forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s; opt.textContent = s;
-    document.getElementById("state").appendChild(opt);
-  });
+  const states = {
+    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3,
+    "Colorado": 4.4, "Connecticut": 5, "Delaware": 5.5, "Florida": 0, "Georgia": 5.75,
+    "Hawaii": 6, "Idaho": 5.8, "Illinois": 4.95, "Indiana": 3.23, "Iowa": 6,
+    "Kansas": 5.7, "Kentucky": 5, "Louisiana": 4.25, "Maine": 5.8, "Maryland": 4.75,
+    "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 6.8, "Mississippi": 5,
+    "Missouri": 4.95, "Montana": 5.9, "Nebraska": 5.84, "Nevada": 0, "New Hampshire": 0,
+    "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85, "North Carolina": 4.75,
+    "North Dakota": 2.9, "Ohio": 3.99, "Oklahoma": 4.75, "Oregon": 9,
+    "Pennsylvania": 3.07, "Rhode Island": 5.99, "South Carolina": 6.5,
+    "South Dakota": 0, "Tennessee": 0, "Texas": 0, "Utah": 4.65, "Vermont": 6.6,
+    "Virginia": 5.75, "Washington": 0, "West Virginia": 5.12, "Wisconsin": 5.3,
+    "Wyoming": 0, "District of Columbia": 8.5
+  };
 
   function getDeductions(y, sqft, pct, miles, supplies) {
     return (Math.min(sqft, 300) * 5) + ((pct / 100) * 720) + (miles * mileageRates[y]) + supplies;
@@ -157,54 +157,42 @@
   }
 
   function renderTable() {
-  const tbody = document.querySelector("tbody");
-  const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
-  tbody.innerHTML = "";
-  let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
+    const tbody = document.querySelector("tbody");
+    const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
+    tbody.innerHTML = "";
+    let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
 
-  data.forEach((e, i) => {
-    tbody.innerHTML += `<tr>
-      <td>${i + 1}</td>
-      <td>$${e.income.toFixed(2)}</td>
-      <td>$${e.expenses.toFixed(2)}</td>
-      <td>$${e.deductions.toFixed(2)}</td>
-      <td>$${e.net.toFixed(2)}</td>
-      <td>$${e.se.toFixed(2)}</td>
-      <td>$${e.fed.toFixed(2)}</td>
-      <td>$${e.stateTax.toFixed(2)}</td>
-      <td>$${e.total.toFixed(2)}</td>
-      <td>$${e.paid.toFixed(2)}</td>
-      <td>$${e.owed.toFixed(2)}</td>
-      <td>
-        <button onclick="startEdit(${i})">✏️</button>
-      </td>
-      <td>
-        <button onclick="del(${i})">❌</button>
-      </td>
-    </tr>`;
+    data.forEach((e, i) => {
+      tbody.innerHTML += `<tr>
+        <td>${i + 1}</td>
+        <td>$${e.income.toFixed(2)}</td>
+        <td>$${e.expenses.toFixed(2)}</td>
+        <td>$${e.deductions.toFixed(2)}</td>
+        <td>$${e.net.toFixed(2)}</td>
+        <td>$${e.se.toFixed(2)}</td>
+        <td>$${e.fed.toFixed(2)}</td>
+        <td>$${e.stateTax.toFixed(2)}</td>
+        <td>$${e.total.toFixed(2)}</td>
+        <td>$${e.paid.toFixed(2)}</td>
+        <td>$${e.owed.toFixed(2)}</td>
+        <td><button onclick="del(${i})">❌</button></td>
+      </tr>`;
 
-    for (const k in totals) totals[k] += e[k];
-  });
-
-  document.getElementById("summaryBox").innerHTML = `
-    <strong>YTD Summary:</strong><br>
-    Gross: $${totals.income.toFixed(2)} |
-    Expenses: $${totals.expenses.toFixed(2)} |
-    Deductions: $${totals.deductions.toFixed(2)} |
-    Net: $${totals.net.toFixed(2)}<br>
-    SE: $${totals.se.toFixed(2)} |
-    Fed: $${totals.fed.toFixed(2)} |
-    State: $${totals.stateTax.toFixed(2)}<br>
-    Total Tax: $${totals.total.toFixed(2)} |
-    Paid: $${totals.paid.toFixed(2)} |
-    Owed: $${totals.owed.toFixed(2)}`;
-}
+      for (const k in totals) totals[k] += e[k];
+    });
 
     document.getElementById("summaryBox").innerHTML = `
-    <strong>YTD Summary:</strong><br>
-    Gross: $${totals.income.toFixed(2)} | Expenses: $${totals.expenses.toFixed(2)} | Deductions: $${totals.deductions.toFixed(2)}<br>
-    Net: $${totals.net.toFixed(2)} | SE: $${totals.se.toFixed(2)} | Fed: $${totals.fed.toFixed(2)} | State: $${totals.stateTax.toFixed(2)}<br>
-    Total Tax: $${totals.total.toFixed(2)} | Paid: $${totals.paid.toFixed(2)} | Owed: $${totals.owed.toFixed(2)}`;
+      <strong>YTD Summary:</strong><br>
+      Gross: $${totals.income.toFixed(2)} |
+      Expenses: $${totals.expenses.toFixed(2)} |
+      Deductions: $${totals.deductions.toFixed(2)} |
+      Net: $${totals.net.toFixed(2)}<br>
+      SE: $${totals.se.toFixed(2)} |
+      Fed: $${totals.fed.toFixed(2)} |
+      State: $${totals.stateTax.toFixed(2)}<br>
+      Total Tax: $${totals.total.toFixed(2)} |
+      Paid: $${totals.paid.toFixed(2)} |
+      Owed: $${totals.owed.toFixed(2)}`;
   }
 
   function del(i) {
@@ -215,43 +203,24 @@
   }
 
   function runAudit() {
-  const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
-  const audit = document.getElementById("auditBox");
-  let summary = "";
+    const data = JSON.parse(localStorage.getItem("tax_entries") || "[]");
+    const audit = document.getElementById("auditBox");
+    let summary = "";
 
-  data.forEach((e, i) => {
-    const issues = [];
+    data.forEach((e, i) => {
+      const issues = [];
+      if (e.deductions > e.income) issues.push("Deductions exceed income");
+      if (e.net < 0) issues.push("Net income is negative");
+      if (e.deductions > 20000) issues.push("Unusually high deductions");
+      if (e.deductions > 7200) issues.push("Total deductions may trigger audit");
 
-    if (e.deductions > e.income) issues.push("Deductions exceed income");
-    if (e.net < 0) issues.push("Net income is negative");
-    if (e.deductions > 20000) issues.push("Unusually high deductions");
+      if (issues.length) {
+        summary += `🚨 Entry ${i + 1}: ${issues.join(", ")}<br>`;
+      }
+    });
 
-    // NEW VALIDATION LOGIC
-    const year = document.getElementById("taxYear").value;
-    const mileageCap = 100000; // optional flag limit
-    const maxInternetPct = 100;
-    const maxHomeSqft = 300;
-
-    const internetInput = parseFloat(document.getElementById("internetPercent").value) || 0;
-    const homeSqftInput = parseFloat(document.getElementById("homeSqft").value) || 0;
-    const milesInput = parseFloat(document.getElementById("miles").value) || 0;
-
-    if (internetInput > maxInternetPct)
-      issues.push(`Internet usage exceeds 100% (${internetInput}%)`);
-    if (homeSqftInput > maxHomeSqft)
-      issues.push(`Home office exceeds IRS limit of 300 sqft (${homeSqftInput} sqft)`);
-    if (milesInput > mileageCap)
-      issues.push(`Miles driven unusually high (${milesInput} miles)`);
-
-    if (issues.length) {
-      summary += `🚨 Entry ${i + 1}: ${issues.join(", ")}<br>`;
-    }
-  });
-
-  audit.innerHTML = summary
-    ? `<strong>Audit Summary</strong><br>${summary}`
-    : "✅ All entries pass IRS audit checks.";
-}
+    audit.innerHTML = summary ? `<strong>Audit Summary</strong><br>${summary}` : "✅ All entries pass IRS audit checks.";
+  }
 
   function exportCSV() {
     const logs = JSON.parse(localStorage.getItem("tax_entries") || "[]");
@@ -266,16 +235,26 @@
   }
 
   function resetAll() {
-  if (confirm("Clear all entries?")) {
-    localStorage.removeItem("tax_entries");
-    document.querySelector("tbody").innerHTML = "";
-    document.getElementById("summaryBox").innerHTML = "";
-    document.getElementById("auditBox").innerHTML = "";
-    document.getElementById("irsAlert").style.display = "none";
+    if (confirm("Clear all entries?")) {
+      localStorage.removeItem("tax_entries");
+      document.querySelector("tbody").innerHTML = "";
+      document.getElementById("summaryBox").innerHTML = "";
+      document.getElementById("auditBox").innerHTML = "";
+      document.getElementById("irsAlert").style.display = "none";
+    }
   }
-}
 
-  window.onload = renderTable;
+  window.onload = function () {
+    const stateSelect = document.getElementById("state");
+    Object.keys(states).forEach(state => {
+      const opt = document.createElement("option");
+      opt.value = state;
+      opt.textContent = state;
+      stateSelect.appendChild(opt);
+    });
+    renderTable();
+  };
 </script>
 </body>
 </html>
+
