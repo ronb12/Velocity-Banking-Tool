@@ -171,12 +171,12 @@
     };
 
     window.onload = () => {
-      Object.keys(STATES).forEach(state => {
-        const option = document.createElement("option");
-        option.value = state;
-        option.textContent = state;
-        document.getElementById("state").appendChild(option);
-      });
+    Object.keys(STATES).forEach(state => {
+    const option = document.createElement("option");
+    option.value = state;
+    option.textContent = state;
+    document.getElementById("state").appendChild(option);
+  });
     };
 
     function addEntry() {
