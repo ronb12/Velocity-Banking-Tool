@@ -4,12 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>1099 Contractor Audit & Tax Tool</title>
+  <title>1099 IRS-Compliant Tax Calculator</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px;
-      border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    h1 { text-align: center; }
+    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px; border-radius: 10px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    h1, h2 { text-align: center; }
     label { font-weight: bold; display: block; margin-top: 15px; }
     input, select, button {
       width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 12px;
@@ -20,22 +20,202 @@
     table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background: #007bff; color: white; }
-    .summary { background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px; }
-    .alert { background: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; border-radius: 6px; display: none; }
-    .audit-modal { display: none; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); position: fixed; top: 10%; left: 50%; transform: translateX(-50%); width: 80%; max-width: 600px; z-index: 1000; }
-    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
-    .close-modal { background: red; color: white; border: none; float: right; padding: 4px 10px; cursor: pointer; border-radius: 5px; }
-    .back-btn { display: inline-block; margin-bottom: 20px; background: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; }
+    .summary, .alert, .audit-summary {
+      background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px;
+    }
+    .alert { background: #fff3cd; border-left: 5px solid #ffc107; display: none; }
+    .audit-summary { background: #ffefef; border-left: 5px solid red; display: none; }
+    .back { margin-bottom: 20px; display: inline-block; background: #007bff; color: white; padding: 10px 20px;
+      border-radius: 6px; text-decoration: none; }
   </style>
 </head>
 <body>
 <div class="container">
-  <a class="back-btn" href="index.html">🔙 Back to Dashboard</a>
-  <h1>🛡️ 1099 Contractor Audit & Tax Tool</h1>
+  <a class="back" href="index.html">🔙 Back to Dashboard</a>
+  <h1>1099 Contractor IRS-Compliant Calculator</h1>
 
-  <!-- Inputs and form fields would go here -->
+  <label>Tax Year</label>
+  <select id="taxYear" onchange="updateMileageRate()">
+    <option value="2025">2025</option>
+    <option value="2024" selected>2024</option>
+  </select>
 
-  <!-- Placeholder audit modal and scripts will follow -->
+  <label>Total Income ($)</label>
+  <input type="number" id="income" />
+
+  <label>Total Business Expenses ($)</label>
+  <input type="number" id="expenses" />
+
+  <label>Home Office Size (sq. ft.)</label>
+  <input type="number" id="homeSqft" />
+
+  <label>Internet Use for Business (%)</label>
+  <input type="number" id="internetPercent" />
+
+  <label>Miles Driven for Business</label>
+  <input type="number" id="miles" />
+
+  <label>Supply Costs ($)</label>
+  <input type="number" id="supplies" />
+
+  <label>State</label>
+  <select id="state"></select>
+
+  <label>Payments Made ($)</label>
+  <input type="number" id="payments" />
+
+  <div class="alert" id="irsAlert"></div>
+
+  <button onclick="addEntry()">+ Add Entry</button>
+  <button onclick="runAudit()">🛡️ Run IRS Audit Check</button>
+
+  <table id="entryTable">
+    <thead>
+      <tr>
+        <th>#</th><th>Income</th><th>Expenses</th><th>Deductions</th>
+        <th>Net</th><th>SE Tax</th><th>Federal</th><th>State</th>
+        <th>Total</th><th>Paid</th><th>Owed</th><th>❌</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="summary" id="summaryBox"></div>
+  <div class="audit-summary" id="auditBox"></div>
 </div>
+
+<script>
+  const STORAGE_KEY = "contractor_tax_log";
+  const mileageRates = { 2024: 0.67, 2025: 0.685 };
+  const taxBrackets = {
+    2024: income => income <= 11000 ? income * 0.1 :
+           income <= 44725 ? 1100 + (income - 11000) * 0.12 :
+           5147 + (income - 44725) * 0.22,
+    2025: income => income <= 11300 ? income * 0.1 :
+           income <= 45675 ? 1130 + (income - 11300) * 0.12 :
+           5211 + (income - 45675) * 0.22
+  };
+
+  const states = {
+    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3,
+    "Colorado": 4.4, "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75,
+    "Hawaii": 6.4, "Idaho": 5.8, "Illinois": 4.95, "Indiana": 3.15, "Iowa": 5,
+    "Kansas": 5.7, "Kentucky": 4.5, "Louisiana": 4.25, "Maine": 5.8, "Maryland": 4.75,
+    "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 5.35, "Mississippi": 5,
+    "Missouri": 4.95, "Montana": 6.75, "Nebraska": 5.84, "Nevada": 0, "New Hampshire": 0,
+    "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85, "North Carolina": 4.99,
+    "North Dakota": 2.04, "Ohio": 3.5, "Oklahoma": 4.75, "Oregon": 6.75,
+    "Pennsylvania": 3.07, "Rhode Island": 3.75, "South Carolina": 3.15,
+    "South Dakota": 0, "Tennessee": 0, "Texas": 0, "Utah": 4.65, "Vermont": 6.6,
+    "Virginia": 5.75, "Washington": 0, "West Virginia": 6.5, "Wisconsin": 5.3,
+    "Wyoming": 0, "District of Columbia": 8.5
+  };
+
+  Object.keys(states).forEach(state => {
+    const opt = document.createElement("option");
+    opt.value = state;
+    opt.text = state;
+    document.getElementById("state").appendChild(opt);
+  });
+
+  function getDeductions(year, sqft, internetPct, miles, supplies) {
+    const homeOffice = Math.min(sqft, 300) * 5;
+    const internet = (internetPct / 100) * 720;
+    const mileage = miles * mileageRates[year];
+    return homeOffice + internet + mileage + supplies;
+  }
+
+  function addEntry() {
+    const year = document.getElementById("taxYear").value;
+    const income = +document.getElementById("income").value || 0;
+    const expenses = +document.getElementById("expenses").value || 0;
+    const sqft = +document.getElementById("homeSqft").value || 0;
+    const internet = +document.getElementById("internetPercent").value || 0;
+    const miles = +document.getElementById("miles").value || 0;
+    const supplies = +document.getElementById("supplies").value || 0;
+    const paid = +document.getElementById("payments").value || 0;
+    const state = document.getElementById("state").value;
+
+    const deductions = getDeductions(year, sqft, internet, miles, supplies);
+    const net = income - expenses - deductions;
+    const se = net * 0.153;
+    const fed = taxBrackets[year](net);
+    const stateTax = net * (states[state] / 100);
+    const total = se + fed + stateTax;
+    const owed = total - paid;
+
+    const alertBox = document.getElementById("irsAlert");
+    alertBox.style.display = net > 400 ? "none" : "block";
+    alertBox.innerHTML = "⚠️ IRS Alert: If net income is over $400/year, you're required to file taxes and pay SE tax.";
+
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    logs.push({ income, expenses, deductions, net, se, fed, stateTax, total, paid, owed });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+    renderTable();
+  }
+
+  function renderTable() {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const tbody = document.querySelector("tbody");
+    tbody.innerHTML = "";
+    let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
+
+    logs.forEach((e, i) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${i+1}</td><td>$${e.income.toFixed(2)}</td><td>$${e.expenses.toFixed(2)}</td>
+        <td>$${e.deductions.toFixed(2)}</td><td>$${e.net.toFixed(2)}</td>
+        <td>$${e.se.toFixed(2)}</td><td>$${e.fed.toFixed(2)}</td><td>$${e.stateTax.toFixed(2)}</td>
+        <td>$${e.total.toFixed(2)}</td><td>$${e.paid.toFixed(2)}</td><td><strong>$${e.owed.toFixed(2)}</strong></td>
+        <td><button onclick="deleteEntry(${i})">❌</button></td>`;
+      tbody.appendChild(row);
+      for (const k in totals) totals[k] += e[k];
+    });
+
+    document.getElementById("summaryBox").innerHTML = `
+      <strong>Totals:</strong><br>
+      Gross: $${totals.income.toFixed(2)} |
+      Expenses: $${totals.expenses.toFixed(2)} |
+      Deductions: $${totals.deductions.toFixed(2)} |
+      Net: $${totals.net.toFixed(2)} |
+      Owed: $${totals.owed.toFixed(2)}
+    `;
+  }
+
+  function deleteEntry(i) {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    logs.splice(i, 1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+    renderTable();
+  }
+
+  function runAudit() {
+    const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const box = document.getElementById("auditBox");
+    if (!logs.length) return box.style.display = "none";
+    let issues = [];
+
+    logs.forEach((e, i) => {
+      if (e.deductions > e.income) issues.push(`❌ Entry #${i+1}: Deductions exceed total income.`);
+      if (e.internetPercent > 100) issues.push(`❌ Entry #${i+1}: Internet use can't exceed 100%.`);
+      if (e.net <= 0) issues.push(`⚠️ Entry #${i+1}: Net income is zero or negative. Double-check expenses or income.`);
+    });
+
+    box.innerHTML = issues.length
+      ? `<strong>Audit Warnings:</strong><ul><li>${issues.join("</li><li>")}</li></ul>`
+      : `✅ All entries pass IRS audit checks.`;
+    box.style.display = "block";
+  }
+
+  window.onload = () => {
+    renderTable();
+    updateMileageRate();
+  };
+
+  function updateMileageRate() {
+    const year = document.getElementById("taxYear").value;
+    console.log(`IRS mileage rate: $${mileageRates[year]}/mile`);
+  }
+</script>
 </body>
 </html>
