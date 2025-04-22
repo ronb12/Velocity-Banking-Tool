@@ -6,8 +6,7 @@
   <title>1099 IRS-Compliant Tax Calculator</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px;
-      border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
     h1 { text-align: center; }
     label { font-weight: bold; display: block; margin-top: 15px; }
     input, select, button {
@@ -22,12 +21,9 @@
     .summary, .audit-summary {
       background: #eef9ff; padding: 15px; border-radius: 8px; margin-top: 20px;
     }
-    .alert { background: #fff3cd; border-left: 5px solid #ffc107;
-      padding: 10px; margin-top: 10px; border-radius: 6px; display: none; }
+    .alert { background: #fff3cd; border-left: 5px solid #ffc107; padding: 10px; margin-top: 10px; border-radius: 6px; display: none; }
     .tooltip { font-size: 0.85em; color: #555; margin-top: -10px; }
-    .back { display: inline-block; margin-bottom: 20px;
-      padding: 10px 15px; background: #007bff; color: white;
-      text-decoration: none; border-radius: 6px; }
+    .back { display: inline-block; margin-bottom: 20px; padding: 10px 15px; background: #007bff; color: white; text-decoration: none; border-radius: 6px; }
   </style>
 </head>
 <body>
@@ -37,8 +33,8 @@
 
   <label>Tax Year</label>
   <select id="taxYear">
-    <option value="2025">2025</option>
-    <option value="2024" selected>2024</option>
+    <option value="2025" selected>2025</option>
+    <option value="2024">2024</option>
   </select>
 
   <label>Total Income ($)</label>
@@ -93,26 +89,22 @@
 
 <script>
   const STORAGE_KEY = "contractor_tax_log";
-  const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw12h4x2TnCZCZjEjkvYwCUGmyvFqSeABZgrEN50g9z-m26mtdl2oIVyvxd-VQPHp94Hw/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw12h4x2TnCZCZjEjkvYwCUGmyvFqSeABZgrEN50g9z-m26mtdl2oIVyvxd-VQPHp94Hw/exec";
+
   const mileageRates = { 2024: 0.67, 2025: 0.685 };
   const taxBrackets = {
-    2024: income => income <= 11000 ? income * 0.1 :
-           income <= 44725 ? 1100 + (income - 11000) * 0.12 :
-           5147 + (income - 44725) * 0.22,
-    2025: income => income <= 11300 ? income * 0.1 :
-           income <= 45675 ? 1130 + (income - 11300) * 0.12 :
-           5211 + (income - 45675) * 0.22
+    2024: i => i <= 11000 ? i * 0.1 : i <= 44725 ? 1100 + (i - 11000) * 0.12 : 5147 + (i - 44725) * 0.22,
+    2025: i => i <= 11300 ? i * 0.1 : i <= 45675 ? 1130 + (i - 11300) * 0.12 : 5211 + (i - 45675) * 0.22
   };
   const states = {
-    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3,
-    "Colorado": 4.4, "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75,
-    "Hawaii": 6.4, "Idaho": 5.8, "Illinois": 4.95, "Indiana": 3.15, "Iowa": 5,
-    "Kansas": 5.7, "Kentucky": 4.5, "Louisiana": 4.25, "Maine": 5.8, "Maryland": 4.75,
-    "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 5.35, "Mississippi": 5,
-    "Missouri": 4.95, "Montana": 6.75, "Nebraska": 5.84, "Nevada": 0, "New Hampshire": 0,
-    "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85, "North Carolina": 4.99,
-    "North Dakota": 2.04, "Ohio": 3.5, "Oklahoma": 4.75, "Oregon": 6.75,
-    "Pennsylvania": 3.07, "Rhode Island": 3.75, "South Carolina": 3.15,
+    "Alabama": 5, "Alaska": 0, "Arizona": 2.5, "Arkansas": 4.9, "California": 9.3, "Colorado": 4.4,
+    "Connecticut": 5, "Delaware": 5.55, "Florida": 0, "Georgia": 5.75, "Hawaii": 6.4, "Idaho": 5.8,
+    "Illinois": 4.95, "Indiana": 3.15, "Iowa": 5, "Kansas": 5.7, "Kentucky": 4.5, "Louisiana": 4.25,
+    "Maine": 5.8, "Maryland": 4.75, "Massachusetts": 5, "Michigan": 4.25, "Minnesota": 5.35,
+    "Mississippi": 5, "Missouri": 4.95, "Montana": 6.75, "Nebraska": 5.84, "Nevada": 0,
+    "New Hampshire": 0, "New Jersey": 5.525, "New Mexico": 4.9, "New York": 6.85,
+    "North Carolina": 4.99, "North Dakota": 2.04, "Ohio": 3.5, "Oklahoma": 4.75,
+    "Oregon": 6.75, "Pennsylvania": 3.07, "Rhode Island": 3.75, "South Carolina": 3.15,
     "South Dakota": 0, "Tennessee": 0, "Texas": 0, "Utah": 4.65, "Vermont": 6.6,
     "Virginia": 5.75, "Washington": 0, "West Virginia": 6.5, "Wisconsin": 5.3,
     "Wyoming": 0, "District of Columbia": 8.5
@@ -153,39 +145,43 @@
 
     const alertBox = document.getElementById("irsAlert");
     alertBox.style.display = (net > 400) ? "none" : "block";
-    alertBox.innerHTML = "⚠️ IRS Alert: Net self-employment income under $400 is not taxed, but must still be tracked.";
+    alertBox.innerHTML = "⚠️ IRS Alert: Net self-employment income under $400 is not taxed.";
 
-    const entry = { income, expenses, deductions, net, se, fed, stateTax, total, paid, owed };
+    const entry = { income, expenses, deductions, net, se, fed, state: stateTax, total, paid, owed };
     const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     logs.push(entry);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-
-    // 🔁 Sync to Google Sheet
-    fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify(entry),
-      headers: { "Content-Type": "application/json" }
-    });
-
     renderTable();
+    syncToSheet(entry);
+  }
+
+  function syncToSheet(entry) {
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry)
+    })
+    .then(res => res.text())
+    .then(msg => console.log("✅ Synced:", msg))
+    .catch(err => console.error("❌ Sync failed:", err));
   }
 
   function renderTable() {
     const tbody = document.querySelector("tbody");
     const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     tbody.innerHTML = "";
-    let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, stateTax: 0, total: 0, paid: 0, owed: 0 };
+    let totals = { income: 0, expenses: 0, deductions: 0, net: 0, se: 0, fed: 0, state: 0, total: 0, paid: 0, owed: 0 };
 
     logs.forEach((e, i) => {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${i+1}</td><td>$${e.income.toFixed(2)}</td><td>$${e.expenses.toFixed(2)}</td>
         <td>$${e.deductions.toFixed(2)}</td><td>$${e.net.toFixed(2)}</td><td>$${e.se.toFixed(2)}</td>
-        <td>$${e.fed.toFixed(2)}</td><td>$${e.stateTax.toFixed(2)}</td>
+        <td>$${e.fed.toFixed(2)}</td><td>$${e.state.toFixed(2)}</td>
         <td>$${e.total.toFixed(2)}</td><td>$${e.paid.toFixed(2)}</td><td><strong>$${e.owed.toFixed(2)}</strong></td>
         <td><button onclick="deleteEntry(${i})">❌</button></td>`;
       tbody.appendChild(row);
-      Object.keys(totals).forEach(k => totals[k] += e[k]);
+      for (let k in totals) totals[k] += e[k];
     });
 
     document.getElementById("summaryBox").innerHTML = `
@@ -207,7 +203,7 @@
     const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     let csv = "Income,Expenses,Deductions,Net,SE,Federal,State,Total,Paid,Owed\n";
     logs.forEach(e => {
-      csv += `${e.income},${e.expenses},${e.deductions},${e.net},${e.se},${e.fed},${e.stateTax},${e.total},${e.paid},${e.owed}\n`;
+      csv += `${e.income},${e.expenses},${e.deductions},${e.net},${e.se},${e.fed},${e.state},${e.total},${e.paid},${e.owed}\n`;
     });
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a");
@@ -226,8 +222,7 @@
       if (e.net < 0) issues.push("Net income is negative");
       if (e.deductions > e.income) issues.push("Deductions exceed income");
       if (e.deductions > 20000) issues.push("Deductions unusually high");
-      if (issues.length)
-        msg += `🚨 Entry ${i+1}: ${issues.join(", ")}<br>`;
+      if (issues.length) msg += `🚨 Entry ${i+1}: ${issues.join(", ")}<br>`;
     });
     auditBox.innerHTML = msg ? `<strong>Audit Summary</strong><br>${msg}` : "✅ All entries pass IRS audit checks.";
   }
