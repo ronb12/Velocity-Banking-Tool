@@ -151,43 +151,76 @@
   </div>
 
   <script>
-    const challenges = [
-      {
-        id: '5000_biweekly',
-        title: '$5,000 Biweekly Challenge',
-        pdf: 'pdfs/5000_biweekly.pdf',
-        items: Array.from({ length: 26 }, (_, i) => ({
-          label: `Week ${i+1} - Save $${(i+1)*75}`,
-          amount: (i+1)*75
-        }))
-      },
-      {
-        id: '52_week_1378',
-        title: '$1,378 52-Week Challenge',
-        pdf: 'pdfs/52_week_1378.pdf',
-        items: Array.from({ length: 52 }, (_, i) => ({
-          label: `Week ${i+1} - Save $${i+1}`,
-          amount: i+1
-        }))
-      },
-      {
-        id: 'emergency_fund_3month',
-        title: 'Emergency Fund (3 Months)',
-        pdf: 'pdfs/emergency_fund.pdf',
-        items: [
-          { label: 'Month 1 - Save $1000', amount: 1000 },
-          { label: 'Month 2 - Save $1000', amount: 1000 },
-          { label: 'Month 3 - Save $1000', amount: 1000 }
-        ]
-      },
-      {
-        id: 'no_spend_30day',
-        title: '30-Day No Spend',
-        pdf: 'pdfs/no_spend_30day.pdf',
-        items: Array.from({ length: 30 }, (_, i) => ({
-          label: `Day ${i+1} - No spending`, amount: 5
-        }))
-      }
+   const challenges = [
+  {
+    id: '5000_biweekly',
+    title: '$5,000 Biweekly Challenge',
+    pdf: 'pdfs/5000_biweekly.pdf',
+    items: Array.from({ length: 26 }, (_, i) => ({
+      label: `Week ${i+1} - Save $${(i+1)*75}`,
+      amount: (i+1)*75
+    }))
+  },
+  {
+    id: '52_week_1378',
+    title: '$1,378 52-Week Challenge',
+    pdf: 'pdfs/52_week_1378.pdf',
+    items: Array.from({ length: 52 }, (_, i) => ({
+      label: `Week ${i+1} - Save $${i+1}`,
+      amount: i+1
+    }))
+  },
+  {
+    id: 'emergency_fund_3month',
+    title: 'Emergency Fund (3 Months)',
+    pdf: 'pdfs/emergency_fund.pdf',
+    items: [
+      { label: 'Month 1 - Save $1000', amount: 1000 },
+      { label: 'Month 2 - Save $1000', amount: 1000 },
+      { label: 'Month 3 - Save $1000', amount: 1000 }
+    ]
+  },
+  {
+    id: 'no_spend_30day',
+    title: '30-Day No Spend',
+    pdf: 'pdfs/no_spend_30day.pdf',
+    items: Array.from({ length: 30 }, (_, i) => ({
+      label: `Day ${i+1} - No spending`, amount: 5
+    }))
+  },
+  {
+    id: 'vacation_12month',
+    title: '🏝️ 12-Month Vacation Fund',
+    pdf: 'pdfs/vacation_12month.pdf',
+    items: Array.from({ length: 12 }, (_, i) => ({
+      label: `Month ${i+1} - Save $100`, amount: 100
+    }))
+  },
+  {
+    id: 'holiday_12week',
+    title: '🎁 12-Week Holiday Savings',
+    pdf: 'pdfs/holiday_12week.pdf',
+    items: Array.from({ length: 12 }, (_, i) => ({
+      label: `Week ${i+1} - Save $50`, amount: 50
+    }))
+  },
+  {
+    id: 'weekly_10up',
+    title: '📈 $10 Weekly Ramp-Up',
+    pdf: 'pdfs/weekly_10up.pdf',
+    items: Array.from({ length: 12 }, (_, i) => ({
+      label: `Week ${i+1} - Save $${(i+1)*10}`, amount: (i+1)*10
+    }))
+  },
+  {
+    id: 'random_dice',
+    title: '🎲 Dice Roll Challenge (30 Days)',
+    pdf: 'pdfs/random_dice.pdf',
+    items: Array.from({ length: 30 }, (_, i) => ({
+      label: `Day ${i+1} - Roll & Save $1–$6`, amount: Math.floor(Math.random() * 6) + 1
+    }))
+  }
+];
     ];
 
     function toggleTheme() {
