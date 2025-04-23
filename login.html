@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,6 +15,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
 
     .login-box {
@@ -21,7 +23,7 @@
       padding: 30px;
       border-radius: 10px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-      width: 300px;
+      width: 320px;
       text-align: center;
     }
 
@@ -39,6 +41,7 @@
       border-radius: 6px;
       cursor: pointer;
       width: 100%;
+      margin-bottom: 10px;
     }
 
     button:hover {
@@ -50,6 +53,18 @@
       font-size: 14px;
       margin-top: 10px;
     }
+
+    a.forgot {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    a.forgot:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -58,8 +73,8 @@
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
     <button onclick="login()">Login with Email</button>
-    <hr>
     <button onclick="googleLogin()">Login with Google</button>
+    <a class="forgot" href="reset.html">Forgot Password?</a>
     <p class="error" id="error"></p>
   </div>
 
@@ -102,7 +117,9 @@
 
     window.addEventListener('load', () => {
       auth.onAuthStateChanged(user => {
-        if (user) window.location.href = "index.html";
+        if (user) {
+          window.location.href = "index.html";
+        }
       });
     });
   </script>
