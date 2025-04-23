@@ -189,35 +189,7 @@ function loadDebts() {
   data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment));
   calculateSummary();
 }
-
-function drawChart(labels, data) {
-  const ctx = document.getElementById("debtChart").getContext("2d");
-
-  // Only destroy the chart if it's a valid Chart instance
-  if (window.debtChart && typeof window.debtChart.destroy === "function") {
-    window.debtChart.destroy();
-  }
-
-  window.debtChart = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Debt Balance ($)",
-        data,
-        backgroundColor: "rgba(54, 162, 235, 0.7)"
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, ticks: { callback: v => "$" + v } }
-      }
-    }
-  });
-}
-
+  
 function amortizeRow(btn) {
   const row = btn.closest("tr");
   const inputs = row.querySelectorAll("input");
