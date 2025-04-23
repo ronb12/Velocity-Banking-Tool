@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bradley's Budget Tracker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #007bff;
+    }
+    .month-selector {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .month-selector select {
+      padding: 10px;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    input[type='text'], input[type='number'] {
+      width: 100%;
+      padding: 6px;
+      box-sizing: border-box;
+    }
+    .actions {
+      margin-top: 10px;
+      text-align: right;
+    }
+    .actions button {
+      padding: 10px 15px;
+      margin-left: 5px;
+      border: none;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .actions button:hover {
+      background: #0056b3;
+    }
+    .totals {
+      margin-top: 20px;
+      text-align: right;
+    }
+    .totals div {
+      font-size: 18px;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Bradley's Budget Tracker</h1>
+
+  <div class="month-selector">
+    <label for="month">Select Month: </label>
+    <select id="month">
+      <option>January 2025</option>
+      <option>February 2025</option>
+      <option>March 2025</option>
+      <option>April 2025</option>
+      <option>May 2025</option>
+      <option>June 2025</option>
+      <option>July 2025</option>
+      <option>August 2025</option>
+      <option>September 2025</option>
+      <option>October 2025</option>
+      <option>November 2025</option>
+      <option>December 2025</option>
+    </select>
+  </div>
+
+  <table id="budgetTable">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Budgeted ($)</th>
+        <th>Spent ($)</th>
+        <th>Remaining ($)</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="text" value="Housing"></td>
+        <td><input type="number" value="1200"></td>
+        <td><input type="number" value="1000"></td>
+        <td>200</td>
+        <td><input type="text" placeholder="e.g., Rent or Mortgage"></td>
+      </tr>
+      <tr>
+        <td><input type="text" value="Transportation"></td>
+        <td><input type="number" value="300"></td>
+        <td><input type="number" value="150"></td>
+        <td>150</td>
+        <td><input type="text" placeholder="e.g., Gas, Uber"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="actions">
+    <button onclick="addRow()">➕ Add Row</button>
+    <button onclick="calculateTotals()">🧮 Recalculate</button>
+  </div>
+
+  <div class="totals">
+    <div><strong>Total Budgeted:</strong> $<span id="totalBudget">0</span></div>
+    <div><strong>Total Spent:</strong> $<span id="totalSpent">0</span></div>
+    <div><strong>Total Remaining:</strong> $<span id="totalRemaining">0</span></div>
+  </div>
+
+  <script>
+    function addRow() {
+      const table = document.getElementById("budgetTable").getElementsByTagName("tbody")[0];
+      const newRow = table.insertRow();
+      newRow.innerHTML = \`
+        <td><input type="text" placeholder="Category"></td>
+        <td><input type="number" value="0"></td>
+        <td><input type="number" value="0"></td>
+        <td>0</td>
+        <td><input type="text" placeholder="Notes"></td>
+      \`;
+    }
+
+    function calculateTotals() {
+      let totalBudget = 0;
+      let totalSpent = 0;
+      const rows = document.querySelectorAll("#budgetTable tbody tr");
+      rows.forEach(row => {
+        const budget = parseFloat(row.cells[1].querySelector("input").value) || 0;
+        const spent = parseFloat(row.cells[2].querySelector("input").value) || 0;
+        const remaining = budget - spent;
+        row.cells[3].innerText = remaining.toFixed(2);
+        totalBudget += budget;
+        totalSpent += spent;
+      });
+      document.getElementById("totalBudget").innerText = totalBudget.toFixed(2);
+      document.getElementById("totalSpent").innerText = totalSpent.toFixed(2);
+      document.getElementById("totalRemaining").innerText = (totalBudget - totalSpent).toFixed(2);
+    }
+
+    calculateTotals();
+  </script>
+</body>
+</html>
