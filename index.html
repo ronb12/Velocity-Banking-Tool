@@ -116,21 +116,19 @@
     });
   });
 
-<!-- ✅ Script block starts here -->
-<script>
-  function logout() {
-    firebase.auth().signOut()
-      .then(() => {
-        console.log("User signed out.");
-        // Delay a bit to ensure auth state change finishes
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 500);
-      })
-      .catch((error) => {
-        console.error("Logout error:", error.message);
-        alert("Logout failed: " + error.message);
-      });
+function logout() {
+  firebase.auth().signOut()
+    .then(() => {
+      console.log("User signed out.");
+      // Delay a bit to ensure auth state change finishes
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 500);
+    })
+    .catch((error) => {
+      console.error("Logout error:", error.message);
+      alert("Logout failed: " + error.message);
+    });
   }
 </script>
 
