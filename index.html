@@ -116,20 +116,25 @@
     });
   });
 
+ <!-- Logout Button -->
+<button onclick="logout()" style="position: absolute; top: 20px; right: 20px;">🔒 Logout</button>
+
+<!-- ✅ Script block starts here -->
+<script>
   function logout() {
-  firebase.auth().signOut()
-    .then(() => {
-      console.log("User signed out.");
-      // Delay a bit to ensure auth state change finishes
-      setTimeout(() => {
-        window.location.href = "login.html";
-      }, 500);
-    })
-    .catch((error) => {
-      console.error("Logout error:", error.message);
-      alert("Logout failed: " + error.message);
-    });
-}
+    firebase.auth().signOut()
+      .then(() => {
+        console.log("User signed out.");
+        // Delay a bit to ensure auth state change finishes
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 500);
+      })
+      .catch((error) => {
+        console.error("Logout error:", error.message);
+        alert("Logout failed: " + error.message);
+      });
+  }
 </script>
 
 </body>
