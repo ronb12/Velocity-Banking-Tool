@@ -192,8 +192,9 @@ function loadDebts() {
 
 function drawChart(labels, data) {
   const ctx = document.getElementById("debtChart").getContext("2d");
-  
-  if (window.debtChart instanceof Chart) {
+
+  // Only destroy the chart if it's a valid Chart instance
+  if (window.debtChart && typeof window.debtChart.destroy === "function") {
     window.debtChart.destroy();
   }
 
@@ -213,6 +214,9 @@ function drawChart(labels, data) {
       scales: {
         y: { beginAtZero: true, ticks: { callback: v => "$" + v } }
       }
+    }
+  });
+}
     }
   });
 }
