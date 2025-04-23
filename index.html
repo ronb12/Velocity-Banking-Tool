@@ -97,5 +97,5 @@
     Created by Ronell Bradley • <a href="https://github.com/ronb12" target="_blank">GitHub</a>
   </footer>
 
-</body>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>n<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>n<script>nconst firebaseConfig = {n  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",n  authDomain: "mobile-debt-tracker.firebaseapp.com",n  projectId: "mobile-debt-tracker",n  storageBucket: "mobile-debt-tracker.firebasestorage.app",n  messagingSenderId: "153601029964",n  appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",n  measurementId: "G-ZKXW42Y7YZ"n};nfirebase.initializeApp(firebaseConfig);nconst auth = firebase.auth();nauth.onAuthStateChanged(user => {n  if (!user) window.location.href = "login.html";n});n</script></body>
 </html>
