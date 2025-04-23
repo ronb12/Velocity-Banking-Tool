@@ -192,7 +192,11 @@ function loadDebts() {
 
 function drawChart(labels, data) {
   const ctx = document.getElementById("debtChart").getContext("2d");
-  if (window.debtChart) window.debtChart.destroy();
+  
+  if (window.debtChart instanceof Chart) {
+    window.debtChart.destroy();
+  }
+
   window.debtChart = new Chart(ctx, {
     type: "bar",
     data: {
@@ -209,6 +213,9 @@ function drawChart(labels, data) {
       scales: {
         y: { beginAtZero: true, ticks: { callback: v => "$" + v } }
       }
+    }
+  });
+}
     }
   });
 }
