@@ -75,7 +75,7 @@
     Created by Ronell Bradley • <a href="https://github.com/ronb12" target="_blank">GitHub</a>
   </footer>
 
-  <!-- ✅ Single Firebase setup -->
+  <!-- Firebase Config -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script>
@@ -90,16 +90,17 @@
     };
 
     firebase.initializeApp(firebaseConfig);
+
     const auth = firebase.auth();
 
-    // ✅ Wait until window is fully loaded before checking auth
-    window.addEventListener("load", () => {
+    // 👇 Ensure DOM + Firebase are fully loaded before checking auth
+    document.addEventListener("DOMContentLoaded", () => {
       auth.onAuthStateChanged(user => {
         if (!user) {
-          console.log("No user detected. Redirecting...");
+          console.log("No user. Redirecting to login.");
           window.location.href = "login.html";
         } else {
-          console.log("User signed in:", user.email);
+          console.log("User authenticated:", user.email);
         }
       });
     });
