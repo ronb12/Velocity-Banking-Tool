@@ -91,21 +91,40 @@
       measurementId: "G-ZKXW42Y7YZ"
     };
 
-    firebase.initializeApp(firebaseConfig);
+ <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+    authDomain: "mobile-debt-tracker.firebaseapp.com",
+    projectId: "mobile-debt-tracker",
+    storageBucket: "mobile-debt-tracker.firebasestorage.app",
+    messagingSenderId: "153601029964",
+    appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
+    measurementId: "G-ZKXW42Y7YZ"
+  };
 
-    const auth = firebase.auth();
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-    // 👇 Ensure DOM + Firebase are fully loaded before checking auth
-    document.addEventListener("DOMContentLoaded", () => {
-      auth.onAuthStateChanged(user => {
-        if (!user) {
-          console.log("No user. Redirecting to login.");
-          window.location.href = "login.html";
-        } else {
-          console.log("User authenticated:", user.email);
-        }
-      });
+  document.addEventListener("DOMContentLoaded", () => {
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        console.log("No user. Redirecting to login.");
+        window.location.href = "login.html";
+      } else {
+        console.log("User authenticated:", user.email);
+      }
     });
-  </script>
+  });
+
+  function logout() {
+    firebase.auth().signOut().then(() => {
+      console.log("User signed out.");
+      window.location.href = "login.html";
+    }).catch((error) => {
+      console.error("Logout error:", error.message);
+    });
+  }
+</script>
+
 </body>
 </html>
