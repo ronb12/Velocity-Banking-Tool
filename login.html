@@ -64,15 +64,15 @@
   </div>
 
   <script>
-   const firebaseConfig = {
-  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-  authDomain: "mobile-debt-tracker.firebaseapp.com",
-  projectId: "mobile-debt-tracker",
-  storageBucket: "mobile-debt-tracker.firebasestorage.app",
-  messagingSenderId: "153601029964",
-  appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
-  measurementId: "G-ZKXW42Y7YZ"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker",
+      storageBucket: "mobile-debt-tracker.firebasestorage.app",
+      messagingSenderId: "153601029964",
+      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
+      measurementId: "G-ZKXW42Y7YZ"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -100,8 +100,11 @@
         });
     }
 
-    auth.onAuthStateChanged(user => {
-      if (user) window.location.href = "index.html";
+    // ✅ Fixed redirect logic
+    window.addEventListener('load', () => {
+      auth.onAuthStateChanged(user => {
+        if (user) window.location.href = "index.html";
+      });
     });
   </script>
 </body>
