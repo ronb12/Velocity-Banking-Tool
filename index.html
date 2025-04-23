@@ -76,22 +76,10 @@
   <footer>
     Created by Ronell Bradley • <a href="https://github.com/ronb12" target="_blank">GitHub</a>
   </footer>
-
-  <!-- Firebase Config -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.firebasestorage.app",
-      messagingSenderId: "153601029964",
-      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
-      measurementId: "G-ZKXW42Y7YZ"
-    };
-
- <script>
+<!-- Firebase Config + Auth Check -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
     authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -115,6 +103,17 @@
       }
     });
   });
+
+  function logout() {
+    sessionStorage.setItem("justLoggedOut", "true");
+    auth.signOut().then(() => {
+      console.log("User signed out.");
+      window.location.href = "login.html";
+    }).catch(error => {
+      console.error("Logout error:", error.message);
+    });
+  }
+</script>
 
   function logout() {
   firebase.auth().signOut()
