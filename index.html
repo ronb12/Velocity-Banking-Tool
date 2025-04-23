@@ -117,13 +117,19 @@
   });
 
   function logout() {
-    firebase.auth().signOut().then(() => {
+  firebase.auth().signOut()
+    .then(() => {
       console.log("User signed out.");
-      window.location.href = "login.html";
-    }).catch((error) => {
+      // Delay a bit to ensure auth state change finishes
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 500);
+    })
+    .catch((error) => {
       console.error("Logout error:", error.message);
+      alert("Logout failed: " + error.message);
     });
-  }
+}
 </script>
 
 </body>
