@@ -120,17 +120,16 @@ function logout() {
   firebase.auth().signOut()
     .then(() => {
       console.log("User signed out.");
-      // Delay a bit to ensure auth state change finishes
+      // Wait a second to avoid race condition with auth state
       setTimeout(() => {
-        window.location.href = "login.html";
-      }, 500);
+        window.location.replace("login.html");
+      }, 1000);
     })
     .catch((error) => {
       console.error("Logout error:", error.message);
       alert("Logout failed: " + error.message);
     });
-  }
-</script>
+}
 
 </body>
 </html>
