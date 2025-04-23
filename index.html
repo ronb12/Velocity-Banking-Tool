@@ -87,15 +87,15 @@
 
  <p id="visit-count">👥 Visitors to this page: Loading...</p>
 <script>
-  fetch('https://countapi-js.vercel.app/hit/ronb12-financial-tools/visits')
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById('visit-count').textContent = `👥 Visitors to this page: ${data.value}`;
-    })
-    .catch(() => {
-      document.getElementById('visit-count').textContent = "👥 Visitors to this page: Unavailable";
-    });
-</script>
+    fetch('https://countapi-js.vercel.app/hit/ronb12-financial-tools/visits')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('visit-count').textContent = `👥 Visitors to this page: ${data.value}`;
+      })
+      .catch(() => {
+        document.getElementById('visit-count').textContent = "👥 Visitors to this page: Unavailable";
+      });
+  </script>
 
 </body>
 </html>
