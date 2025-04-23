@@ -111,7 +111,8 @@
 <body>
 
   <div class="top-nav">
-    <a href="#">📊 Mobile Debt Tracker</a>
+    <a href="index.html">⬅️ Back to Dashboard</a>
+    <h1>📊 Mobile Debt Tracker</h1>
   </div>
 
   <div id="debts" class="tab-content active">
@@ -161,10 +162,10 @@
     function addDebt(name = '', balance = '', rate = '', payment = '', due = '') {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td><input value="${name}" onchange="update()" /></td>
-        <td><input type="number" value="${balance}" onchange="update()" /></td>
-        <td><input type="number" value="${rate}" onchange="update()" /></td>
-        <td><input type="number" value="${payment}" onchange="update()" /></td>
+        <td><input placeholder="Name" value="${name}" onchange="update()" /></td>
+        <td><input type="number" placeholder="Balance" value="${balance}" onchange="update()" /></td>
+        <td><input type="number" placeholder="Rate %" value="${rate}" onchange="update()" /></td>
+        <td><input type="number" placeholder="Min Pay" value="${payment}" onchange="update()" /></td>
         <td><input type="date" value="${due}" onchange="update()" /></td>
         <td><button onclick="this.closest('tr').remove(); update();">❌</button></td>
       `;
