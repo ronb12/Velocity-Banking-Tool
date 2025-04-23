@@ -1,11 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Net Worth Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🧮 Net Worth Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      color: #007bff;
+    }
+    .section {
+      background: #fff;
+      padding: 20px;
+      margin: 15px auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      max-width: 500px;
+    }
+    input {
+      padding: 8px;
+      width: 70%;
+      margin: 5px;
+    }
+    button {
+      padding: 8px 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #e9ecef;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+    .result {
+      font-size: 20px;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
+
   <h1>🧮 Net Worth Tracker</h1>
-  <p>Calculate and track your net worth here.</p>
+
+  <div class="section">
+    <h3>💰 Assets</h3>
+    <input type="text" id="assetName" placeholder="Asset name" />
+    <input type="number" id="assetValue" placeholder="Value ($)" />
+    <button onclick="addAsset()">Add Asset</button>
+    <ul id="assetsList"></ul>
+  </div>
+
+  <div class="section">
+    <h3>💳 Liabilities</h3>
+    <input type="text" id="liabilityName" placeholder="Liability name" />
+    <input type="number" id="liabilityValue" placeholder="Amount owed ($)" />
+    <button onclick="addLiability()">Add Liability</button>
+    <ul id="liabilitiesList"></ul>
+  </div>
+
+  <div class="result" id="netWorthDisplay">Net Worth: $0</div>
+
+  <script>
+    let assets = JSON.parse(localStorage.getItem("assets")) || [];
+    let liabilities = JSON.parse(localStorage.getItem("liabilities")) || [];
+
+    function addAsset() {
+      const name = document.getElementById("assetName").value;
+      const value = parseFloat(document.getElementById("assetValue").value);
+      if (name && value) {
+        assets.push({ name, value });
+        localStorage.setItem("assets", JSON.stringify(assets));
+        renderLists();
+      }
+      document.getElementById("assetName").value = "";
+      document.getElementById("assetValue").value = "";
+    }
+
+    function addLiability() {
+      const name = document.getElementById("liabilityName").value;
+      const value = parseFloat(document.getElementById("liabilityValue").value);
+      if (name && value) {
+        liabilities.push({ name, value });
+        localStorage.setItem("liabilities", JSON.stringify(liabilities));
+        renderLists();
+      }
+      document.getElementById("liabilityName").value = "";
+      document.getElementById("liabilityValue").value = "";
+    }
+
+    function renderLists() {
+      const assetsList = document.getElementById("assetsList");
+      const liabilitiesList = document.getElementById("liabilitiesList");
+      assetsList.innerHTML = "";
+      liabilitiesList.innerHTML = "";
+
+      let assetTotal = 0;
+      let liabilityTotal = 0;
+
+      assets.forEach(a => {
+        const li = document.createElement("li");
+        li.textContent = `${a.name}: $${a.value.toLocaleString()}`;
+        assetsList.appendChild(li);
+        assetTotal += a.value;
+      });
+
+      liabilities.forEach(l => {
+        const li = document.createElement("li");
+        li.textContent = `${l.name}: $${l.value.toLocaleString()}`;
+        liabilitiesList.appendChild(li);
+        liabilityTotal += l.value;
+      });
+
+      const netWorth = assetTotal - liabilityTotal;
+      const netWorthDisplay = document.getElementById("netWorthDisplay");
+      netWorthDisplay.textContent = `Net Worth: $${netWorth.toLocaleString()}`;
+      netWorthDisplay.style.color = netWorth >= 0 ? "#28a745" : "#dc3545";
+    }
+
+    renderLists();
+  </script>
 </body>
 </html>
