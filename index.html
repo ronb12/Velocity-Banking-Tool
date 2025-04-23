@@ -13,7 +13,8 @@
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      margin: 0; padding: 0;
+      margin: 0;
+      padding: 0;
       background: #f4f4f9;
       text-align: center;
     }
@@ -25,8 +26,20 @@
     }
     button.logout {
       position: absolute;
-      right: 20px; top: 15px;
+      right: 20px;
+      top: 15px;
       background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.profile-btn {
+      position: absolute;
+      left: 20px;
+      top: 15px;
+      background: #28a745;
       color: white;
       border: none;
       padding: 8px 12px;
@@ -61,19 +74,15 @@
       border-radius: 5px;
       max-width: 500px;
     }
-    .profile-section {
-      margin-top: 20px;
-    }
-    .profile-box {
+    #profileBox {
       display: none;
-      margin-top: 10px;
-      padding: 10px;
-      background: #fff;
+      background: #ffffff;
       border: 1px solid #ccc;
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
+      max-width: 400px;
+      margin: 20px auto;
+      padding: 15px;
       border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
   </style>
 </head>
@@ -81,8 +90,17 @@
 
 <header>
   🚀 Bradley's Dashboard
+  <button class="profile-btn" onclick="toggleProfile()">👤 My Profile</button>
   <button class="logout" onclick="logout()">🔒 Logout</button>
 </header>
+
+<div id="notification" class="alert" style="display: none;">🔔 Notification will appear here.</div>
+
+<div id="profileBox">
+  <h3>👤 Your Profile</h3>
+  <p id="profileEmail">Email: ...</p>
+  <p id="profileJoinDate">Joined: ...</p>
+</div>
 
 <div class="tools">
   <p>Welcome to your personal finance hub. Choose a tool:</p>
@@ -96,23 +114,12 @@
   <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
 </div>
 
-<div id="notification" class="alert" style="display: none;">🔔 Notification will appear here.</div>
-
 <canvas id="monthlyChart"></canvas>
 
 <div class="export-buttons">
   <button onclick="exportPDF()">📄 Export PDF</button>
   <button onclick="exportCSV()">📊 Export CSV</button>
   <button onclick="syncCalendar()">📅 Sync to Google Calendar</button>
-</div>
-
-<div class="profile-section">
-  <button onclick="toggleProfile()">👤 My Profile</button>
-  <div id="profileBox" class="profile-box">
-    <h3>Profile Info</h3>
-    <p><strong>Email:</strong> <span id="profileEmail"></span></p>
-    <p><strong>Joined:</strong> <span id="profileJoined"></span></p>
-  </div>
 </div>
 
 <script>
@@ -137,24 +144,24 @@
 
   function toggleProfile() {
     const box = document.getElementById("profileBox");
-    box.style.display = box.style.display === "none" ? "block" : "none";
+    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
   }
 
   auth.onAuthStateChanged(async user => {
     if (!user) {
       window.location.href = "login.html";
     } else {
-      document.getElementById("notification").style.display = "block";
-      document.getElementById("notification").innerText = "🔔 Welcome back, " + user.email;
-
       const userRef = db.collection("users").doc(user.uid);
       const doc = await userRef.get();
       if (!doc.exists) {
         await userRef.set({ email: user.email, joined: new Date().toISOString() });
-      } else {
-        document.getElementById("profileEmail").innerText = doc.data().email || user.email;
-        document.getElementById("profileJoined").innerText = doc.data().joined || "N/A";
       }
+
+      const data = doc.data() || { email: user.email, joined: new Date().toISOString() };
+      document.getElementById("notification").style.display = "block";
+      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
+      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
+      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
     }
   });
 
@@ -188,7 +195,7 @@
   }
 
   function syncCalendar() {
-    alert("📅 Google Calendar sync is coming soon.");
+    alert("Google Calendar sync is coming soon.");
   }
 </script>
 
