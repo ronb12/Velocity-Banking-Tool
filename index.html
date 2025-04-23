@@ -151,22 +151,28 @@
     if (!user) {
       window.location.href = "login.html";
     } else {
-      const userRef = db.collection("users").doc(user.uid);
-      let doc = await userRef.get();
+      try {
+        const userRef = db.collection("users").doc(user.uid);
+        let doc = await userRef.get();
 
-      if (!doc.exists) {
-        const newData = { email: user.email, joined: new Date().toISOString() };
-        await userRef.set(newData);
-        doc = await userRef.get(); // Re-fetch after creation
+        if (!doc.exists) {
+          const newData = { email: user.email, joined: new Date().toISOString() };
+          await userRef.set(newData);
+          doc = await userRef.get();
+        }
+
+        const data = doc.data();
+        document.getElementById("notification").style.display = "block";
+        document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
+        document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
+        document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
+      } catch (error) {
+        console.error("Firestore error:", error.message);
+        document.getElementById("notification").style.display = "block";
+        document.getElementById("notification").innerText = "⚠️ Unable to load profile. Check your internet.";
       }
-
-      const data = doc.data();
-      document.getElementById("notification").style.display = "block";
-      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
     }
-  })
+  });
 
   const ctx = document.getElementById("monthlyChart").getContext("2d");
   new Chart(ctx, {
