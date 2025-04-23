@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Savings Goal Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+
+    #goalStats, #totalSavedSummary {
+      font-weight: bold;
+      margin-top: 10px;
+      color: #007bff;
+    }
+
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    .progress-bar {
+      height: 20px;
+      background-color: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .progress {
+      height: 100%;
+      background-color: #28a745;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-label {
+      margin-top: 5px;
+      font-size: 0.9em;
+      color: #333;
+    }
+
+    button {
+      margin: 10px 10px 0 0;
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+
+    @media print {
+      button, .back, #goalStats, #totalSavedSummary {
+        display: none;
+      }
+      input {
+        border: none;
+      }
+    }
+
+    @media screen and (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      th {
+        background: #007bff;
+        color: white;
+      }
+      td {
+        border-bottom: none;
+        padding: 5px 0;
+      }
+      td input {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back" href="index.html">🔙 Back to Dashboard</a>
+    <h1>💰 Savings Goal Tracker</h1>
+    <div id="goalStats"></div>
+    <div id="totalSavedSummary"></div>
+
+    <table id="goalsTable">
+      <thead>
+        <tr>
+          <th>Goal Name</th>
+          <th>Target Amount ($)</th>
+          <th>Saved So Far ($)</th>
+          <th>Progress</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="addGoal()">+ Add Savings Goal</button>
+    <button onclick="exportGoals()">📤 Export Goals</button>
+    <button onclick="printGoals()">🖨️ Print Goals</button>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'savings_goals';
+
+    function addGoal(name = '', target = 0, saved = 0) {
+      const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
+      const newRow = table.insertRow();
+
+      const nameCell = newRow.insertCell(0);
+      const targetCell = newRow.insertCell(1);
+      const savedCell = newRow.insertCell(2);
+      const progressCell = newRow.insertCell(3);
+      const deleteCell = newRow.insertCell(4);
+
+      nameCell.innerHTML = `<input type="text" value="${name}" oninput="saveGoals()" />`;
+      targetCell.innerHTML = `<input type="number" value="${target}" min="0" onchange="updateProgress(this)" />`;
+      savedCell.innerHTML = `<input type="number" value="${saved}" min="0" onchange="updateProgress(this)" />`;
+      progressCell.innerHTML = `
+        <div class="progress-bar"><div class="progress"></div></div>
+        <div class="progress-label"></div>
+      `;
+      deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
+
+      updateProgress(newRow);
+    }
+
+    function updateProgress(input) {
+      const row = input.closest('tr') || input;
+      const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+      const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+      const progress = row.cells[3].querySelector('.progress');
+      const label = row.cells[3].querySelector('.progress-label');
+
+      let percent = 0;
+      if (target > 0) {
+        percent = Math.min((saved / target) * 100, 100);
+      }
+
+      progress.style.width = percent + '%';
+      label.textContent = `$${saved.toFixed(2)} of $${target.toFixed(2)} saved`;
+
+      saveGoals();
+    }
+
+    function deleteRow(button) {
+      const row = button.closest("tr");
+      row.remove();
+      saveGoals();
+    }
+
+    function saveGoals() {
+      const rows = document.querySelectorAll('#goalsTable tbody tr');
+      const data = [];
+      let completed = 0;
+      let totalSaved = 0;
+
+      rows.forEach(row => {
+        const name = row.cells[0].querySelector('input').value;
+        const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+        const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+        data.push({ name, target, saved });
+        if (saved >= target && target > 0) completed++;
+        totalSaved += saved;
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      document.getElementById('goalStats').textContent = `🎯 ${completed} of ${data.length} goals completed!`;
+      document.getElementById('totalSavedSummary').textContent = `💵 Total Saved Across All Goals: $${totalSaved.toFixed(2)}`;
+    }
+
+    function loadGoals() {
+      const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      savedData.forEach(goal => {
+        addGoal(goal.name, goal.target, goal.saved);
+      });
+    }
+
+    function printGoals() {
+      window.print();
+    }
+
+    function exportGoals() {
+      const rows = document.querySelectorAll('#goalsTable tbody tr');
+      let csv = 'Goal Name,Target,Current Saved\n';
+      rows.forEach(row => {
+        const name = row.cells[0].querySelector('input').value;
+        const target = row.cells[1].querySelector('input').value;
+        const saved = row.cells[2].querySelector('input').value;
+        csv += `"${name}","${target}","${saved}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'savings_goals.csv';
+      a.click();
+    }
+
+    window.onload = () => {
+      loadGoals();
+    };
+  </script>
+</body>
+</html>
