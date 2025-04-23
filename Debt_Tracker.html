@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Debt Tracker – Full Featured</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="icon" type="image/png" href="favicon.png" /> <!-- ✅ Custom favicon added -->
+
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
     nav { text-align: center; margin-bottom: 20px; }
@@ -32,7 +33,6 @@
 <body>
   <nav><a href="index.html">⬅️ Back to Dashboard</a></nav>
   <h1>Debt Tracker – Full Featured</h1>
-
   <table id="debtTable">
     <thead>
       <tr>
@@ -112,6 +112,7 @@
 
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value;
         const balance = parseFloat(inputs[1].value) || 0;
         const rate = parseFloat(inputs[2].value) || 0;
         const payment = parseFloat(inputs[3].value) || 0;
@@ -217,7 +218,7 @@
           <td>$${balance.toFixed(2)}</td>
           <td>$${interest.toFixed(2)}</td>
           <td>$${principal.toFixed(2)}</td>
-          <td>$${Math.max(0, end).toFixed(2)}</td>
+          <td>$${Math.max(0,end).toFixed(2)}</td>
         </tr>`;
         totalInterest += interest;
         balance = end;
@@ -231,7 +232,8 @@
 
     function printAmortization() {
       const modal = document.getElementById("amortizationModal").cloneNode(true);
-      modal.querySelectorAll("button").forEach(btn => btn.remove());
+      const buttons = modal.querySelectorAll("button");
+      buttons.forEach(btn => btn.remove());
 
       const win = window.open("", "", "height=900,width=1200");
       win.document.write("<html><head><title>Print</title>");
@@ -245,6 +247,8 @@
 
     window.onload = function () {
       loadDebts();
+      const addBtn = document.querySelector('button[onclick="addDebt()"]');
+      if (addBtn) addBtn.onclick = () => addDebt();
     };
   </script>
 </body>
