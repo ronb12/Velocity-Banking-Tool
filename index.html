@@ -27,7 +27,7 @@
     .tool-link {
       display: block;
       max-width: 400px;
-      margin: 15px auto;
+      margin: 20px auto;
       padding: 15px;
       font-size: 18px;
       background-color: #007bff;
@@ -41,14 +41,14 @@
       background-color: #0056b3;
     }
 
-    .counter {
-      margin-top: 20px;
-      font-size: 14px;
-      color: #555;
+    #sc-visits {
+      margin-top: 30px;
+      font-size: 16px;
+      color: #444;
     }
 
     footer {
-      margin-top: 50px;
+      margin-top: 40px;
       font-size: 14px;
       color: #999;
     }
@@ -77,25 +77,15 @@
   <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goal Tracker</a>
   <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
 
-  <div class="counter">
-    👥 Visitors to this page: <span id="visitCount">Loading...</span>
+  <!-- ✅ Visitor Counter (SimpleCounter.js) -->
+  <div id="sc-visits">
+    👥 Visitors to this page: <span id="sfc5b6sc4k3zmn"></span>
   </div>
+  <script src="https://simplecounterjs.com/counter.js"></script>
 
   <footer>
     Created by Ronell Bradley • <a href="https://github.com/ronb12" target="_blank">GitHub</a>
   </footer>
-
- <p id="visit-count">👥 Visitors to this page: Loading...</p>
-<script>
-  fetch('https://api.countapi.xyz/hit/ronb12-financial-tools/visits')
-    .then(res => res.json())
-    .then(data => {
-      document.getElementById('visit-count').textContent = `👥 Visitors to this page: ${data.value}`;
-    })
-    .catch(() => {
-      document.getElementById('visit-count').textContent = "👥 Visitors to this page: Unavailable";
-    });
-</script>
 
 </body>
 </html>
