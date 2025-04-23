@@ -152,18 +152,20 @@
       window.location.href = "login.html";
     } else {
       const userRef = db.collection("users").doc(user.uid);
-      const doc = await userRef.get();
-      if (!doc.exists) {
-        await userRef.set({ email: user.email, joined: new Date().toISOString() });
-      }
+let doc = await userRef.get();
 
-      const data = doc.data() || { email: user.email, joined: new Date().toISOString() };
-      document.getElementById("notification").style.display = "block";
-      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
-    }
-  });
+if (!doc.exists) {
+  const newData = { email: user.email, joined: new Date().toISOString() };
+  await userRef.set(newData);
+  doc = await userRef.get(); // re-fetch after setting
+}
+
+const data = doc.data();
+document.getElementById("notification").style.display = "block";
+document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
+document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
+document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
+ }]
 
   const ctx = document.getElementById("monthlyChart").getContext("2d");
   new Chart(ctx, {
