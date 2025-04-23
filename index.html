@@ -1,144 +1,163 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0; padding: 0;
+      background: #f4f4f9;
       text-align: center;
-      background-color: #f4f4f9;
-      margin: 0;
-      padding: 40px 20px;
     }
-
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 10px;
-    }
-
-    p {
-      font-size: 1.1em;
-      margin-bottom: 30px;
-      color: #666;
-    }
-
-    .tool-link {
-      display: block;
-      max-width: 400px;
-      margin: 20px auto;
-      padding: 15px;
-      font-size: 18px;
-      background-color: #007bff;
+    header {
+      background: #007bff;
       color: white;
-      text-decoration: none;
-      border-radius: 8px;
-      transition: background-color 0.3s ease;
+      padding: 1em;
+      position: relative;
     }
-
-    .tool-link:hover {
-      background-color: #0056b3;
-    }
-
-    footer {
-      margin-top: 40px;
-      font-size: 14px;
-      color: #999;
-    }
-
-    footer a {
-      color: #007bff;
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    .logout-btn {
+    button.logout {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      right: 20px; top: 15px;
       background: #dc3545;
       color: white;
       border: none;
-      padding: 10px 15px;
-      border-radius: 5px;
+      padding: 8px 12px;
+      border-radius: 4px;
       cursor: pointer;
     }
-
-    .logout-btn:hover {
-      background-color: #b02a37;
+    .tools {
+      padding: 20px;
+    }
+    .tool-link {
+      display: block;
+      margin: 10px auto;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      width: 300px;
+      border-radius: 8px;
+      text-decoration: none;
+    }
+    canvas {
+      max-width: 600px;
+      margin: 20px auto;
+    }
+    .export-buttons {
+      margin: 10px;
+    }
+    .alert {
+      background: #ffc107;
+      color: black;
+      margin: 10px auto;
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 500px;
     }
   </style>
 </head>
 <body>
 
-  <!-- 🔓 Logout Button -->
-  <button class="logout-btn" onclick="logout()">🔒 Logout</button>
+<header>
+  🚀 Bradley's Dashboard
+  <button class="logout" onclick="logout()">🔒 Logout</button>
+</header>
 
-  <h1>🚀 Bradley's Velocity Banking Toolkit</h1>
-  <p>Select a tool below to begin managing your finances smarter and faster.</p>
-
-  <a class="tool-link" href="Velocity_Calculator.html">📊 Velocity Banking Calculator</a>
-  <a class="tool-link" href="1099_calculator.html">🧾 1099 Tax Calculator</a>
+<div class="tools">
+  <p>Welcome to your personal finance hub. Choose a tool:</p>
+  <a class="tool-link" href="Velocity_Calculator.html">📊 Velocity Calculator</a>
   <a class="tool-link" href="Debt_Tracker.html">📋 Debt Tracker</a>
-  <a class="tool-link" href="Credit_Score_Estimator.html">💳 Credit Score Estimator</a>
-  <a class="tool-link" href="Mobile_Tracker.html">📱 Mobile Debt Tracker</a>
-  <a class="tool-link" href="net_worth_tracker.html">🧮 Net Worth Tracker</a>
-  <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goal Tracker</a>
+  <a class="tool-link" href="1099_calculator.html">🧾 1099 Tax Calculator</a>
+  <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goals</a>
   <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
+</div>
 
-  <footer>
-    Created by Ronell Bradley • <a href="https://github.com/ronb12" target="_blank">GitHub</a>
-  </footer>
+<div id="notification" class="alert" style="display: none;">🔔 Notification will appear here.</div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+<canvas id="monthlyChart"></canvas>
 
-  <!-- Firebase Config & Auth Logic -->
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.firebasestorage.app",
-      messagingSenderId: "153601029964",
-      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
-      measurementId: "G-ZKXW42Y7YZ"
-    };
+<div class="export-buttons">
+  <button onclick="exportPDF()">📄 Export PDF</button>
+  <button onclick="exportCSV()">📊 Export CSV</button>
+  <button onclick="syncCalendar()">📅 Sync to Google Calendar</button>
+</div>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+    authDomain: "mobile-debt-tracker.firebaseapp.com",
+    projectId: "mobile-debt-tracker",
+    storageBucket: "mobile-debt-tracker.firebasestorage.app",
+    messagingSenderId: "153601029964",
+    appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
+  };
 
-    // Protect Page
-    document.addEventListener("DOMContentLoaded", () => {
-      auth.onAuthStateChanged(user => {
-        if (!user) {
-          console.log("No user. Redirecting to login.");
-          window.location.href = "login.html";
-        } else {
-          console.log("✅ Logged in as:", user.email);
-        }
-      });
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  function logout() {
+    auth.signOut().then(() => {
+      window.location.href = "login.html";
     });
+  }
 
-    // Logout Function
-    function logout() {
-      auth.signOut()
-        .then(() => {
-          console.log("🔓 User signed out.");
-          setTimeout(() => {
-            window.location.href = "login.html";
-          }, 500);
-        })
-        .catch((error) => {
-          console.error("Logout error:", error.message);
-          alert("Logout failed: " + error.message);
-        });
+  auth.onAuthStateChanged(async user => {
+    if (!user) {
+      window.location.href = "login.html";
+    } else {
+      document.getElementById("notification").style.display = "block";
+      document.getElementById("notification").innerText = "🔔 Welcome back, " + user.email;
+
+      const userRef = db.collection("users").doc(user.uid);
+      const doc = await userRef.get();
+      if (!doc.exists) {
+        await userRef.set({ email: user.email, joined: new Date().toISOString() });
+      }
     }
-  </script>
+  });
+
+  const ctx = document.getElementById("monthlyChart").getContext("2d");
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+      datasets: [{
+        label: "Spending ($)",
+        data: [500, 400, 600, 700, 650]
+      }]
+    }
+  });
+
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Bradley's Dashboard Summary", 10, 10);
+    doc.save("dashboard.pdf");
+  }
+
+  function exportCSV() {
+    const data = [["Month", "Spending"], ["Jan", 500], ["Feb", 400]];
+    const csv = Papa.unparse(data);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "dashboard.csv";
+    a.click();
+  }
+
+  function syncCalendar() {
+    alert("Google Calendar sync is coming soon.");
+  }
+</script>
+
 </body>
 </html>
