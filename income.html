@@ -1,11 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Income Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📈 Income Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #007bff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    .total {
+      text-align: right;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px 5px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #incomeForm input, #incomeForm select {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #incomeForm {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+  </style>
 </head>
 <body>
-  <h1>📈 Income Tracker</h1>
-  <p>Track all income sources here.</p>
+
+<h1>📈 Income Tracker</h1>
+
+<div id="incomeForm">
+  <input type="text" id="description" placeholder="Description" />
+  <input type="number" id="amount" placeholder="Amount ($)" />
+  <select id="category">
+    <option value="Job">Job</option>
+    <option value="Business">Business</option>
+    <option value="Side Hustle">Side Hustle</option>
+    <option value="Other">Other</option>
+  </select>
+  <input type="date" id="date" />
+  <button onclick="addIncome()">➕ Add Income</button>
+</div>
+
+<div class="total" id="totalDisplay">Total This Month: $0.00</div>
+
+<table id="incomeTable">
+  <thead>
+    <tr>
+      <th>Description</th>
+      <th>Amount ($)</th>
+      <th>Category</th>
+      <th>Date</th>
+      <th>🗑️</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const tableBody = document.querySelector("#incomeTable tbody");
+  const totalDisplay = document.getElementById("totalDisplay");
+
+  function saveData(data) {
+    localStorage.setItem("incomeEntries", JSON.stringify(data));
+  }
+
+  function loadData() {
+    return JSON.parse(localStorage.getItem("incomeEntries")) || [];
+  }
+
+  function updateTable() {
+    const data = loadData();
+    tableBody.innerHTML = "";
+    let monthlyTotal = 0;
+
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    data.forEach((entry, index) => {
+      const dateObj = new Date(entry.date);
+      const isThisMonth = dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear;
+
+      if (isThisMonth) monthlyTotal += parseFloat(entry.amount);
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${entry.description}</td>
+        <td>$${parseFloat(entry.amount).toFixed(2)}</td>
+        <td>${entry.category}</td>
+        <td>${entry.date}</td>
+        <td><button onclick="deleteIncome(${index})">❌</button></td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    totalDisplay.textContent = `Total This Month: $${monthlyTotal.toFixed(2)}`;
+  }
+
+  function addIncome() {
+    const description = document.getElementById("description").value;
+    const amount = document.getElementById("amount").value;
+    const category = document.getElementById("category").value;
+    const date = document.getElementById("date").value;
+
+    if (!description || !amount || !date) {
+      alert("Please fill out all fields.");
+      return;
+    }
+
+    const data = loadData();
+    data.push({ description, amount, category, date });
+    saveData(data);
+    updateTable();
+
+    document.getElementById("description").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("date").value = "";
+  }
+
+  function deleteIncome(index) {
+    const data = loadData();
+    data.splice(index, 1);
+    saveData(data);
+    updateTable();
+  }
+
+  updateTable();
+</script>
+
 </body>
 </html>
