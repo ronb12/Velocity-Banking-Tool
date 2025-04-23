@@ -94,6 +94,9 @@
       color: var(--text-color);
       border: 1px solid #888;
     }
+    input[type="date"] {
+      padding: 4px;
+    }
     button.action {
       margin: 5px 0;
       padding: 10px;
@@ -103,21 +106,12 @@
       width: 100%;
       border-radius: 4px;
     }
-    .amort-btn {
-      background: #444;
-      color: #fff;
-      border: none;
-      padding: 4px 8px;
-      margin-top: 4px;
-      cursor: pointer;
-      border-radius: 4px;
-    }
   </style>
 </head>
 <body>
 
   <div class="top-nav">
-    <a href="index.html">⬅️ Back to Dashboard</a>
+    <a href="#">📊 Mobile Debt Tracker</a>
   </div>
 
   <div id="debts" class="tab-content active">
@@ -125,7 +119,7 @@
     <table id="debtTable">
       <thead>
         <tr>
-          <th>Name</th><th>Balance</th><th>Rate (%)</th><th>Min Pay</th><th>Actions</th>
+          <th>Name</th><th>Balance</th><th>Rate (%)</th><th>Min Pay</th><th>Due Date</th><th>❌</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -137,30 +131,22 @@
     <h2>Summary</h2>
     <p id="summaryText">Loading...</p>
     <p id="interestText"></p>
-    <canvas id="debtChart" height="200"></canvas>
+    <p id="payoffEstimate"></p>
+    <button class="action" onclick="exportToCSV()">📥 Export CSV</button>
+    <input type="file" accept=".csv" onchange="importCSV(event)" />
   </div>
 
-  <div id="amortization" class="tab-content">
-    <h2>Amortization Preview</h2>
-    <div id="amortizationSchedule">Select a debt to preview.</div>
-  </div>
-
-  <div id="settings" class="tab-content">
-    <h2>Settings</h2>
-    <button class="action" onclick="saveDebts()">💾 Save</button>
-    <button class="action" onclick="loadDebts()">📂 Load</button>
-    <button class="action" onclick="exportToExcel()">📥 Export to Excel</button>
-    <button class="action" onclick="window.print()">🖨️ Print to PDF</button>
+  <div id="calendar" class="tab-content">
+    <h2>📅 Calendar View</h2>
+    <ul id="calendarList"></ul>
   </div>
 
   <div class="tab-container">
     <button class="active" onclick="switchTab('debts', this)">Debts</button>
     <button onclick="switchTab('summary', this)">Summary</button>
-    <button onclick="switchTab('amortization', this)">Amortize</button>
-    <button onclick="switchTab('settings', this)">Settings</button>
+    <button onclick="switchTab('calendar', this)">Calendar</button>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     const tableBody = document.querySelector("#debtTable tbody");
 
@@ -169,19 +155,18 @@
       document.getElementById(tabId).classList.add('active');
       document.querySelectorAll('.tab-container button').forEach(el => el.classList.remove('active'));
       btn.classList.add('active');
+      if (tabId === 'calendar') renderCalendar();
     }
 
-    function addDebt(name = '', balance = '', rate = '', payment = '') {
+    function addDebt(name = '', balance = '', rate = '', payment = '', due = '') {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td><input value="${name}" onchange="update()" /></td>
         <td><input type="number" value="${balance}" onchange="update()" /></td>
         <td><input type="number" value="${rate}" onchange="update()" /></td>
         <td><input type="number" value="${payment}" onchange="update()" /></td>
-        <td>
-          <button onclick="this.closest('tr').remove(); update();">❌</button><br>
-          <button class="amort-btn" onclick="amortizeRow(this)">📆</button>
-        </td>
+        <td><input type="date" value="${due}" onchange="update()" /></td>
+        <td><button onclick="this.closest('tr').remove(); update();">❌</button></td>
       `;
       tableBody.appendChild(row);
       update();
@@ -189,123 +174,92 @@
 
     function update() {
       let totalBalance = 0, totalPayment = 0, totalInterest = 0;
-      let labels = [], data = [];
+      let maxMonths = 0;
 
       tableBody.querySelectorAll("tr").forEach(row => {
-        const cells = row.querySelectorAll("input");
-        const name = cells[0].value;
-        const balance = parseFloat(cells[1].value) || 0;
-        const rate = parseFloat(cells[2].value) || 0;
-        const payment = parseFloat(cells[3].value) || 0;
+        const [name, balance, rate, payment] = Array.from(row.querySelectorAll("input")).map(i => i.value);
+        const bal = parseFloat(balance) || 0;
+        const r = (parseFloat(rate) || 0) / 100 / 12;
+        const pmt = parseFloat(payment) || 0;
+        let remaining = bal, months = 0;
 
-        let r = rate / 100 / 12;
-        let months = 0, remaining = balance;
         while (remaining > 0 && months < 1200) {
           let interest = remaining * r;
-          let principal = payment - interest;
+          let principal = pmt - interest;
           if (principal <= 0) break;
           remaining -= principal;
           totalInterest += interest;
           months++;
         }
 
-        totalBalance += balance;
-        totalPayment += payment;
-        labels.push(name);
-        data.push(balance);
+        if (months > maxMonths) maxMonths = months;
+        totalBalance += bal;
+        totalPayment += pmt;
       });
 
-      document.getElementById("summaryText").innerText =
-        `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)}`;
-      document.getElementById("interestText").innerText =
-        `Estimated Total Interest: $${totalInterest.toFixed(2)}`;
-
-      const ctx = document.getElementById("debtChart").getContext("2d");
-      if (window.debtChart) window.debtChart.destroy();
-      window.debtChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Debt Balance ($)',
-            data: data,
-            backgroundColor: "rgba(54, 162, 235, 0.7)"
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } }
-        }
-      });
+      document.getElementById("summaryText").innerText = `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payment: $${totalPayment.toFixed(2)}`;
+      document.getElementById("interestText").innerText = `Est. Total Interest: $${totalInterest.toFixed(2)}`;
+      document.getElementById("payoffEstimate").innerText = maxMonths ? `Estimated Debt-Free Date: ${new Date(new Date().setMonth(new Date().getMonth() + maxMonths)).toLocaleDateString()}` : '';
     }
 
-    function amortizeRow(btn) {
-      const row = btn.closest("tr");
-      const cells = row.querySelectorAll("input");
-      const balance = parseFloat(cells[1].value) || 0;
-      const rate = parseFloat(cells[2].value) || 0;
-      const payment = parseFloat(cells[3].value) || 0;
-      const r = rate / 100 / 12;
+    function renderCalendar() {
+      const calendarList = document.getElementById("calendarList");
+      calendarList.innerHTML = "";
+      let debts = [];
 
-      let month = 1, output = "";
-      let remaining = balance;
-      let totalInterest = 0;
-
-      output += `<h3>Schedule for ${cells[0].value}</h3>`;
-      output += `<table border="1" width="100%"><tr><th>Month</th><th>Start</th><th>Interest</th><th>Principal</th><th>End</th></tr>`;
-
-      while (remaining > 0 && month < 1000) {
-        const interest = remaining * r;
-        const principal = Math.min(payment - interest, remaining);
-        const endBalance = remaining + interest - payment;
-        output += `<tr><td>${month}</td><td>$${remaining.toFixed(2)}</td><td>$${interest.toFixed(2)}</td><td>$${principal.toFixed(2)}</td><td>$${Math.max(0,endBalance).toFixed(2)}</td></tr>`;
-        remaining = endBalance;
-        totalInterest += interest;
-        month++;
-      }
-
-      output += `</table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
-      document.getElementById("amortizationSchedule").innerHTML = output;
-      switchTab('amortization', document.querySelectorAll('.tab-container button')[2]);
-    }
-
-    function saveDebts() {
-      const data = [];
       tableBody.querySelectorAll("tr").forEach(row => {
         const cells = row.querySelectorAll("input");
-        data.push({
-          name: cells[0].value,
-          balance: cells[1].value,
-          rate: cells[2].value,
-          payment: cells[3].value
-        });
+        const name = cells[0].value;
+        const due = cells[4].value;
+        if (name && due) debts.push({ name, due });
       });
-      localStorage.setItem("debtData", JSON.stringify(data));
-      alert("Saved!");
+
+      debts.sort((a, b) => new Date(a.due) - new Date(b.due));
+      debts.forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = `${new Date(d.due).toLocaleDateString()}: ${d.name}`;
+        calendarList.appendChild(li);
+      });
     }
 
-    function loadDebts() {
-      const data = JSON.parse(localStorage.getItem("debtData")) || [];
-      tableBody.innerHTML = "";
-      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment));
-      update();
-    }
-
-    function exportToExcel() {
-      const rows = [["Name", "Balance", "Rate", "Payment"]];
+    function exportToCSV() {
+      const rows = [["Name", "Balance", "Rate", "Payment", "DueDate"]];
       tableBody.querySelectorAll("tr").forEach(row => {
         const cells = row.querySelectorAll("input");
-        rows.push([cells[0].value, cells[1].value, cells[2].value, cells[3].value]);
+        rows.push([cells[0].value, cells[1].value, cells[2].value, cells[3].value, cells[4].value]);
       });
       const csv = rows.map(r => r.join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "debt_tracker.csv";
+      a.download = "debts.csv";
       a.click();
     }
 
-    window.onload = loadDebts;
+    function importCSV(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        const lines = reader.result.split("\n").slice(1);
+        tableBody.innerHTML = "";
+        lines.forEach(line => {
+          const [name, balance, rate, payment, due] = line.split(",");
+          if (name) addDebt(name.trim(), balance, rate, payment, due);
+        });
+        update();
+      };
+      reader.readAsText(file);
+    }
+
+    window.onload = () => {
+      if (localStorage.getItem("debtData")) {
+        try {
+          const data = JSON.parse(localStorage.getItem("debtData"));
+          data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+        } catch {}
+      }
+      update();
+    };
   </script>
 </body>
 </html>
