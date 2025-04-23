@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
-<button onclick="logout()" style="position:fixed;top:15px;right:15px;">🔓 Logout</button>
-
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -57,9 +55,28 @@
     footer a:hover {
       text-decoration: underline;
     }
+
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .logout-btn:hover {
+      background-color: #b02a37;
+    }
   </style>
 </head>
 <body>
+
+  <!-- 🔓 Logout Button -->
+  <button class="logout-btn" onclick="logout()">🔒 Logout</button>
 
   <h1>🚀 Bradley's Velocity Banking Toolkit</h1>
   <p>Select a tool below to begin managing your finances smarter and faster.</p>
@@ -77,9 +94,11 @@
     Created by Ronell Bradley • <a href="https://github.com/ronb12" target="_blank">GitHub</a>
   </footer>
 
-  <!-- Firebase Config -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+  <!-- Firebase Config & Auth Logic -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
@@ -91,50 +110,35 @@
       measurementId: "G-ZKXW42Y7YZ"
     };
 
- <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-    authDomain: "mobile-debt-tracker.firebaseapp.com",
-    projectId: "mobile-debt-tracker",
-    storageBucket: "mobile-debt-tracker.firebasestorage.app",
-    messagingSenderId: "153601029964",
-    appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
-    measurementId: "G-ZKXW42Y7YZ"
-  };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-
-  document.addEventListener("DOMContentLoaded", () => {
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        console.log("No user. Redirecting to login.");
-        window.location.href = "login.html";
-      } else {
-        console.log("User authenticated:", user.email);
-      }
-    });
-  });
-
-<!-- 🔓 Logout Button -->
-<button onclick="logout()" style="position: absolute; top: 20px; right: 20px;">🔒 Logout</button>
-
-<!-- ✅ Script at the end of body -->
-<script>
-  function logout() {
-    firebase.auth().signOut()
-      .then(() => {
-        console.log("User signed out.");
-        setTimeout(() => {
-          window.location.replace("login.html");
-        }, 1000);
-      })
-      .catch((error) => {
-        console.error("Logout error:", error.message);
-        alert("Logout failed: " + error.message);
+    // Protect Page
+    document.addEventListener("DOMContentLoaded", () => {
+      auth.onAuthStateChanged(user => {
+        if (!user) {
+          console.log("No user. Redirecting to login.");
+          window.location.href = "login.html";
+        } else {
+          console.log("✅ Logged in as:", user.email);
+        }
       });
-  }
-</script>
+    });
 
+    // Logout Function
+    function logout() {
+      auth.signOut()
+        .then(() => {
+          console.log("🔓 User signed out.");
+          setTimeout(() => {
+            window.location.href = "login.html";
+          }, 500);
+        })
+        .catch((error) => {
+          console.error("Logout error:", error.message);
+          alert("Logout failed: " + error.message);
+        });
+    }
+  </script>
 </body>
 </html>
