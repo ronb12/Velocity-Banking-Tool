@@ -166,7 +166,7 @@
       document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
       document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
     }
-  });
+  })
 
   const ctx = document.getElementById("monthlyChart").getContext("2d");
   new Chart(ctx, {
