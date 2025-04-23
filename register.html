@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Account | Bradley's Toolkit</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .register-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      width: 300px;
+      text-align: center;
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      background: #28a745;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="register-box">
+    <h2>🆕 Create Account</h2>
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Password (min 6 characters)" />
+    <button onclick="createAccount()">Create Account</button>
+    <p class="error" id="error"></p>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker",
+      storageBucket: "mobile-debt-tracker.firebasestorage.app",
+      messagingSenderId: "153601029964",
+      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
+      measurementId: "G-ZKXW42Y7YZ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    function createAccount() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          window.location.href = "index.html"; // Redirect on success
+        })
+        .catch(error => {
+          document.getElementById("error").innerText = error.message;
+        });
+    }
+  </script>
+</body>
+</html>
