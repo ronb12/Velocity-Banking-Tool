@@ -152,20 +152,21 @@
       window.location.href = "login.html";
     } else {
       const userRef = db.collection("users").doc(user.uid);
-let doc = await userRef.get();
+      let doc = await userRef.get();
 
-if (!doc.exists) {
-  const newData = { email: user.email, joined: new Date().toISOString() };
-  await userRef.set(newData);
-  doc = await userRef.get(); // re-fetch after setting
-}
+      if (!doc.exists) {
+        const newData = { email: user.email, joined: new Date().toISOString() };
+        await userRef.set(newData);
+        doc = await userRef.get(); // Re-fetch after creation
+      }
 
-const data = doc.data();
-document.getElementById("notification").style.display = "block";
-document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
- }]
+      const data = doc.data();
+      document.getElementById("notification").style.display = "block";
+      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
+      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
+      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
+    }
+  });
 
   const ctx = document.getElementById("monthlyChart").getContext("2d");
   new Chart(ctx, {
@@ -174,7 +175,8 @@ document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.
       labels: ["Jan", "Feb", "Mar", "Apr", "May"],
       datasets: [{
         label: "Spending ($)",
-        data: [500, 400, 600, 700, 650]
+        data: [500, 400, 600, 700, 650],
+        backgroundColor: "#007bff"
       }]
     }
   });
@@ -197,7 +199,7 @@ document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.
   }
 
   function syncCalendar() {
-    alert("Google Calendar sync is coming soon.");
+    alert("📅 Google Calendar sync coming soon.");
   }
 </script>
 
