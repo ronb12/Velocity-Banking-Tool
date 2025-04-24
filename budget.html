@@ -14,23 +14,26 @@
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
     th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
     th { background: #007bff; color: white; }
-    input, select { width: 100%; padding: 5px; box-sizing: border-box; }
+    input, select, textarea { width: 100%; padding: 6px; box-sizing: border-box; }
     .controls, .summary, .income-breakdown { margin-top: 20px; }
     .controls button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
     .controls button:hover { background: #0056b3; }
     .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
     .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
     td select { min-width: 140px; }
-    input[type="number"], input[type="text"], select, textarea {
+    input[type="number"], input[type="text"], select {
       border: 1px solid #ccc; border-radius: 6px; padding: 5px;
       transition: all 0.2s ease;
     }
-    input:focus, select:focus, textarea:focus {
+    input:focus, select:focus {
       border-color: #007bff;
       outline: none;
       box-shadow: 0 0 5px rgba(0,123,255,0.3);
     }
-    table tbody tr:hover { background: #f1f7ff; transition: background 0.2s; }
+    table tbody tr:hover {
+      background: #f1f7ff;
+      transition: background 0.2s;
+    }
     .dashboard-tile {
       display: inline-block;
       margin: 10px;
@@ -70,8 +73,8 @@
   </table>
   <button onclick="addExpense()">+ Add Expense</button>
 
-  <h3>📝 Notes for This Month</h3>
-  <textarea id="monthlyNotes" rows="4" style="width: 100%; margin-bottom: 20px;"></textarea>
+  <h3>Monthly Notes</h3>
+  <textarea id="monthlyNotes" rows="4" placeholder="Write monthly financial goals, notes or reminders..."></textarea>
 
   <div class="controls">
     <button onclick="calculateBudget()">🧮 Recalculate</button>
@@ -80,7 +83,6 @@
     <button onclick="loadPreviousMonth()">📥 Load Budget</button>
   </div>
 
-  <!-- Dashboard -->
   <div class="summary">
     <div class="dashboard-tile dashboard-total-income" id="tileIncome">Total Income: $0</div>
     <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">Budgeted: $0</div>
@@ -132,7 +134,7 @@
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><input type="checkbox" ${exp.paid ? "checked" : ""} onchange="calculateBudget()"></td>
-      <td><input type="text" style="min-width: 250px;" value="${exp.category || ""}"></td>
+      <td><input type="text" value="${exp.category || ""}" style="min-width: 150px;"></td>
       <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateBudget()"></td>
       <td><input type="number" value="${exp.spent || 0}" onchange="calculateBudget()"></td>
       <td>0</td>
@@ -169,17 +171,35 @@
       const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
       const paid = row.cells[0].querySelector("input").checked;
       const paidFrom = row.cells[6].querySelector("select").value;
+      const dueDate = new Date(row.cells[5].querySelector("input").value);
       const remaining = budgeted - spent;
+
       const percentUsed = Math.min((spent / budgeted) * 100, 100);
       row.cells[4].innerHTML = `
         <div style="position:relative; height:20px; background:#eee; border-radius:4px;">
           <div style="width:${percentUsed}%; background:${percentUsed > 100 ? '#dc3545' : '#007bff'}; height:100%; border-radius:4px;"></div>
           <span style="position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:12px;">$${remaining.toFixed(2)}</span>
         </div>`;
+
       budgetedTotal += budgeted;
       spentTotal += spent;
       if (paid) paidTotal += spent;
-      if (paid && incomeMap[paidFrom]) incomeMap[paidFrom].spent += spent;
+
+      row.style.backgroundColor = paid ? "#e6f7e6" : "white";
+
+      const today = new Date();
+      const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+      if (daysUntilDue >= 0 && daysUntilDue <= 7) {
+        row.cells[5].querySelector("input").style.border = "2px solid #ffc107";
+        row.cells[5].querySelector("input").style.background = "#fff8e1";
+      } else {
+        row.cells[5].querySelector("input").style.border = "";
+        row.cells[5].querySelector("input").style.background = "white";
+      }
+
+      if (paid && incomeMap[paidFrom]) {
+        incomeMap[paidFrom].spent += spent;
+      }
     });
 
     document.getElementById("tileIncome").innerText = `Total Income: $${incomeTotal.toFixed(2)}`;
@@ -193,18 +213,21 @@
       return `<div><strong>${name}:</strong> Budgeted $${val.amount}, Used $${val.spent}, Remaining $${remain.toFixed(2)}</div>`;
     }).join("");
     document.getElementById("incomeBreakdown").innerHTML = breakdown;
+
     document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
   }
 
   function saveBudget() {
     const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
     const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value, timestamp: new Date() };
+
     document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
       data.incomes.push({
         source: row.cells[0].querySelector("input").value,
         amount: parseFloat(row.cells[1].querySelector("input").value) || 0
       });
     });
+
     document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
       data.expenses.push({
         paid: row.cells[0].querySelector("input").checked,
@@ -215,12 +238,13 @@
         source: row.cells[6].querySelector("select").value
       });
     });
+
     db.collection("budgets").doc(userId + "_" + month).set(data);
   }
 
   async function loadBudget() {
-    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    const doc = await db.collection("budgets").doc(userId + "_" + month).get();
+    const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+    const doc = await db.collection("budgets").doc(userId + "_" + currentMonth).get();
     document.querySelector("#incomeTable tbody").innerHTML = "";
     document.querySelector("#expenseTable tbody").innerHTML = "";
     document.getElementById("monthlyNotes").value = "";
@@ -230,21 +254,34 @@
       data.incomes.forEach(i => addIncome(i.source, i.amount));
       data.expenses.forEach(e => addExpense(e));
       document.getElementById("monthlyNotes").value = data.notes || "";
-    } else {
-      const [year, monthNum] = month.split("-");
-      const prevMonth = (parseInt(monthNum) === 1) ? `${parseInt(year) - 1}-12` : `${year}-${(parseInt(monthNum) - 1).toString().padStart(2, '0')}`;
-      const prevDoc = await db.collection("budgets").doc(userId + "_" + prevMonth).get();
-      if (prevDoc.exists) {
-        const data = prevDoc.data();
-        data.incomes.forEach(i => addIncome(i.source, i.amount));
-        data.expenses.forEach(e => addExpense({ ...e, paid: false, spent: 0, due: "" }));
-      }
     }
     calculateBudget();
   }
 
-  function loadPreviousMonth() {
-    onMonthChange(); // Triggers re-load and fallback if no data exists
+  async function loadPreviousMonth() {
+    const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+    const [year, monthNum] = currentMonth.split("-");
+    const prevMonth = (parseInt(monthNum) === 1)
+      ? `${parseInt(year) - 1}-12`
+      : `${year}-${(parseInt(monthNum) - 1).toString().padStart(2, '0')}`;
+    const prevDoc = await db.collection("budgets").doc(userId + "_" + prevMonth).get();
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+    document.getElementById("monthlyNotes").value = "";
+
+    if (prevDoc.exists) {
+      const prevData = prevDoc.data();
+      const currentDatePrefix = `${year}-${monthNum.padStart(2, '0')}`;
+      prevData.incomes.forEach(i => addIncome(i.source, i.amount));
+      prevData.expenses.forEach(e => {
+        const newDue = e.due ? `${currentDatePrefix}-${e.due.split("-")[2]}` : "";
+        addExpense({ ...e, paid: false, spent: 0, due: newDue });
+      });
+      document.getElementById("monthlyNotes").value = prevData.notes || "";
+      calculateBudget();
+    } else {
+      alert("❌ No previous budget found.");
+    }
   }
 </script>
 </body>
