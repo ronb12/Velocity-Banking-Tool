@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>💸 Bradley's Zero-Based Budget</title>
+  <title>💰 Bradley's Budget Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -11,31 +12,28 @@
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #f4f4f9;
-      margin: 0;
       padding: 20px;
+      margin: 0;
+      text-align: center;
     }
     h1 {
-      text-align: center;
       color: #007bff;
+      margin-bottom: 10px;
     }
-    .month-selector {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .month-selector select {
-      padding: 10px;
-      font-size: 16px;
+    .container {
+      max-width: 900px;
+      margin: auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 15px;
       background: white;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     th, td {
-      padding: 12px;
-      border-bottom: 1px solid #ddd;
+      border: 1px solid #ddd;
+      padding: 8px;
     }
     th {
       background: #007bff;
@@ -43,208 +41,201 @@
     }
     input, select {
       width: 100%;
-      padding: 6px;
+      padding: 5px;
+      box-sizing: border-box;
     }
-    .actions, .income-box, .zero-message, .back-link {
-      margin-top: 20px;
-      text-align: center;
+    .section-title {
+      margin-top: 30px;
+      color: #007bff;
+      font-size: 18px;
     }
-    .actions button {
+    .controls {
+      margin-top: 15px;
+    }
+    .controls button {
       padding: 10px 15px;
       margin: 5px;
-      border: none;
       background: #007bff;
       color: white;
-      cursor: pointer;
+      border: none;
       border-radius: 4px;
+      cursor: pointer;
     }
-    .zero-message {
+    .controls button:hover {
+      background: #0056b3;
+    }
+    .summary {
+      text-align: right;
+      margin-top: 20px;
       font-weight: bold;
-      color: green;
     }
-    .back-link {
-      display: block;
+    .success-msg {
+      background: #d4edda;
+      color: #155724;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+      display: none;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 20px;
       text-decoration: none;
-      color: #007bff;
       font-weight: bold;
+      color: #007bff;
     }
   </style>
 </head>
 <body>
+<div class="container">
   <h1>💸 Bradley's Budget Tracker</h1>
+  <label for="month">Select Month:</label>
+  <input type="month" id="month" />
 
-  <div class="month-selector">
-    <label>Select Month:
-      <select id="month">
-        <option>January 2025</option>
-        <option>February 2025</option>
-        <option>March 2025</option>
-        <option>April 2025</option>
-        <option>May 2025</option>
-        <option>June 2025</option>
-        <option>July 2025</option>
-        <option>August 2025</option>
-        <option>September 2025</option>
-        <option>October 2025</option>
-        <option>November 2025</option>
-        <option>December 2025</option>
-      </select>
-    </label>
-  </div>
-
-  <div class="income-box">
-    <h3>Income Sources</h3>
-    <table id="incomeTable">
-      <thead>
-        <tr>
-          <th>Source</th>
-          <th>Amount ($)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><input type="text" placeholder="e.g. VA Check"></td>
-          <td><input type="number" value="0"></td>
-        </tr>
-      </tbody>
-    </table>
-    <button onclick="addIncomeRow()">➕ Add Income</button>
-  </div>
-
-  <h3>Expenses</h3>
-  <table id="budgetTable">
+  <div class="section-title">Income Sources</div>
+  <table id="incomeTable">
     <thead>
-      <tr>
-        <th>Paid</th>
-        <th>Category</th>
-        <th>Budgeted</th>
-        <th>Spent</th>
-        <th>Remaining</th>
-        <th>Due Date</th>
-        <th>Paid From</th>
-      </tr>
+      <tr><th>Source</th><th>Amount ($)</th></tr>
     </thead>
-    <tbody>
-      <tr>
-        <td><input type="checkbox"></td>
-        <td><input type="text" value="Rent"></td>
-        <td><input type="number" value="1200"></td>
-        <td><input type="number" value="1200"></td>
-        <td>0</td>
-        <td><input type="date"></td>
-        <td><select><option>VA</option><option>SSDI</option><option>Card</option></select></td>
-      </tr>
-    </tbody>
+    <tbody></tbody>
   </table>
+  <button onclick="addIncome()">+ Add Income</button>
 
-  <div class="actions">
-    <button onclick="addExpenseRow()">➕ Add Expense</button>
-    <button onclick="calculate()">🧮 Recalculate</button>
-    <a href="index.html" class="back-link">← Back to Dashboard</a>
+  <div class="section-title">Expenses</div>
+  <table id="expenseTable">
+    <thead>
+      <tr><th>Paid</th><th>Category</th><th>Budgeted</th><th>Spent</th><th>Remaining</th><th>Due Date</th><th>Paid From</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="addExpense()">+ Add Expense</button>
+
+  <div class="controls">
+    <button onclick="calculateBudget()">🧮 Recalculate</button>
+    <button onclick="saveBudget()">💾 Save</button>
   </div>
 
-  <div class="zero-message" id="zeroMessage"></div>
+  <div class="summary" id="summaryTotals">
+    Total Income: $0 | Total Budgeted: $0 | Remaining: $0
+  </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.firebasestorage.app",
-      messagingSenderId: "153601029964",
-      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
+  <div class="success-msg" id="zeroBasedMessage">🎉 Congratulations! You've created a Zero-Based Budget.</div>
+  <a class="back" href="index.html">← Back to Dashboard</a>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+    authDomain: "mobile-debt-tracker.firebaseapp.com",
+    projectId: "mobile-debt-tracker"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let userId = "";
+  auth.onAuthStateChanged(user => {
+    if (!user) return window.location.href = "login.html";
+    userId = user.uid;
+    loadBudget();
+  });
+
+  function addIncome() {
+    const row = document.createElement("tr");
+    row.innerHTML = \`
+      <td><input type="text" placeholder="e.g. VA Check"></td>
+      <td><input type="number" value="0"></td>
+    \`;
+    document.querySelector("#incomeTable tbody").appendChild(row);
+  }
+
+  function addExpense() {
+    const row = document.createElement("tr");
+    row.innerHTML = \`
+      <td><input type="checkbox"></td>
+      <td><input type="text" placeholder="Category"></td>
+      <td><input type="number" value="0"></td>
+      <td><input type="number" value="0"></td>
+      <td>0</td>
+      <td><input type="date"></td>
+      <td><select><option>VA</option><option>SS</option><option>Other</option></select></td>
+    \`;
+    document.querySelector("#expenseTable tbody").appendChild(row);
+  }
+
+  function calculateBudget() {
+    let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0;
+    document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+      incomeTotal += parseFloat(row.cells[1].querySelector("input").value) || 0;
+    });
+    document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+      const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+      const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
+      row.cells[4].innerText = (budgeted - spent).toFixed(2);
+      budgetedTotal += budgeted;
+      spentTotal += spent;
+    });
+    document.getElementById("summaryTotals").innerText =
+      \`Total Income: $\${incomeTotal.toFixed(2)} | Total Budgeted: $\${budgetedTotal.toFixed(2)} | Remaining: $\${(incomeTotal - budgetedTotal).toFixed(2)}\`;
+
+    const msg = document.getElementById("zeroBasedMessage");
+    msg.style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+  }
+
+  function saveBudget() {
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
+    const data = {
+      incomes: [], expenses: [], timestamp: new Date()
     };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    let currentUID = null;
-
-    auth.onAuthStateChanged(user => {
-      if (!user) return location.href = "login.html";
-      currentUID = user.uid;
-      loadData();
-    });
-
-    function addExpenseRow() {
-      const table = document.querySelector("#budgetTable tbody");
-      const row = table.insertRow();
-      row.innerHTML = `
-        <td><input type="checkbox"></td>
-        <td><input type="text" placeholder="Category"></td>
-        <td><input type="number" value="0"></td>
-        <td><input type="number" value="0"></td>
-        <td>0</td>
-        <td><input type="date"></td>
-        <td><select><option>VA</option><option>SSDI</option><option>Card</option></select></td>
-      `;
-    }
-
-    function addIncomeRow() {
-      const table = document.querySelector("#incomeTable tbody");
-      const row = table.insertRow();
-      row.innerHTML = `
-        <td><input type="text" placeholder="Source"></td>
-        <td><input type="number" value="0"></td>
-      `;
-    }
-
-    function calculate() {
-      const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
-      let totalIncome = 0;
-      incomeRows.forEach(row => {
-        totalIncome += parseFloat(row.cells[1].querySelector("input").value) || 0;
+    document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+      data.incomes.push({
+        source: row.cells[0].querySelector("input").value,
+        amount: parseFloat(row.cells[1].querySelector("input").value) || 0
       });
-
-      const expenseRows = document.querySelectorAll("#budgetTable tbody tr");
-      let totalBudget = 0;
-      let totalSpent = 0;
-
-      expenseRows.forEach(row => {
-        const budget = parseFloat(row.cells[2].querySelector("input").value) || 0;
-        const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
-        row.cells[4].innerText = (budget - spent).toFixed(2);
-        totalBudget += budget;
-        totalSpent += spent;
-      });
-
-      const msg = document.getElementById("zeroMessage");
-      if (totalIncome > 0 && totalIncome.toFixed(2) == totalBudget.toFixed(2)) {
-        msg.innerText = "🎉 Congratulations! You've created a Zero-Based Budget!";
-      } else {
-        msg.innerText = "";
-      }
-
-      // Save to Firestore
-      if (currentUID) {
-        const monthKey = document.getElementById("month").value;
-        db.collection("users").doc(currentUID)
-          .collection("budgets").doc(monthKey)
-          .set({
-            incomeHTML: document.querySelector("#incomeTable tbody").innerHTML,
-            expenseHTML: document.querySelector("#budgetTable tbody").innerHTML,
-            timestamp: new Date()
-          });
-      }
-    }
-
-    function loadData() {
-      const monthKey = document.getElementById("month").value;
-      db.collection("users").doc(currentUID)
-        .collection("budgets").doc(monthKey)
-        .get().then(doc => {
-          if (doc.exists) {
-            document.querySelector("#incomeTable tbody").innerHTML = doc.data().incomeHTML;
-            document.querySelector("#budgetTable tbody").innerHTML = doc.data().expenseHTML;
-            calculate();
-          }
-        });
-    }
-
-    document.getElementById("month").addEventListener("change", () => {
-      loadData();
     });
-  </script>
+    document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+      data.expenses.push({
+        paid: row.cells[0].querySelector("input").checked,
+        category: row.cells[1].querySelector("input").value,
+        budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
+        spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
+        due: row.cells[5].querySelector("input").value,
+        source: row.cells[6].querySelector("select").value
+      });
+    });
+    db.collection("budgets").doc(userId + "_" + month).set(data);
+  }
+
+  function loadBudget() {
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
+    db.collection("budgets").doc(userId + "_" + month).get().then(doc => {
+      if (!doc.exists) return;
+      const data = doc.data();
+      data.incomes.forEach(i => {
+        const row = document.createElement("tr");
+        row.innerHTML = \`<td><input type="text" value="\${i.source}"></td><td><input type="number" value="\${i.amount}"></td>\`;
+        document.querySelector("#incomeTable tbody").appendChild(row);
+      });
+      data.expenses.forEach(e => {
+        const row = document.createElement("tr");
+        row.innerHTML = \`
+          <td><input type="checkbox" \${e.paid ? "checked" : ""}></td>
+          <td><input type="text" value="\${e.category}"></td>
+          <td><input type="number" value="\${e.budgeted}"></td>
+          <td><input type="number" value="\${e.spent}"></td>
+          <td>0</td>
+          <td><input type="date" value="\${e.due}"></td>
+          <td><select>
+            <option \${e.source==="VA"?"selected":""}>VA</option>
+            <option \${e.source==="SS"?"selected":""}>SS</option>
+            <option \${e.source==="Other"?"selected":""}>Other</option>
+          </select></td>
+        \`;
+        document.querySelector("#expenseTable tbody").appendChild(row);
+      });
+      calculateBudget();
+    });
+  }
+</script>
 </body>
 </html>
