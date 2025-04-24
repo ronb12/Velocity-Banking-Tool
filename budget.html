@@ -3,101 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>💰 Bradley's Budget Tracker</title>
+  <title>💰 Bradley's Zero-Based Budget Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f4f9;
-      padding: 20px;
-      margin: 0;
-      text-align: center;
-    }
-    h1 {
-      color: #007bff;
-    }
-    .container {
-      max-width: 950px;
-      margin: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-    }
-    th {
-      background: #007bff;
-      color: white;
-    }
-    input, select {
-      width: 100%;
-      padding: 5px;
-      box-sizing: border-box;
-    }
-    .section-title {
-      margin-top: 30px;
-      color: #007bff;
-      font-size: 18px;
-    }
-    .controls {
-      margin-top: 15px;
-    }
-    .controls button {
-      padding: 10px 15px;
-      margin: 5px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .controls button:hover {
-      background: #0056b3;
-    }
-    .summary {
-      text-align: right;
-      margin-top: 20px;
-      font-weight: bold;
-    }
-    .success-msg {
-      background: #d4edda;
-      color: #155724;
-      padding: 10px;
-      border-radius: 5px;
-      margin-top: 15px;
-      display: none;
-    }
-    .back {
-      display: inline-block;
-      margin-top: 20px;
-      text-decoration: none;
-      font-weight: bold;
-      color: #007bff;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; margin: 0; padding: 20px; text-align: center; }
+    h1 { color: #007bff; }
+    .container { max-width: 1000px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+    th { background: #007bff; color: white; }
+    input, select { width: 100%; padding: 5px; box-sizing: border-box; }
+    .controls, .summary, .income-breakdown { margin-top: 20px; }
+    .controls button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .controls button:hover { background: #0056b3; }
+    .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
+    .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
   </style>
 </head>
 <body>
 <div class="container">
   <h1>💸 Bradley's Budget Tracker</h1>
-  <label for="month">Select Budget Date:</label>
-  <input type="date" id="month" />
+  <label for="month">Select Month:</label>
+  <input type="month" id="month" />
 
-  <div class="section-title">Income Sources</div>
+  <h3>Income Sources</h3>
   <table id="incomeTable">
     <thead><tr><th>Source</th><th>Amount ($)</th></tr></thead>
     <tbody></tbody>
   </table>
   <button onclick="addIncome()">+ Add Income</button>
 
-  <div class="section-title">Expenses</div>
+  <h3>Expenses</h3>
   <table id="expenseTable">
     <thead>
       <tr><th>Paid</th><th>Category</th><th>Budgeted</th><th>Spent</th><th>Remaining</th><th>Due Date</th><th>Paid From</th></tr>
@@ -111,10 +49,8 @@
     <button onclick="saveBudget()">💾 Save</button>
   </div>
 
-  <div class="summary" id="summaryTotals">
-    Total Income: $0 | Total Budgeted: $0 | Remaining: $0 | Total Paid Bills: 0
-  </div>
-
+  <div class="summary" id="summaryTotals">Total Income: $0 | Total Budgeted: $0 | Total Spent: $0 | Remaining: $0 | Total Paid: $0</div>
+  <div class="income-breakdown" id="incomeBreakdown"></div>
   <div class="success-msg" id="zeroBasedMessage">🎉 Congratulations! You've created a Zero-Based Budget.</div>
   <a class="back" href="index.html">← Back to Dashboard</a>
 </div>
@@ -130,6 +66,7 @@
   const db = firebase.firestore();
 
   let userId = "";
+
   auth.onAuthStateChanged(user => {
     if (!user) return window.location.href = "login.html";
     userId = user.uid;
@@ -140,9 +77,9 @@
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><input type="text" placeholder="e.g. VA Check"></td>
-      <td><input type="number" value="0"></td>
-    `;
+      <td><input type="number" value="0"></td>`;
     document.querySelector("#incomeTable tbody").appendChild(row);
+    updatePaidFromDropdowns();
   }
 
   function addExpense() {
@@ -150,48 +87,64 @@
     row.innerHTML = `
       <td><input type="checkbox" onchange="calculateBudget()"></td>
       <td><input type="text" placeholder="Category"></td>
-      <td><input type="number" value="0"></td>
-      <td><input type="number" value="0"></td>
+      <td><input type="number" value="0" onchange="calculateBudget()"></td>
+      <td><input type="number" value="0" onchange="calculateBudget()"></td>
       <td>0</td>
       <td><input type="date"></td>
-      <td>
-        <select>
-          <option>VA</option>
-          <option>SS</option>
-          <option>Other</option>
-        </select>
-      </td>
-    `;
+      <td><select></select></td>`;
     document.querySelector("#expenseTable tbody").appendChild(row);
+    updatePaidFromDropdowns();
+  }
+
+  function updatePaidFromDropdowns() {
+    const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
+      row => row.cells[0].querySelector("input").value.trim()).filter(Boolean);
+    document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+      const select = row.cells[6].querySelector("select");
+      const currentValue = select.value;
+      select.innerHTML = sources.map(s => `<option${s === currentValue ? " selected" : ""}>${s}</option>`).join("");
+    });
   }
 
   function calculateBudget() {
-    let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidCount = 0;
+    let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
+    const incomeMap = {};
+
     document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
-      incomeTotal += parseFloat(row.cells[1].querySelector("input").value) || 0;
+      const name = row.cells[0].querySelector("input").value.trim();
+      const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+      incomeTotal += amount;
+      if (name) incomeMap[name] = { amount, spent: 0 };
     });
 
     document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-      const paid = row.cells[0].querySelector("input").checked;
       const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
       const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
+      const paid = row.cells[0].querySelector("input").checked;
+      const paidFrom = row.cells[6].querySelector("select").value;
       row.cells[4].innerText = (budgeted - spent).toFixed(2);
+
       budgetedTotal += budgeted;
       spentTotal += spent;
-      if (paid) paidCount++;
+      if (paid) paidTotal += spent;
+      if (paid && incomeMap[paidFrom]) incomeMap[paidFrom].spent += spent;
     });
 
-    const remaining = incomeTotal - budgetedTotal;
-    document.getElementById("summaryTotals").innerText =
-      `Total Income: $${incomeTotal.toFixed(2)} | Total Budgeted: $${budgetedTotal.toFixed(2)} | Remaining: $${remaining.toFixed(2)} | Total Paid Bills: ${paidCount}`;
+    const summary = document.getElementById("summaryTotals");
+    summary.innerText = `Total Income: $${incomeTotal.toFixed(2)} | Total Budgeted: $${budgetedTotal.toFixed(2)} | Total Spent: $${spentTotal.toFixed(2)} | Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)} | Total Paid: $${paidTotal.toFixed(2)}`;
 
-    const msg = document.getElementById("zeroBasedMessage");
-    msg.style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+    const breakdown = Object.entries(incomeMap).map(([name, val]) => {
+      const remain = val.amount - val.spent;
+      return `<div><strong>${name}:</strong> Budgeted $${val.amount}, Used $${val.spent}, Remaining $${remain.toFixed(2)}</div>`;
+    }).join("");
+    document.getElementById("incomeBreakdown").innerHTML = breakdown;
+
+    const zeroMsg = document.getElementById("zeroBasedMessage");
+    zeroMsg.style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
   }
 
   function saveBudget() {
-    const rawDate = document.getElementById("month").value || new Date().toISOString().slice(0, 10);
-    const month = rawDate.slice(0, 7);
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
     const data = { incomes: [], expenses: [], timestamp: new Date() };
 
     document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
@@ -216,39 +169,28 @@
   }
 
   function loadBudget() {
-    const rawDate = document.getElementById("month").value || new Date().toISOString().slice(0, 10);
-    const month = rawDate.slice(0, 7);
-
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
     db.collection("budgets").doc(userId + "_" + month).get().then(doc => {
       if (!doc.exists) return;
       const data = doc.data();
-
       data.incomes.forEach(i => {
         const row = document.createElement("tr");
         row.innerHTML = `<td><input type="text" value="${i.source}"></td><td><input type="number" value="${i.amount}"></td>`;
         document.querySelector("#incomeTable tbody").appendChild(row);
       });
-
       data.expenses.forEach(e => {
         const row = document.createElement("tr");
         row.innerHTML = `
           <td><input type="checkbox" ${e.paid ? "checked" : ""} onchange="calculateBudget()"></td>
           <td><input type="text" value="${e.category}"></td>
-          <td><input type="number" value="${e.budgeted}"></td>
-          <td><input type="number" value="${e.spent}"></td>
+          <td><input type="number" value="${e.budgeted}" onchange="calculateBudget()"></td>
+          <td><input type="number" value="${e.spent}" onchange="calculateBudget()"></td>
           <td>0</td>
           <td><input type="date" value="${e.due}"></td>
-          <td>
-            <select>
-              <option ${e.source === "VA" ? "selected" : ""}>VA</option>
-              <option ${e.source === "SS" ? "selected" : ""}>SS</option>
-              <option ${e.source === "Other" ? "selected" : ""}>Other</option>
-            </select>
-          </td>
-        `;
+          <td><select></select></td>`;
         document.querySelector("#expenseTable tbody").appendChild(row);
       });
-
+      updatePaidFromDropdowns();
       calculateBudget();
     });
   }
