@@ -1,9 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Net Worth Tracker</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -59,13 +63,6 @@
       font-size: 18px;
       font-weight: bold;
     }
-    .button-group {
-      margin-top: 20px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
   </style>
 </head>
 <body>
@@ -94,30 +91,41 @@
     </table>
     <button onclick="addRow('liabilitiesTable')">+ Add Liability</button>
 
-    <div class="button-group">
-      <button onclick="saveData()">💾 Save</button>
-      <button onclick="loadData()">📥 Load</button>
-    </div>
-
     <div class="summary" id="netWorthSummary">Net Worth: $0.00</div>
   </div>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    let userId = "";
+
+    auth.onAuthStateChanged(user => {
+      if (!user) return window.location.href = "login.html";
+      userId = user.uid;
+      loadData();
+    });
+
     function addRow(tableId, name = "", value = 0) {
       const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
       const newRow = table.insertRow();
-      newRow.innerHTML = `
-        <td><input type="text" value="${name}" placeholder="${tableId === 'assetsTable' ? 'Asset Name' : 'Liability Name'}" /></td>
-        <td><input type="number" value="${value}" onchange="calculateNetWorth()" /></td>
+      newRow.innerHTML = \`
+        <td><input type="text" value="\${name}" placeholder="\${tableId === 'assetsTable' ? 'Asset Name' : 'Liability Name'}" oninput="saveData()" /></td>
+        <td><input type="number" value="\${value}" onchange="calculateNetWorth(); saveData();" /></td>
         <td><button onclick="deleteRow(this)">❌</button></td>
-      `;
+      \`;
       calculateNetWorth();
     }
 
     function deleteRow(button) {
-      const row = button.closest("tr");
-      row.remove();
+      button.closest("tr").remove();
       calculateNetWorth();
+      saveData();
     }
 
     function calculateNetWorth() {
@@ -132,7 +140,7 @@
       });
 
       const netWorth = totalAssets - totalLiabilities;
-      document.getElementById('netWorthSummary').innerText = `Net Worth: $${netWorth.toFixed(2)}`;
+      document.getElementById('netWorthSummary').innerText = \`Net Worth: $\${netWorth.toFixed(2)}\`;
     }
 
     function saveData() {
@@ -150,27 +158,20 @@
         liabilities.push({ name, value });
       });
 
-      localStorage.setItem("netWorthData", JSON.stringify({ assets, liabilities }));
-      alert("✅ Data saved successfully.");
+      db.collection("networth").doc(userId).set({ assets, liabilities, timestamp: new Date() });
     }
 
-    function loadData() {
-      const saved = localStorage.getItem("netWorthData");
-      if (!saved) return alert("❌ No saved data found.");
-      
-      const { assets, liabilities } = JSON.parse(saved);
+    async function loadData() {
+      const doc = await db.collection("networth").doc(userId).get();
+      if (!doc.exists) return;
 
+      const data = doc.data();
       document.querySelector("#assetsTable tbody").innerHTML = "";
       document.querySelector("#liabilitiesTable tbody").innerHTML = "";
-
-      assets.forEach(a => addRow("assetsTable", a.name, a.value));
-      liabilities.forEach(l => addRow("liabilitiesTable", l.name, l.value));
-
+      data.assets.forEach(a => addRow("assetsTable", a.name, a.value));
+      data.liabilities.forEach(l => addRow("liabilitiesTable", l.name, l.value));
       calculateNetWorth();
     }
-
-    // Load data on page load if available
-    window.onload = loadData;
   </script>
 </body>
 </html>
