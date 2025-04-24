@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Budget Tracker</title>
   <style>
     body {
@@ -16,13 +15,19 @@
       text-align: center;
       color: #007bff;
     }
-    .month-selector {
-      text-align: center;
-      margin-bottom: 20px;
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .month-selector select {
-      padding: 10px;
-      font-size: 16px;
+    .top-bar a {
+      text-decoration: none;
+      color: #007bff;
+      font-weight: bold;
+    }
+    .month-selector, .income-section {
+      text-align: center;
+      margin: 10px 0;
     }
     table {
       width: 100%;
@@ -31,7 +36,7 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     th, td {
-      padding: 12px;
+      padding: 10px;
       border-bottom: 1px solid #ddd;
       text-align: left;
     }
@@ -39,7 +44,7 @@
       background: #007bff;
       color: white;
     }
-    input[type='text'], input[type='number'] {
+    input[type='text'], input[type='number'], select {
       width: 100%;
       padding: 6px;
       box-sizing: border-box;
@@ -57,25 +62,28 @@
       cursor: pointer;
       border-radius: 4px;
     }
-    .actions button:hover {
-      background: #0056b3;
-    }
-    .totals {
+    .totals, .zero-msg {
       margin-top: 20px;
       text-align: right;
+      font-size: 16px;
     }
-    .totals div {
-      font-size: 18px;
-      margin-bottom: 5px;
+    .zero-msg {
+      font-weight: bold;
     }
+    .zero-ok { color: green; }
+    .zero-left { color: orange; }
+    .zero-over { color: red; }
   </style>
 </head>
 <body>
-  <h1>Bradley's Budget Tracker</h1>
+  <div class="top-bar">
+    <a href="index.html">← Back to Dashboard</a>
+    <h1>Bradley's Budget Tracker</h1>
+  </div>
 
   <div class="month-selector">
-    <label for="month">Select Month: </label>
-    <select id="month">
+    <label for="month">Month:</label>
+    <select id="month" onchange="loadMonth()">
       <option>January 2025</option>
       <option>February 2025</option>
       <option>March 2025</option>
@@ -91,6 +99,11 @@
     </select>
   </div>
 
+  <div class="income-section">
+    <label for="income">Monthly Income: $</label>
+    <input type="number" id="income" value="0" onchange="calculateTotals()">
+  </div>
+
   <table id="budgetTable">
     <thead>
       <tr>
@@ -98,30 +111,19 @@
         <th>Budgeted ($)</th>
         <th>Spent ($)</th>
         <th>Remaining ($)</th>
+        <th>Due Date</th>
+        <th>Check Paid From</th>
+        <th>Paid</th>
         <th>Notes</th>
       </tr>
     </thead>
-    <tbody>
-      <tr>
-        <td><input type="text" value="Housing"></td>
-        <td><input type="number" value="1200"></td>
-        <td><input type="number" value="1000"></td>
-        <td>200</td>
-        <td><input type="text" placeholder="e.g., Rent or Mortgage"></td>
-      </tr>
-      <tr>
-        <td><input type="text" value="Transportation"></td>
-        <td><input type="number" value="300"></td>
-        <td><input type="number" value="150"></td>
-        <td>150</td>
-        <td><input type="text" placeholder="e.g., Gas, Uber"></td>
-      </tr>
-    </tbody>
+    <tbody></tbody>
   </table>
 
   <div class="actions">
     <button onclick="addRow()">➕ Add Row</button>
     <button onclick="calculateTotals()">🧮 Recalculate</button>
+    <button onclick="saveMonth()">💾 Save</button>
   </div>
 
   <div class="totals">
@@ -129,38 +131,90 @@
     <div><strong>Total Spent:</strong> $<span id="totalSpent">0</span></div>
     <div><strong>Total Remaining:</strong> $<span id="totalRemaining">0</span></div>
   </div>
+  <div class="zero-msg" id="zeroMessage"></div>
 
   <script>
-    function addRow() {
-      const table = document.getElementById("budgetTable").getElementsByTagName("tbody")[0];
-      const newRow = table.insertRow();
-      newRow.innerHTML = \`
-        <td><input type="text" placeholder="Category"></td>
-        <td><input type="number" value="0"></td>
-        <td><input type="number" value="0"></td>
+    function addRow(category = '', budgeted = 0, spent = 0, due = '', check = '', paid = false, notes = '') {
+      const table = document.querySelector("#budgetTable tbody");
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="text" value="${category}"></td>
+        <td><input type="number" value="${budgeted}"></td>
+        <td><input type="number" value="${spent}"></td>
         <td>0</td>
-        <td><input type="text" placeholder="Notes"></td>
-      \`;
+        <td><input type="text" value="${due}" placeholder="MM/DD"></td>
+        <td><input type="text" value="${check}" placeholder="VA / SS / etc."></td>
+        <td><input type="checkbox" ${paid ? 'checked' : ''}></td>
+        <td><input type="text" value="${notes}"></td>
+      `;
+      table.appendChild(row);
     }
 
     function calculateTotals() {
-      let totalBudget = 0;
-      let totalSpent = 0;
       const rows = document.querySelectorAll("#budgetTable tbody tr");
+      let totalBudget = 0, totalSpent = 0;
       rows.forEach(row => {
         const budget = parseFloat(row.cells[1].querySelector("input").value) || 0;
         const spent = parseFloat(row.cells[2].querySelector("input").value) || 0;
-        const remaining = budget - spent;
-        row.cells[3].innerText = remaining.toFixed(2);
+        row.cells[3].innerText = (budget - spent).toFixed(2);
         totalBudget += budget;
         totalSpent += spent;
       });
       document.getElementById("totalBudget").innerText = totalBudget.toFixed(2);
       document.getElementById("totalSpent").innerText = totalSpent.toFixed(2);
+      const remaining = (parseFloat(document.getElementById("income").value) || 0) - totalBudget;
       document.getElementById("totalRemaining").innerText = (totalBudget - totalSpent).toFixed(2);
+      updateZeroMessage(remaining);
     }
 
-    calculateTotals();
+    function updateZeroMessage(remaining) {
+      const msg = document.getElementById("zeroMessage");
+      if (remaining === 0) {
+        msg.textContent = "🎉 Congratulations! You've created a Zero-Based Budget.";
+        msg.className = "zero-msg zero-ok";
+      } else if (remaining > 0) {
+        msg.textContent = `⚠️ You still have $${remaining.toFixed(2)} left to allocate.`;
+        msg.className = "zero-msg zero-left";
+      } else {
+        msg.textContent = `🚨 You've overbudgeted by $${Math.abs(remaining).toFixed(2)}.`;
+        msg.className = "zero-msg zero-over";
+      }
+    }
+
+    function saveMonth() {
+      const key = "budget-" + document.getElementById("month").value;
+      const income = document.getElementById("income").value;
+      const rows = document.querySelectorAll("#budgetTable tbody tr");
+      const data = [];
+      rows.forEach(row => {
+        data.push({
+          category: row.cells[0].querySelector("input").value,
+          budget: row.cells[1].querySelector("input").value,
+          spent: row.cells[2].querySelector("input").value,
+          due: row.cells[4].querySelector("input").value,
+          check: row.cells[5].querySelector("input").value,
+          paid: row.cells[6].querySelector("input").checked,
+          notes: row.cells[7].querySelector("input").value
+        });
+      });
+      localStorage.setItem(key, JSON.stringify({ income, data }));
+      alert("✅ Budget saved for " + document.getElementById("month").value);
+    }
+
+    function loadMonth() {
+      const key = "budget-" + document.getElementById("month").value;
+      const saved = JSON.parse(localStorage.getItem(key));
+      document.querySelector("#budgetTable tbody").innerHTML = '';
+      if (saved) {
+        document.getElementById("income").value = saved.income || 0;
+        saved.data.forEach(r => addRow(r.category, r.budget, r.spent, r.due, r.check, r.paid, r.notes));
+      } else {
+        addRow();
+      }
+      calculateTotals();
+    }
+
+    window.onload = loadMonth;
   </script>
 </body>
 </html>
