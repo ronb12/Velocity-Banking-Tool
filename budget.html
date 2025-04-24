@@ -1,3 +1,6 @@
+<!-- Due to character limits, I will break the code into two parts -->
+
+<!-- Part 1: Head, Styles, and Layout Structure -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,15 +23,37 @@
     .controls button:hover { background: #0056b3; }
     .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
     .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
-    .dashboard-cards {
-      display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;
+
+    td select { min-width: 140px; }
+    input[type="number"], input[type="text"], select {
+      border: 1px solid #ccc; border-radius: 6px; padding: 5px;
+      transition: all 0.2s ease;
     }
-    .card {
-      background: white; padding: 15px; border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-width: 180px;
+    input:focus, select:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 5px rgba(0,123,255,0.3);
     }
-    .card h4 { margin: 5px 0; color: #007bff; font-size: 16px; }
-    .card span { font-size: 20px; font-weight: bold; }
+    table tbody tr:hover {
+      background: #f1f7ff;
+      transition: background 0.2s;
+    }
+
+    .dashboard-tile {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px 20px;
+      background: #fff;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+      border-left: 5px solid;
+      border-radius: 8px;
+      min-width: 180px;
+    }
+    .dashboard-total-income { border-color: #28a745; }
+    .dashboard-total-budgeted { border-color: #ffc107; }
+    .dashboard-total-spent { border-color: #dc3545; }
+    .dashboard-total-remaining { border-color: #007bff; }
+    .dashboard-total-paid { border-color: #6f42c1; }
   </style>
 </head>
 <body>
@@ -59,12 +84,13 @@
     <button onclick="window.print()">🖨️ Print / Save PDF</button>
   </div>
 
-  <div class="dashboard-cards">
-    <div class="card"><h4>Total Income</h4><span id="totalIncome">$0</span></div>
-    <div class="card"><h4>Total Budgeted</h4><span id="totalBudgeted">$0</span></div>
-    <div class="card"><h4>Total Spent</h4><span id="totalSpent">$0</span></div>
-    <div class="card"><h4>Remaining</h4><span id="totalRemaining">$0</span></div>
-    <div class="card"><h4>Total Paid</h4><span id="totalPaid">$0</span></div>
+  <!-- 🎯 DIGITAL DASHBOARD -->
+  <div class="summary">
+    <div class="dashboard-tile dashboard-total-income" id="tileIncome">Total Income: $0</div>
+    <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">Budgeted: $0</div>
+    <div class="dashboard-tile dashboard-total-spent" id="tileSpent">Spent: $0</div>
+    <div class="dashboard-tile dashboard-total-remaining" id="tileRemaining">Remaining: $0</div>
+    <div class="dashboard-tile dashboard-total-paid" id="tilePaid">Paid: $0</div>
   </div>
 
   <div class="income-breakdown" id="incomeBreakdown"></div>
@@ -72,6 +98,7 @@
   <a class="back" href="index.html">← Back to Dashboard</a>
 </div>
 
+<!-- Part 2: Script will follow next due to character limits -->
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
@@ -83,6 +110,7 @@
   const db = firebase.firestore();
 
   let userId = "";
+
   auth.onAuthStateChanged(user => {
     if (!user) return window.location.href = "login.html";
     userId = user.uid;
@@ -144,21 +172,59 @@
     document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
       const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
       const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
-      const paid = row.cells[0].querySelector("input").checked;
+      const paidCheckbox = row.cells[0].querySelector("input");
+      const paid = paidCheckbox.checked;
       const paidFrom = row.cells[6].querySelector("select").value;
+      const dueDateInput = row.cells[5].querySelector("input");
+      const dueDate = new Date(dueDateInput.value);
+      const remaining = budgeted - spent;
 
-      row.cells[4].innerText = (budgeted - spent).toFixed(2);
+      // Bar & text
+      const percentUsed = Math.min((spent / budgeted) * 100, 100);
+      row.cells[4].innerHTML = `
+        <div style="position:relative; height:20px; background:#eee; border-radius:4px;">
+          <div style="width:${percentUsed}%; background:${percentUsed > 100 ? '#dc3545' : '#007bff'}; height:100%; border-radius:4px;"></div>
+          <span style="position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:12px;">$${remaining.toFixed(2)}</span>
+        </div>
+      `;
+
+      // Totals
       budgetedTotal += budgeted;
       spentTotal += spent;
       if (paid) paidTotal += spent;
-      if (paid && incomeMap[paidFrom]) incomeMap[paidFrom].spent += spent;
+
+      // Row color
+      row.style.backgroundColor = paid ? "#e6f7e6" : "white";
+
+      // Due soon warning
+      const today = new Date();
+      const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+      if (daysUntilDue >= 0 && daysUntilDue <= 7) {
+        dueDateInput.style.border = "2px solid #ffc107";
+        dueDateInput.style.background = "#fff8e1";
+      } else {
+        dueDateInput.style.border = "";
+        dueDateInput.style.background = "white";
+      }
+
+      // Smart Paid From
+      if (paid && incomeMap[paidFrom]) {
+        incomeMap[paidFrom].spent += spent;
+      } else if (paid && Object.keys(incomeMap).length > 0) {
+        const bestMatch = Object.entries(incomeMap).reduce((a, b) =>
+          (a[1].amount - a[1].spent) > (b[1].amount - b[1].spent) ? a : b
+        );
+        row.cells[6].querySelector("select").value = bestMatch[0];
+        incomeMap[bestMatch[0]].spent += spent;
+      }
     });
 
-    document.getElementById("totalIncome").innerText = `$${incomeTotal.toFixed(2)}`;
-    document.getElementById("totalBudgeted").innerText = `$${budgetedTotal.toFixed(2)}`;
-    document.getElementById("totalSpent").innerText = `$${spentTotal.toFixed(2)}`;
-    document.getElementById("totalRemaining").innerText = `$${(incomeTotal - budgetedTotal).toFixed(2)}`;
-    document.getElementById("totalPaid").innerText = `$${paidTotal.toFixed(2)}`;
+    // Update dashboard
+    document.getElementById("tileIncome").innerText = `Total Income: $${incomeTotal.toFixed(2)}`;
+    document.getElementById("tileBudgeted").innerText = `Budgeted: $${budgetedTotal.toFixed(2)}`;
+    document.getElementById("tileSpent").innerText = `Spent: $${spentTotal.toFixed(2)}`;
+    document.getElementById("tileRemaining").innerText = `Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)}`;
+    document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
 
     const breakdown = Object.entries(incomeMap).map(([name, val]) => {
       const remain = val.amount - val.spent;
@@ -196,10 +262,11 @@
   }
 
   function loadBudget() {
-    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    const docRef = db.collection("budgets").doc(userId + "_" + month);
+    const monthInput = document.getElementById("month");
+    const currentMonth = monthInput.value || new Date().toISOString().slice(0, 7);
+    const currentDocRef = db.collection("budgets").doc(userId + "_" + currentMonth);
 
-    docRef.get().then(async (doc) => {
+    currentDocRef.get().then(async (doc) => {
       document.querySelector("#incomeTable tbody").innerHTML = "";
       document.querySelector("#expenseTable tbody").innerHTML = "";
 
@@ -209,18 +276,16 @@
         data.expenses.forEach(e => addExpense(e));
         calculateBudget();
       } else {
-        // Recurring from previous month
-        const [year, m] = month.split("-");
-        const prevMonth = (parseInt(m) === 1) ? `${parseInt(year) - 1}-12` : `${year}-${(parseInt(m) - 1).toString().padStart(2, '0')}`;
-        const prevRef = db.collection("budgets").doc(userId + "_" + prevMonth);
-        const prevDoc = await prevRef.get();
-
+        // 🔁 Recurring Budget - Load Previous Month
+        const [year, month] = currentMonth.split("-");
+        const prevMonth = (parseInt(month) === 1)
+          ? `${parseInt(year) - 1}-12`
+          : `${year}-${(parseInt(month) - 1).toString().padStart(2, '0')}`;
+        const prevDoc = await db.collection("budgets").doc(userId + "_" + prevMonth).get();
         if (prevDoc.exists) {
-          const data = prevDoc.data();
-          data.incomes.forEach(i => addIncome(i.source, i.amount));
-          data.expenses.forEach(e => addExpense({
-            ...e, paid: false, spent: 0, due: ""
-          }));
+          const prevData = prevDoc.data();
+          prevData.incomes.forEach(i => addIncome(i.source, i.amount));
+          prevData.expenses.forEach(e => addExpense({ ...e, paid: false, spent: 0, due: "" }));
           calculateBudget();
         }
       }
