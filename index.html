@@ -166,19 +166,6 @@
     }
   });
 
-  const ctx = document.getElementById("monthlyChart").getContext("2d");
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels: ["Jan", "Feb", "Mar", "Apr", "May"],
-      datasets: [{
-        label: "Spending ($)",
-        data: [500, 400, 600, 700, 650],
-        backgroundColor: "#007bff"
-      }]
-    }
-  });
-
   function exportPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
