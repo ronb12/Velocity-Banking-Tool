@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>💰 Bradley's Zero-Based Budget Tracker</title>
+  <title>💰 Bradley's Budget Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -26,11 +26,11 @@
 <div class="container">
   <h1>💸 Bradley's Budget Tracker</h1>
   <label for="month">Select Month:</label>
-  <input type="month" id="month" />
+  <input type="month" id="month" onchange="switchMonth()" />
 
   <h3>Income Sources</h3>
   <table id="incomeTable">
-    <thead><tr><th>Source</th><th>Amount ($)</th></tr></thead>
+    <thead><tr><th>Source</th><th>Amount ($)</th><th>❌</th></tr></thead>
     <tbody></tbody>
   </table>
   <button onclick="addIncome()">+ Add Income</button>
@@ -38,7 +38,7 @@
   <h3>Expenses</h3>
   <table id="expenseTable">
     <thead>
-      <tr><th>Paid</th><th>Category</th><th>Budgeted</th><th>Spent</th><th>Remaining</th><th>Due Date</th><th>Paid From</th></tr>
+      <tr><th>Paid</th><th>Category</th><th>Budgeted</th><th>Spent</th><th>Remaining</th><th>Due Date</th><th>Paid From</th><th>❌</th></tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -64,7 +64,6 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
-
   let userId = "";
 
   auth.onAuthStateChanged(user => {
@@ -73,11 +72,17 @@
     loadBudget();
   });
 
+  function switchMonth() {
+    saveBudget();
+    loadBudget();
+  }
+
   function addIncome() {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><input type="text" placeholder="e.g. VA Check"></td>
-      <td><input type="number" value="0"></td>`;
+      <td><input type="number" value="0"></td>
+      <td><button onclick="this.closest('tr').remove(); calculateBudget()">❌</button></td>`;
     document.querySelector("#incomeTable tbody").appendChild(row);
     updatePaidFromDropdowns();
   }
@@ -91,7 +96,8 @@
       <td><input type="number" value="0" onchange="calculateBudget()"></td>
       <td>0</td>
       <td><input type="date"></td>
-      <td><select></select></td>`;
+      <td><select></select></td>
+      <td><button onclick="this.closest('tr').remove(); calculateBudget()">❌</button></td>`;
     document.querySelector("#expenseTable tbody").appendChild(row);
     updatePaidFromDropdowns();
   }
@@ -130,8 +136,8 @@
       if (paid && incomeMap[paidFrom]) incomeMap[paidFrom].spent += spent;
     });
 
-    const summary = document.getElementById("summaryTotals");
-    summary.innerText = `Total Income: $${incomeTotal.toFixed(2)} | Total Budgeted: $${budgetedTotal.toFixed(2)} | Total Spent: $${spentTotal.toFixed(2)} | Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)} | Total Paid: $${paidTotal.toFixed(2)}`;
+    document.getElementById("summaryTotals").innerText = 
+      `Total Income: $${incomeTotal.toFixed(2)} | Total Budgeted: $${budgetedTotal.toFixed(2)} | Total Spent: $${spentTotal.toFixed(2)} | Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)} | Total Paid: $${paidTotal.toFixed(2)}`;
 
     const breakdown = Object.entries(incomeMap).map(([name, val]) => {
       const remain = val.amount - val.spent;
@@ -170,12 +176,14 @@
 
   function loadBudget() {
     const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
     db.collection("budgets").doc(userId + "_" + month).get().then(doc => {
       if (!doc.exists) return;
       const data = doc.data();
       data.incomes.forEach(i => {
         const row = document.createElement("tr");
-        row.innerHTML = `<td><input type="text" value="${i.source}"></td><td><input type="number" value="${i.amount}"></td>`;
+        row.innerHTML = `<td><input type="text" value="${i.source}"></td><td><input type="number" value="${i.amount}"></td><td><button onclick="this.closest('tr').remove(); calculateBudget()">❌</button></td>`;
         document.querySelector("#incomeTable tbody").appendChild(row);
       });
       data.expenses.forEach(e => {
@@ -187,7 +195,8 @@
           <td><input type="number" value="${e.spent}" onchange="calculateBudget()"></td>
           <td>0</td>
           <td><input type="date" value="${e.due}"></td>
-          <td><select></select></td>`;
+          <td><select></select></td>
+          <td><button onclick="this.closest('tr').remove(); calculateBudget()">❌</button></td>`;
         document.querySelector("#expenseTable tbody").appendChild(row);
       });
       updatePaidFromDropdowns();
