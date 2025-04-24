@@ -22,6 +22,20 @@
     .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
     td select {
   min-width: 140px;
+      input[type="number"], input[type="text"], select {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 5px;
+  transition: all 0.2s ease;
+}
+input:focus, select:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0,123,255,0.3);
+}
+table tbody tr:hover {
+  background: #f1f7ff;
+  transition: background 0.2s;
 }
   </style>
 </head>
@@ -132,17 +146,54 @@
     });
 
     document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-      const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-      const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
-      const paid = row.cells[0].querySelector("input").checked;
-      const paidFrom = row.cells[6].querySelector("select").value;
-      row.cells[4].innerText = (budgeted - spent).toFixed(2);
+  const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+  const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
+  const paidCheckbox = row.cells[0].querySelector("input");
+  const paid = paidCheckbox.checked;
+  const paidFrom = row.cells[6].querySelector("select").value;
+  const dueDateInput = row.cells[5].querySelector("input");
+  const dueDate = new Date(dueDateInput.value);
+  const remaining = budgeted - spent;
 
-      budgetedTotal += budgeted;
-      spentTotal += spent;
-      if (paid) paidTotal += spent;
-      if (paid && incomeMap[paidFrom]) incomeMap[paidFrom].spent += spent;
-    });
+  // 💰 Remaining value and visual bar
+  const percentUsed = Math.min((spent / budgeted) * 100, 100);
+  row.cells[4].innerHTML = `
+    <div style="position:relative; height:20px; background:#eee; border-radius:4px;">
+      <div style="width:${percentUsed}%; background:${percentUsed > 100 ? '#dc3545' : '#007bff'}; height:100%; border-radius:4px;"></div>
+      <span style="position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:12px;">$${remaining.toFixed(2)}</span>
+    </div>
+  `;
+
+  // 💸 Totals
+  budgetedTotal += budgeted;
+  spentTotal += spent;
+  if (paid) paidTotal += spent;
+
+  // ✅ Row highlight if paid
+  row.style.backgroundColor = paid ? "#e6f7e6" : "white";
+
+  // ⏰ Warn if due within 7 days
+  const today = new Date();
+  const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+  if (daysUntilDue >= 0 && daysUntilDue <= 7) {
+    dueDateInput.style.border = "2px solid #ffc107";
+    dueDateInput.style.background = "#fff8e1";
+  } else {
+    dueDateInput.style.border = "";
+    dueDateInput.style.background = "white";
+  }
+
+  // 📌 Smart Paid From
+  if (paid && incomeMap[paidFrom]) {
+    incomeMap[paidFrom].spent += spent;
+  } else if (paid && Object.keys(incomeMap).length > 0) {
+    const bestMatch = Object.entries(incomeMap).reduce((a, b) =>
+      (a[1].amount - a[1].spent) > (b[1].amount - b[1].spent) ? a : b
+    );
+    row.cells[6].querySelector("select").value = bestMatch[0];
+    incomeMap[bestMatch[0]].spent += spent;
+  }
+});
 
     const summary = document.getElementById("summaryTotals");
     summary.innerText = `Total Income: $${incomeTotal.toFixed(2)} | Total Budgeted: $${budgetedTotal.toFixed(2)} | Total Spent: $${spentTotal.toFixed(2)} | Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)} | Total Paid: $${paidTotal.toFixed(2)}`;
