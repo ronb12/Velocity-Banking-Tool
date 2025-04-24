@@ -48,6 +48,8 @@
     <button onclick="calculateBudget()">🧮 Recalculate</button>
     <button onclick="saveBudget()">💾 Save</button>
     <button onclick="window.print()">🖨️ Print / Save PDF</button>
+    <button onclick="loadPreviousMonth()">📥 Load Previous Month</button>
+
   </div>
 
   <div class="summary" id="summaryTotals">Total Income: $0 | Total Budgeted: $0 | Total Spent: $0 | Remaining: $0 | Total Paid: $0</div>
@@ -176,6 +178,37 @@
 
     db.collection("budgets").doc(userId + "_" + month).set(data);
   }
+  function loadPreviousMonth() {
+  const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+  const [year, month] = currentMonth.split("-");
+  const prevMonth = (parseInt(month) === 1)
+    ? `${parseInt(year) - 1}-12`
+    : `${year}-${(parseInt(month) - 1).toString().padStart(2, '0')}`;
+  const prevDocRef = db.collection("budgets").doc(userId + "_" + prevMonth);
+
+  prevDocRef.get().then(doc => {
+    if (!doc.exists) {
+      alert("❌ No budget found for the previous month.");
+      return;
+    }
+
+    // Clear current data
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+
+    const data = doc.data();
+
+    data.incomes.forEach(i => addIncome(i.source, i.amount));
+    data.expenses.forEach(e => addExpense({
+      ...e,
+      paid: false,
+      spent: 0,
+      due: ""
+    }));
+
+    calculateBudget();
+  });
+}
 
  function loadBudget() {
   const monthInput = document.getElementById("month");
