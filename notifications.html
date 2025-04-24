@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔔 Notifications | Bradley's Toolkit</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f9fafb;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+
+    .notification {
+      background: #fff;
+      border-left: 5px solid #007bff;
+      margin: 10px 0;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .notification time {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-top: 8px;
+    }
+
+    #loading {
+      text-align: center;
+      margin-top: 30px;
+      font-style: italic;
+    }
+
+    .back {
+      display: inline-block;
+      margin-top: 20px;
+      text-decoration: none;
+      color: #007bff;
+      font-weight: bold;
+    }
+
+    .back:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔔 Notifications</h1>
+  <div id="loading">Loading notifications...</div>
+  <div id="notifications"></div>
+  <a href="index.html" class="back">← Back to Dashboard</a>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker",
+      storageBucket: "mobile-debt-tracker.firebasestorage.app",
+      messagingSenderId: "153601029964",
+      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      const container = document.getElementById("notifications");
+      const loading = document.getElementById("loading");
+
+      try {
+        const snapshot = await db
+          .collection("users")
+          .doc(user.uid)
+          .collection("notifications")
+          .orderBy("timestamp", "desc")
+          .limit(20)
+          .get();
+
+        loading.style.display = "none";
+
+        if (snapshot.empty) {
+          container.innerHTML = "<p>No notifications yet.</p>";
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          const n = doc.data();
+          const div = document.createElement("div");
+          div.className = "notification";
+          div.innerHTML = `
+            <div>${n.message || "No message provided."}</div>
+            <time>${n.timestamp ? new Date(n.timestamp.toDate()).toLocaleString() : "Unknown time"}</time>
+          `;
+          container.appendChild(div);
+        });
+      } catch (error) {
+        loading.innerText = "⚠️ Failed to load notifications.";
+        console.error("Error loading notifications:", error);
+      }
+    });
+  </script>
+</body>
+</html>
