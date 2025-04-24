@@ -11,12 +11,10 @@
       margin: 0;
       padding: 20px;
     }
-
     h1 {
       text-align: center;
       color: #2c3e50;
     }
-
     .container {
       max-width: 800px;
       margin: 0 auto;
@@ -25,30 +23,25 @@
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-
     table {
       width: 100%;
       margin-top: 20px;
       border-collapse: collapse;
     }
-
     th, td {
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #ddd;
     }
-
     th {
       background-color: #007bff;
       color: white;
     }
-
     input {
       width: 100%;
       padding: 8px;
       box-sizing: border-box;
     }
-
     button {
       margin-top: 10px;
       padding: 10px 15px;
@@ -58,15 +51,20 @@
       border-radius: 6px;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #0056b3;
     }
-
     .summary {
       margin-top: 30px;
       font-size: 18px;
       font-weight: bold;
+    }
+    .button-group {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
     }
   </style>
 </head>
@@ -77,16 +75,11 @@
     </a>
 
     <h1>Net Worth Tracker</h1>
-    <!-- rest of your content here... -->
 
     <h2>Assets</h2>
     <table id="assetsTable">
       <thead>
-        <tr>
-          <th>Asset Name</th>
-          <th>Value ($)</th>
-          <th></th>
-        </tr>
+        <tr><th>Asset Name</th><th>Value ($)</th><th></th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -95,52 +88,89 @@
     <h2>Liabilities</h2>
     <table id="liabilitiesTable">
       <thead>
-        <tr>
-          <th>Liability Name</th>
-          <th>Amount Owed ($)</th>
-          <th></th>
-        </tr>
+        <tr><th>Liability Name</th><th>Amount Owed ($)</th><th></th></tr>
       </thead>
       <tbody></tbody>
     </table>
     <button onclick="addRow('liabilitiesTable')">+ Add Liability</button>
 
+    <div class="button-group">
+      <button onclick="saveData()">💾 Save</button>
+      <button onclick="loadData()">📥 Load</button>
+    </div>
+
     <div class="summary" id="netWorthSummary">Net Worth: $0.00</div>
   </div>
 
   <script>
-    function addRow(tableId) {
+    function addRow(tableId, name = "", value = 0) {
       const table = document.getElementById(tableId).getElementsByTagName('tbody')[0];
       const newRow = table.insertRow();
-      const nameCell = newRow.insertCell(0);
-      const valueCell = newRow.insertCell(1);
-      const deleteCell = newRow.insertCell(2);
-
-      nameCell.innerHTML = `<input type="text" placeholder="${tableId === 'assetsTable' ? 'Asset Name' : 'Liability Name'}" />`;
-      valueCell.innerHTML = `<input type="number" value="0" onchange="calculateNetWorth()" />`;
-      deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
-
+      newRow.innerHTML = `
+        <td><input type="text" value="${name}" placeholder="${tableId === 'assetsTable' ? 'Asset Name' : 'Liability Name'}" /></td>
+        <td><input type="number" value="${value}" onchange="calculateNetWorth()" /></td>
+        <td><button onclick="deleteRow(this)">❌</button></td>
+      `;
       calculateNetWorth();
     }
 
     function deleteRow(button) {
       const row = button.closest("tr");
-      row.parentNode.removeChild(row);
+      row.remove();
       calculateNetWorth();
     }
 
     function calculateNetWorth() {
-      const assetInputs = document.querySelectorAll('#assetsTable tbody input[type="number"]');
-      const liabilityInputs = document.querySelectorAll('#liabilitiesTable tbody input[type="number"]');
-
       let totalAssets = 0, totalLiabilities = 0;
 
-      assetInputs.forEach(input => totalAssets += parseFloat(input.value || 0));
-      liabilityInputs.forEach(input => totalLiabilities += parseFloat(input.value || 0));
+      document.querySelectorAll('#assetsTable tbody input[type="number"]').forEach(input => {
+        totalAssets += parseFloat(input.value || 0);
+      });
+
+      document.querySelectorAll('#liabilitiesTable tbody input[type="number"]').forEach(input => {
+        totalLiabilities += parseFloat(input.value || 0);
+      });
 
       const netWorth = totalAssets - totalLiabilities;
       document.getElementById('netWorthSummary').innerText = `Net Worth: $${netWorth.toFixed(2)}`;
     }
+
+    function saveData() {
+      const assets = [], liabilities = [];
+
+      document.querySelectorAll('#assetsTable tbody tr').forEach(row => {
+        const name = row.cells[0].querySelector("input").value;
+        const value = parseFloat(row.cells[1].querySelector("input").value) || 0;
+        assets.push({ name, value });
+      });
+
+      document.querySelectorAll('#liabilitiesTable tbody tr').forEach(row => {
+        const name = row.cells[0].querySelector("input").value;
+        const value = parseFloat(row.cells[1].querySelector("input").value) || 0;
+        liabilities.push({ name, value });
+      });
+
+      localStorage.setItem("netWorthData", JSON.stringify({ assets, liabilities }));
+      alert("✅ Data saved successfully.");
+    }
+
+    function loadData() {
+      const saved = localStorage.getItem("netWorthData");
+      if (!saved) return alert("❌ No saved data found.");
+      
+      const { assets, liabilities } = JSON.parse(saved);
+
+      document.querySelector("#assetsTable tbody").innerHTML = "";
+      document.querySelector("#liabilitiesTable tbody").innerHTML = "";
+
+      assets.forEach(a => addRow("assetsTable", a.name, a.value));
+      liabilities.forEach(l => addRow("liabilitiesTable", l.name, l.value));
+
+      calculateNetWorth();
+    }
+
+    // Load data on page load if available
+    window.onload = loadData;
   </script>
 </body>
 </html>
