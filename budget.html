@@ -17,10 +17,9 @@
     }
     h1 {
       color: #007bff;
-      margin-bottom: 10px;
     }
     .container {
-      max-width: 960px;
+      max-width: 950px;
       margin: auto;
     }
     table {
@@ -40,7 +39,7 @@
     }
     input, select {
       width: 100%;
-      padding: 6px;
+      padding: 5px;
       box-sizing: border-box;
     }
     .section-title {
@@ -78,7 +77,7 @@
     }
     .back {
       display: inline-block;
-      margin-top: 25px;
+      margin-top: 20px;
       text-decoration: none;
       font-weight: bold;
       color: #007bff;
@@ -88,14 +87,12 @@
 <body>
 <div class="container">
   <h1>💸 Bradley's Budget Tracker</h1>
-  <label for="month">Select Month:</label>
-  <input type="month" id="month" />
+  <label for="month">Select Budget Date:</label>
+  <input type="date" id="month" />
 
   <div class="section-title">Income Sources</div>
   <table id="incomeTable">
-    <thead>
-      <tr><th>Source</th><th>Amount ($)</th></tr>
-    </thead>
+    <thead><tr><th>Source</th><th>Amount ($)</th></tr></thead>
     <tbody></tbody>
   </table>
   <button onclick="addIncome()">+ Add Income</button>
@@ -115,7 +112,7 @@
   </div>
 
   <div class="summary" id="summaryTotals">
-    Total Income: $0 | Total Budgeted: $0 | Remaining: $0
+    Total Income: $0 | Total Budgeted: $0 | Remaining: $0 | Total Paid Bills: 0
   </div>
 
   <div class="success-msg" id="zeroBasedMessage">🎉 Congratulations! You've created a Zero-Based Budget.</div>
@@ -151,51 +148,59 @@
   function addExpense() {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td><input type="checkbox"></td>
+      <td><input type="checkbox" onchange="calculateBudget()"></td>
       <td><input type="text" placeholder="Category"></td>
       <td><input type="number" value="0"></td>
       <td><input type="number" value="0"></td>
       <td>0</td>
       <td><input type="date"></td>
-      <td><select>
-        <option>VA</option>
-        <option>SS</option>
-        <option>Other</option>
-      </select></td>
+      <td>
+        <select>
+          <option>VA</option>
+          <option>SS</option>
+          <option>Other</option>
+        </select>
+      </td>
     `;
     document.querySelector("#expenseTable tbody").appendChild(row);
   }
 
   function calculateBudget() {
-    let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0;
+    let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidCount = 0;
     document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
       incomeTotal += parseFloat(row.cells[1].querySelector("input").value) || 0;
     });
+
     document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+      const paid = row.cells[0].querySelector("input").checked;
       const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
       const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
       row.cells[4].innerText = (budgeted - spent).toFixed(2);
       budgetedTotal += budgeted;
       spentTotal += spent;
+      if (paid) paidCount++;
     });
+
+    const remaining = incomeTotal - budgetedTotal;
     document.getElementById("summaryTotals").innerText =
-      `Total Income: $${incomeTotal.toFixed(2)} | Total Budgeted: $${budgetedTotal.toFixed(2)} | Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)}`;
+      `Total Income: $${incomeTotal.toFixed(2)} | Total Budgeted: $${budgetedTotal.toFixed(2)} | Remaining: $${remaining.toFixed(2)} | Total Paid Bills: ${paidCount}`;
 
     const msg = document.getElementById("zeroBasedMessage");
     msg.style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
   }
 
   function saveBudget() {
-    const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-    const data = {
-      incomes: [], expenses: [], timestamp: new Date()
-    };
+    const rawDate = document.getElementById("month").value || new Date().toISOString().slice(0, 10);
+    const month = rawDate.slice(0, 7);
+    const data = { incomes: [], expenses: [], timestamp: new Date() };
+
     document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
       data.incomes.push({
         source: row.cells[0].querySelector("input").value,
         amount: parseFloat(row.cells[1].querySelector("input").value) || 0
       });
     });
+
     document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
       data.expenses.push({
         paid: row.cells[0].querySelector("input").checked,
@@ -206,36 +211,44 @@
         source: row.cells[6].querySelector("select").value
       });
     });
+
     db.collection("budgets").doc(userId + "_" + month).set(data);
   }
 
   function loadBudget() {
-    const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
+    const rawDate = document.getElementById("month").value || new Date().toISOString().slice(0, 10);
+    const month = rawDate.slice(0, 7);
+
     db.collection("budgets").doc(userId + "_" + month).get().then(doc => {
       if (!doc.exists) return;
       const data = doc.data();
+
       data.incomes.forEach(i => {
         const row = document.createElement("tr");
         row.innerHTML = `<td><input type="text" value="${i.source}"></td><td><input type="number" value="${i.amount}"></td>`;
         document.querySelector("#incomeTable tbody").appendChild(row);
       });
+
       data.expenses.forEach(e => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td><input type="checkbox" ${e.paid ? "checked" : ""}></td>
+          <td><input type="checkbox" ${e.paid ? "checked" : ""} onchange="calculateBudget()"></td>
           <td><input type="text" value="${e.category}"></td>
           <td><input type="number" value="${e.budgeted}"></td>
           <td><input type="number" value="${e.spent}"></td>
           <td>0</td>
           <td><input type="date" value="${e.due}"></td>
-          <td><select>
-            <option ${e.source==="VA"?"selected":""}>VA</option>
-            <option ${e.source==="SS"?"selected":""}>SS</option>
-            <option ${e.source==="Other"?"selected":""}>Other</option>
-          </select></td>
+          <td>
+            <select>
+              <option ${e.source === "VA" ? "selected" : ""}>VA</option>
+              <option ${e.source === "SS" ? "selected" : ""}>SS</option>
+              <option ${e.source === "Other" ? "selected" : ""}>Other</option>
+            </select>
+          </td>
         `;
         document.querySelector("#expenseTable tbody").appendChild(row);
       });
+
       calculateBudget();
     });
   }
