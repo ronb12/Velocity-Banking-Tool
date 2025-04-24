@@ -177,16 +177,43 @@
     db.collection("budgets").doc(userId + "_" + month).set(data);
   }
 
-  function loadBudget() {
-    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    db.collection("budgets").doc(userId + "_" + month).get().then(doc => {
-      if (!doc.exists) return;
+ function loadBudget() {
+  const monthInput = document.getElementById("month");
+  const currentMonth = monthInput.value || new Date().toISOString().slice(0, 7);
+  const currentDocRef = db.collection("budgets").doc(userId + "_" + currentMonth);
+
+  currentDocRef.get().then(async (doc) => {
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+
+    if (doc.exists) {
       const data = doc.data();
       data.incomes.forEach(i => addIncome(i.source, i.amount));
       data.expenses.forEach(e => addExpense(e));
       calculateBudget();
-    });
-  }
+    } else {
+      // Try loading previous month
+      const [year, month] = currentMonth.split("-");
+      const prevMonth = (parseInt(month) === 1)
+        ? `${parseInt(year) - 1}-12`
+        : `${year}-${(parseInt(month) - 1).toString().padStart(2, '0')}`;
+      const prevDocRef = db.collection("budgets").doc(userId + "_" + prevMonth);
+      
+      const prevDoc = await prevDocRef.get();
+      if (prevDoc.exists) {
+        const prevData = prevDoc.data();
+        prevData.incomes.forEach(i => addIncome(i.source, i.amount));
+        prevData.expenses.forEach(e => addExpense({
+          ...e,
+          paid: false,
+          spent: 0,
+          due: "" // or you could default to first of new month
+        }));
+        calculateBudget();
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
