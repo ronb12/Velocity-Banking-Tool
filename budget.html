@@ -1,6 +1,3 @@
-<!-- Due to character limits, I will break the code into two parts -->
-
-<!-- Part 1: Head, Styles, and Layout Structure -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,7 +20,6 @@
     .controls button:hover { background: #0056b3; }
     .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
     .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
-
     td select { min-width: 140px; }
     input[type="number"], input[type="text"], select {
       border: 1px solid #ccc; border-radius: 6px; padding: 5px;
@@ -38,7 +34,6 @@
       background: #f1f7ff;
       transition: background 0.2s;
     }
-
     .dashboard-tile {
       display: inline-block;
       margin: 10px;
@@ -84,7 +79,7 @@
     <button onclick="window.print()">🖨️ Print / Save PDF</button>
   </div>
 
-  <!-- 🎯 DIGITAL DASHBOARD -->
+  <!-- Digital Dashboard Summary -->
   <div class="summary">
     <div class="dashboard-tile dashboard-total-income" id="tileIncome">Total Income: $0</div>
     <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">Budgeted: $0</div>
@@ -98,7 +93,6 @@
   <a class="back" href="index.html">← Back to Dashboard</a>
 </div>
 
-<!-- Part 2: Script will follow next due to character limits -->
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
@@ -108,7 +102,6 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
-
   let userId = "";
 
   auth.onAuthStateChanged(user => {
@@ -179,7 +172,7 @@
       const dueDate = new Date(dueDateInput.value);
       const remaining = budgeted - spent;
 
-      // Bar & text
+      // Remaining + visual bar
       const percentUsed = Math.min((spent / budgeted) * 100, 100);
       row.cells[4].innerHTML = `
         <div style="position:relative; height:20px; background:#eee; border-radius:4px;">
@@ -188,15 +181,14 @@
         </div>
       `;
 
-      // Totals
       budgetedTotal += budgeted;
       spentTotal += spent;
       if (paid) paidTotal += spent;
 
-      // Row color
+      // Row color for paid
       row.style.backgroundColor = paid ? "#e6f7e6" : "white";
 
-      // Due soon warning
+      // Due soon alert
       const today = new Date();
       const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
       if (daysUntilDue >= 0 && daysUntilDue <= 7) {
@@ -207,7 +199,7 @@
         dueDateInput.style.background = "white";
       }
 
-      // Smart Paid From
+      // Smart Paid From allocation
       if (paid && incomeMap[paidFrom]) {
         incomeMap[paidFrom].spent += spent;
       } else if (paid && Object.keys(incomeMap).length > 0) {
@@ -232,8 +224,8 @@
     }).join("");
     document.getElementById("incomeBreakdown").innerHTML = breakdown;
 
-    const zeroMsg = document.getElementById("zeroBasedMessage");
-    zeroMsg.style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+    document.getElementById("zeroBasedMessage").style.display =
+      incomeTotal > 0 && incomeTotal === budgetedTotal ? "block" : "none";
   }
 
   function saveBudget() {
@@ -258,34 +250,39 @@
       });
     });
 
-    db.collection("budgets").doc(userId + "_" + month).set(data);
+    db.collection("budgets").doc(`${userId}_${month}`).set(data);
   }
 
   function loadBudget() {
-    const monthInput = document.getElementById("month");
-    const currentMonth = monthInput.value || new Date().toISOString().slice(0, 7);
-    const currentDocRef = db.collection("budgets").doc(userId + "_" + currentMonth);
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+    const docRef = db.collection("budgets").doc(`${userId}_${month}`);
 
-    currentDocRef.get().then(async (doc) => {
-      document.querySelector("#incomeTable tbody").innerHTML = "";
-      document.querySelector("#expenseTable tbody").innerHTML = "";
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
 
+    docRef.get().then(async (doc) => {
       if (doc.exists) {
         const data = doc.data();
         data.incomes.forEach(i => addIncome(i.source, i.amount));
         data.expenses.forEach(e => addExpense(e));
         calculateBudget();
       } else {
-        // 🔁 Recurring Budget - Load Previous Month
-        const [year, month] = currentMonth.split("-");
-        const prevMonth = (parseInt(month) === 1)
+        // Recurring logic: pull from previous month
+        const [year, monthPart] = month.split("-");
+        const prevMonth = (parseInt(monthPart) === 1)
           ? `${parseInt(year) - 1}-12`
-          : `${year}-${(parseInt(month) - 1).toString().padStart(2, '0')}`;
-        const prevDoc = await db.collection("budgets").doc(userId + "_" + prevMonth).get();
+          : `${year}-${String(parseInt(monthPart) - 1).padStart(2, "0")}`;
+        const prevDoc = await db.collection("budgets").doc(`${userId}_${prevMonth}`).get();
+
         if (prevDoc.exists) {
           const prevData = prevDoc.data();
           prevData.incomes.forEach(i => addIncome(i.source, i.amount));
-          prevData.expenses.forEach(e => addExpense({ ...e, paid: false, spent: 0, due: "" }));
+          prevData.expenses.forEach(e => addExpense({
+            ...e,
+            paid: false,
+            spent: 0,
+            due: ""
+          }));
           calculateBudget();
         }
       }
