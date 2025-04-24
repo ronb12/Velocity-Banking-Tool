@@ -8,60 +8,29 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f4f9;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; margin: 0; text-align: center; }
     h1 { color: #007bff; }
     .container { max-width: 1000px; margin: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      margin-top: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
     th { background: #007bff; color: white; }
-    input, select {
-      width: 100%;
-      padding: 5px;
-      box-sizing: border-box;
-    }
-    td select { min-width: 140px; }
+    input, select { width: 100%; padding: 5px; box-sizing: border-box; }
     .controls, .summary, .income-breakdown { margin-top: 20px; }
-    .controls button {
-      padding: 10px 15px;
-      margin: 5px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+    .controls button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
     .controls button:hover { background: #0056b3; }
-    .success-msg {
-      background: #d4edda;
-      color: #155724;
-      padding: 10px;
-      border-radius: 5px;
-      display: none;
-      margin-top: 15px;
+    .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
+    .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
+    td select { min-width: 140px; }
+    input[type="number"], input[type="text"], select, textarea {
+      border: 1px solid #ccc; border-radius: 6px; padding: 5px;
+      transition: all 0.2s ease;
     }
-    .back {
-      display: inline-block;
-      margin-top: 20px;
-      text-decoration: none;
-      font-weight: bold;
-      color: #007bff;
+    input:focus, select:focus, textarea:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 5px rgba(0,123,255,0.3);
     }
+    table tbody tr:hover { background: #f1f7ff; transition: background 0.2s; }
     .dashboard-tile {
       display: inline-block;
       margin: 10px;
@@ -77,15 +46,6 @@
     .dashboard-total-spent { border-color: #dc3545; }
     .dashboard-total-remaining { border-color: #007bff; }
     .dashboard-total-paid { border-color: #6f42c1; }
-    .popup-msg {
-      background: #007bff;
-      color: white;
-      padding: 10px;
-      border-radius: 6px;
-      margin-top: 20px;
-      display: none;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
@@ -110,12 +70,17 @@
   </table>
   <button onclick="addExpense()">+ Add Expense</button>
 
+  <h3>📝 Notes for This Month</h3>
+  <textarea id="monthlyNotes" rows="4" style="width: 100%; margin-bottom: 20px;"></textarea>
+
   <div class="controls">
     <button onclick="calculateBudget()">🧮 Recalculate</button>
     <button onclick="saveBudget()">💾 Save</button>
     <button onclick="window.print()">🖨️ Print / Save PDF</button>
+    <button onclick="loadPreviousMonth()">📥 Load Budget</button>
   </div>
 
+  <!-- Dashboard -->
   <div class="summary">
     <div class="dashboard-tile dashboard-total-income" id="tileIncome">Total Income: $0</div>
     <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">Budgeted: $0</div>
@@ -126,7 +91,6 @@
 
   <div class="income-breakdown" id="incomeBreakdown"></div>
   <div class="success-msg" id="zeroBasedMessage">🎉 Congratulations! You've created a Zero-Based Budget.</div>
-  <div class="popup-msg" id="popupMessage"></div>
   <a class="back" href="index.html">← Back to Dashboard</a>
 </div>
 
@@ -139,7 +103,6 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
-
   let userId = "";
 
   auth.onAuthStateChanged(user => {
@@ -151,6 +114,7 @@
   function onMonthChange() {
     document.querySelector("#incomeTable tbody").innerHTML = "";
     document.querySelector("#expenseTable tbody").innerHTML = "";
+    document.getElementById("monthlyNotes").value = "";
     loadBudget();
   }
 
@@ -168,7 +132,7 @@
     const row = document.createElement("tr");
     row.innerHTML = `
       <td><input type="checkbox" ${exp.paid ? "checked" : ""} onchange="calculateBudget()"></td>
-      <td><input type="text" value="${exp.category || ""}"></td>
+      <td><input type="text" style="min-width: 250px;" value="${exp.category || ""}"></td>
       <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateBudget()"></td>
       <td><input type="number" value="${exp.spent || 0}" onchange="calculateBudget()"></td>
       <td>0</td>
@@ -206,13 +170,12 @@
       const paid = row.cells[0].querySelector("input").checked;
       const paidFrom = row.cells[6].querySelector("select").value;
       const remaining = budgeted - spent;
-
+      const percentUsed = Math.min((spent / budgeted) * 100, 100);
       row.cells[4].innerHTML = `
         <div style="position:relative; height:20px; background:#eee; border-radius:4px;">
-          <div style="width:${Math.min(spent / budgeted * 100, 100)}%; background:${spent > budgeted ? '#dc3545' : '#007bff'}; height:100%; border-radius:4px;"></div>
+          <div style="width:${percentUsed}%; background:${percentUsed > 100 ? '#dc3545' : '#007bff'}; height:100%; border-radius:4px;"></div>
           <span style="position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:12px;">$${remaining.toFixed(2)}</span>
         </div>`;
-
       budgetedTotal += budgeted;
       spentTotal += spent;
       if (paid) paidTotal += spent;
@@ -230,65 +193,18 @@
       return `<div><strong>${name}:</strong> Budgeted $${val.amount}, Used $${val.spent}, Remaining $${remain.toFixed(2)}</div>`;
     }).join("");
     document.getElementById("incomeBreakdown").innerHTML = breakdown;
-
     document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
-  }
-
-  function showPopup(message) {
-    const el = document.getElementById("popupMessage");
-    el.textContent = message;
-    el.style.display = "block";
-    setTimeout(() => el.style.display = "none", 3500);
-  }
-
-  async function loadBudget() {
-    const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    const docRef = db.collection("budgets").doc(userId + "_" + currentMonth);
-    const doc = await docRef.get();
-
-    document.querySelector("#incomeTable tbody").innerHTML = "";
-    document.querySelector("#expenseTable tbody").innerHTML = "";
-
-    if (doc.exists) {
-      const data = doc.data();
-      const hasIncome = data?.incomes?.length > 0;
-      const hasExpenses = data?.expenses?.length > 0;
-
-      if (!hasIncome && !hasExpenses) {
-        const [year, monthPart] = currentMonth.split("-");
-        const prevMonth = (parseInt(monthPart) === 1)
-          ? `${parseInt(year) - 1}-12`
-          : `${year}-${(parseInt(monthPart) - 1).toString().padStart(2, '0')}`;
-        const prevDoc = await db.collection("budgets").doc(userId + "_" + prevMonth).get();
-
-        if (prevDoc.exists) {
-          const prevData = prevDoc.data();
-          prevData.incomes?.forEach(i => addIncome(i.source, i.amount));
-          prevData.expenses?.forEach(e => addExpense({ ...e, paid: false, spent: 0, due: "" }));
-          showPopup("📥 Recurring budget loaded from previous month.");
-          calculateBudget();
-          return;
-        }
-      }
-
-      data.incomes?.forEach(i => addIncome(i.source, i.amount));
-      data.expenses?.forEach(e => addExpense(e));
-    }
-
-    calculateBudget();
   }
 
   function saveBudget() {
     const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    const data = { incomes: [], expenses: [], timestamp: new Date() };
-
+    const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value, timestamp: new Date() };
     document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
       data.incomes.push({
         source: row.cells[0].querySelector("input").value,
         amount: parseFloat(row.cells[1].querySelector("input").value) || 0
       });
     });
-
     document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
       data.expenses.push({
         paid: row.cells[0].querySelector("input").checked,
@@ -299,9 +215,36 @@
         source: row.cells[6].querySelector("select").value
       });
     });
-
     db.collection("budgets").doc(userId + "_" + month).set(data);
-    showPopup("✅ Budget saved successfully!");
+  }
+
+  async function loadBudget() {
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+    const doc = await db.collection("budgets").doc(userId + "_" + month).get();
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+    document.getElementById("monthlyNotes").value = "";
+
+    if (doc.exists) {
+      const data = doc.data();
+      data.incomes.forEach(i => addIncome(i.source, i.amount));
+      data.expenses.forEach(e => addExpense(e));
+      document.getElementById("monthlyNotes").value = data.notes || "";
+    } else {
+      const [year, monthNum] = month.split("-");
+      const prevMonth = (parseInt(monthNum) === 1) ? `${parseInt(year) - 1}-12` : `${year}-${(parseInt(monthNum) - 1).toString().padStart(2, '0')}`;
+      const prevDoc = await db.collection("budgets").doc(userId + "_" + prevMonth).get();
+      if (prevDoc.exists) {
+        const data = prevDoc.data();
+        data.incomes.forEach(i => addIncome(i.source, i.amount));
+        data.expenses.forEach(e => addExpense({ ...e, paid: false, spent: 0, due: "" }));
+      }
+    }
+    calculateBudget();
+  }
+
+  function loadPreviousMonth() {
+    onMonthChange(); // Triggers re-load and fallback if no data exists
   }
 </script>
 </body>
