@@ -7,7 +7,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; margin: 0; text-align: center; }
     h1 { color: #007bff; }
@@ -27,7 +26,7 @@
 <div class="container">
   <h1>💸 Bradley's Budget Tracker</h1>
   <label for="month">Select Month:</label>
-  <input type="month" id="month" onchange="loadBudget()" />
+  <input type="month" id="month" onchange="onMonthChange()" />
 
   <h3>Income Sources</h3>
   <table id="incomeTable">
@@ -48,7 +47,7 @@
   <div class="controls">
     <button onclick="calculateBudget()">🧮 Recalculate</button>
     <button onclick="saveBudget()">💾 Save</button>
-    <button onclick="exportPDF()">📄 Export PDF</button>
+    <button onclick="window.print()">🖨️ Print / Save PDF</button>
   </div>
 
   <div class="summary" id="summaryTotals">Total Income: $0 | Total Budgeted: $0 | Total Spent: $0 | Remaining: $0 | Total Paid: $0</div>
@@ -58,8 +57,6 @@
 </div>
 
 <script>
-  const { jsPDF } = window.jspdf;
-
   const firebaseConfig = {
     apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
     authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -68,36 +65,42 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
+
   let userId = "";
 
   auth.onAuthStateChanged(user => {
     if (!user) return window.location.href = "login.html";
     userId = user.uid;
-    document.getElementById("month").value = new Date().toISOString().slice(0, 7);
     loadBudget();
   });
 
-  function addIncome() {
+  function onMonthChange() {
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+    loadBudget();
+  }
+
+  function addIncome(source = "", amount = 0) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td><input type="text" placeholder="e.g. VA Check"></td>
-      <td><input type="number" value="0"></td>
-      <td><button onclick="this.closest('tr').remove(); updatePaidFromDropdowns(); calculateBudget()">🗑️</button></td>`;
+      <td><input type="text" value="${source}"></td>
+      <td><input type="number" value="${amount}"></td>
+      <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
     document.querySelector("#incomeTable tbody").appendChild(row);
     updatePaidFromDropdowns();
   }
 
-  function addExpense() {
+  function addExpense(exp = {}) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td><input type="checkbox" onchange="calculateBudget()"></td>
-      <td><input type="text" placeholder="Category"></td>
-      <td><input type="number" value="0" onchange="calculateBudget()"></td>
-      <td><input type="number" value="0" onchange="calculateBudget()"></td>
+      <td><input type="checkbox" ${exp.paid ? "checked" : ""} onchange="calculateBudget()"></td>
+      <td><input type="text" value="${exp.category || ""}"></td>
+      <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateBudget()"></td>
+      <td><input type="number" value="${exp.spent || 0}" onchange="calculateBudget()"></td>
       <td>0</td>
-      <td><input type="date"></td>
+      <td><input type="date" value="${exp.due || ""}"></td>
       <td><select></select></td>
-      <td><button onclick="this.closest('tr').remove(); calculateBudget()">🗑️</button></td>`;
+      <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
     document.querySelector("#expenseTable tbody").appendChild(row);
     updatePaidFromDropdowns();
   }
@@ -150,7 +153,7 @@
   }
 
   function saveBudget() {
-    const month = document.getElementById("month").value;
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
     const data = { incomes: [], expenses: [], timestamp: new Date() };
 
     document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
@@ -174,81 +177,15 @@
     db.collection("budgets").doc(userId + "_" + month).set(data);
   }
 
-  async function loadBudget() {
-    const month = document.getElementById("month").value;
-    const docRef = db.collection("budgets").doc(userId + "_" + month);
-    const doc = await docRef.get();
-
-    document.querySelector("#incomeTable tbody").innerHTML = "";
-    document.querySelector("#expenseTable tbody").innerHTML = "";
-
-    if (doc.exists) {
-      populateBudget(doc.data());
-    } else {
-      const querySnap = await db.collection("budgets")
-        .where(firebase.firestore.FieldPath.documentId(), ">=", userId + "_")
-        .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
-        .limit(1).get();
-
-      if (!querySnap.empty) {
-        const prevData = querySnap.docs[0].data();
-        prevData.expenses.forEach(e => {
-          e.paid = false;
-          e.spent = 0;
-        });
-        populateBudget(prevData);
-      }
-    }
-
-    updatePaidFromDropdowns();
-    calculateBudget();
-  }
-
-  function populateBudget(data) {
-    data.incomes.forEach(i => {
-      const row = document.createElement("tr");
-      row.innerHTML = `<td><input type="text" value="${i.source}"></td><td><input type="number" value="${i.amount}"></td><td><button onclick="this.closest('tr').remove(); updatePaidFromDropdowns(); calculateBudget()">🗑️</button></td>`;
-      document.querySelector("#incomeTable tbody").appendChild(row);
+  function loadBudget() {
+    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+    db.collection("budgets").doc(userId + "_" + month).get().then(doc => {
+      if (!doc.exists) return;
+      const data = doc.data();
+      data.incomes.forEach(i => addIncome(i.source, i.amount));
+      data.expenses.forEach(e => addExpense(e));
+      calculateBudget();
     });
-    data.expenses.forEach(e => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><input type="checkbox" ${e.paid ? "checked" : ""} onchange="calculateBudget()"></td>
-        <td><input type="text" value="${e.category}"></td>
-        <td><input type="number" value="${e.budgeted}" onchange="calculateBudget()"></td>
-        <td><input type="number" value="${e.spent}" onchange="calculateBudget()"></td>
-        <td>0</td>
-        <td><input type="date" value="${e.due}"></td>
-        <td><select></select></td>
-        <td><button onclick="this.closest('tr').remove(); calculateBudget()">🗑️</button></td>`;
-      document.querySelector("#expenseTable tbody").appendChild(row);
-    });
-  }
-
-  function exportPDF() {
-    const doc = new jsPDF();
-    const month = document.getElementById("month").value;
-    const summaryText = document.getElementById("summaryTotals").innerText;
-    const incomeBreakdown = document.getElementById("incomeBreakdown").innerText;
-
-    let expenseDetails = "";
-    document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-      const paid = row.cells[0].querySelector("input").checked ? "Paid" : "Unpaid";
-      const category = row.cells[1].querySelector("input").value;
-      const budgeted = row.cells[2].querySelector("input").value;
-      const spent = row.cells[3].querySelector("input").value;
-      const due = row.cells[5].querySelector("input").value;
-      const source = row.cells[6].querySelector("select").value;
-      expenseDetails += `• ${paid} | ${category} | Budgeted: $${budgeted} | Spent: $${spent} | Due: ${due} | Paid From: ${source}\n`;
-    });
-
-    doc.setFontSize(14);
-    doc.text(`📊 Bradley's Budget Summary — ${month}`, 10, 10);
-    doc.setFontSize(11);
-    doc.text(summaryText, 10, 20);
-    doc.text("Income Breakdown:\n" + incomeBreakdown, 10, 30);
-    doc.text("Expenses:\n" + expenseDetails, 10, 50);
-    doc.save("budget-summary.pdf");
   }
 </script>
 </body>
