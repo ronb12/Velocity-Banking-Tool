@@ -8,111 +8,27 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f4f9;
-      padding: 20px;
-      margin: 0;
-      text-align: center;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; margin: 0; text-align: center; }
     h1 { color: #007bff; }
     .container { max-width: 1000px; margin: auto; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
     th { background: #007bff; color: white; }
-    input, select {
-      width: 100%;
-      padding: 5px;
-      box-sizing: border-box;
+    input, select { width: 100%; padding: 5px; box-sizing: border-box; }
+    .controls, .summary, .income-breakdown { margin-top: 20px; }
+    .controls button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .controls button:hover { background: #0056b3; }
+    .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
+    .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
+    .dashboard-cards {
+      display: flex; flex-wrap: wrap; justify-content: space-around; gap: 10px;
     }
-    td select { min-width: 140px; }
-    input[type="number"], input[type="text"], select {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 5px;
-      transition: all 0.2s ease;
+    .card {
+      background: white; padding: 15px; border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-width: 180px;
     }
-    input:focus, select:focus {
-      border-color: #007bff;
-      outline: none;
-      box-shadow: 0 0 5px rgba(0,123,255,0.3);
-    }
-    table tbody tr:hover {
-      background: #f1f7ff;
-      transition: background 0.2s;
-    }
-
-    .controls {
-      margin-top: 20px;
-    }
-    .controls button {
-      padding: 10px 15px;
-      margin: 5px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .controls button:hover {
-      background: #0056b3;
-    }
-
-    .dashboard-summary {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
-      margin-top: 30px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 15px 20px;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 16px;
-      min-width: 220px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      transition: all 0.2s ease-in-out;
-    }
-    .stat-card span {
-      display: block;
-      font-size: 22px;
-      margin-top: 5px;
-    }
-    .stat-card.income { border-left: 6px solid #28a745; }
-    .stat-card.budgeted { border-left: 6px solid #007bff; }
-    .stat-card.spent { border-left: 6px solid #dc3545; }
-    .stat-card.remaining { border-left: 6px solid #ffc107; }
-    .stat-card.paid { border-left: 6px solid #17a2b8; }
-
-    .success-msg {
-      background: #d4edda;
-      color: #155724;
-      padding: 10px;
-      border-radius: 5px;
-      display: none;
-      margin-top: 20px;
-    }
-
-    .back {
-      display: inline-block;
-      margin-top: 20px;
-      text-decoration: none;
-      font-weight: bold;
-      color: #007bff;
-    }
+    .card h4 { margin: 5px 0; color: #007bff; font-size: 16px; }
+    .card span { font-size: 20px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -141,15 +57,14 @@
     <button onclick="calculateBudget()">🧮 Recalculate</button>
     <button onclick="saveBudget()">💾 Save</button>
     <button onclick="window.print()">🖨️ Print / Save PDF</button>
-    <button onclick="loadPreviousMonth()">📥 Load Previous Month</button>
   </div>
 
-  <div class="dashboard-summary">
-    <div class="stat-card income">💰 Total Income: <span id="dashIncome">$0</span></div>
-    <div class="stat-card budgeted">📋 Total Budgeted: <span id="dashBudgeted">$0</span></div>
-    <div class="stat-card spent">💸 Total Spent: <span id="dashSpent">$0</span></div>
-    <div class="stat-card remaining">🧮 Remaining: <span id="dashRemaining">$0</span></div>
-    <div class="stat-card paid">✅ Total Paid: <span id="dashPaid">$0</span></div>
+  <div class="dashboard-cards">
+    <div class="card"><h4>Total Income</h4><span id="totalIncome">$0</span></div>
+    <div class="card"><h4>Total Budgeted</h4><span id="totalBudgeted">$0</span></div>
+    <div class="card"><h4>Total Spent</h4><span id="totalSpent">$0</span></div>
+    <div class="card"><h4>Remaining</h4><span id="totalRemaining">$0</span></div>
+    <div class="card"><h4>Total Paid</h4><span id="totalPaid">$0</span></div>
   </div>
 
   <div class="income-breakdown" id="incomeBreakdown"></div>
@@ -168,7 +83,6 @@
   const db = firebase.firestore();
 
   let userId = "";
-
   auth.onAuthStateChanged(user => {
     if (!user) return window.location.href = "login.html";
     userId = user.uid;
@@ -234,18 +148,17 @@
       const paidFrom = row.cells[6].querySelector("select").value;
 
       row.cells[4].innerText = (budgeted - spent).toFixed(2);
-
       budgetedTotal += budgeted;
       spentTotal += spent;
       if (paid) paidTotal += spent;
       if (paid && incomeMap[paidFrom]) incomeMap[paidFrom].spent += spent;
     });
 
-    document.getElementById("dashIncome").innerText = `$${incomeTotal.toFixed(2)}`;
-    document.getElementById("dashBudgeted").innerText = `$${budgetedTotal.toFixed(2)}`;
-    document.getElementById("dashSpent").innerText = `$${spentTotal.toFixed(2)}`;
-    document.getElementById("dashRemaining").innerText = `$${(incomeTotal - budgetedTotal).toFixed(2)}`;
-    document.getElementById("dashPaid").innerText = `$${paidTotal.toFixed(2)}`;
+    document.getElementById("totalIncome").innerText = `$${incomeTotal.toFixed(2)}`;
+    document.getElementById("totalBudgeted").innerText = `$${budgetedTotal.toFixed(2)}`;
+    document.getElementById("totalSpent").innerText = `$${spentTotal.toFixed(2)}`;
+    document.getElementById("totalRemaining").innerText = `$${(incomeTotal - budgetedTotal).toFixed(2)}`;
+    document.getElementById("totalPaid").innerText = `$${paidTotal.toFixed(2)}`;
 
     const breakdown = Object.entries(incomeMap).map(([name, val]) => {
       const remain = val.amount - val.spent;
@@ -253,7 +166,8 @@
     }).join("");
     document.getElementById("incomeBreakdown").innerHTML = breakdown;
 
-    document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+    const zeroMsg = document.getElementById("zeroBasedMessage");
+    zeroMsg.style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
   }
 
   function saveBudget() {
@@ -281,29 +195,11 @@
     db.collection("budgets").doc(userId + "_" + month).set(data);
   }
 
-  function loadPreviousMonth() {
-    const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    const [year, month] = currentMonth.split("-");
-    const prevMonth = (parseInt(month) === 1)
-      ? `${parseInt(year) - 1}-12`
-      : `${year}-${(parseInt(month) - 1).toString().padStart(2, '0')}`;
-    const prevDocRef = db.collection("budgets").doc(userId + "_" + prevMonth);
-
-    prevDocRef.get().then(doc => {
-      if (!doc.exists) return alert("❌ No previous month budget found.");
-      document.querySelector("#incomeTable tbody").innerHTML = "";
-      document.querySelector("#expenseTable tbody").innerHTML = "";
-
-      const data = doc.data();
-      data.incomes.forEach(i => addIncome(i.source, i.amount));
-      data.expenses.forEach(e => addExpense({ ...e, paid: false, spent: 0, due: "" }));
-      calculateBudget();
-    });
-  }
-
   function loadBudget() {
     const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    db.collection("budgets").doc(userId + "_" + month).get().then(doc => {
+    const docRef = db.collection("budgets").doc(userId + "_" + month);
+
+    docRef.get().then(async (doc) => {
       document.querySelector("#incomeTable tbody").innerHTML = "";
       document.querySelector("#expenseTable tbody").innerHTML = "";
 
@@ -312,6 +208,21 @@
         data.incomes.forEach(i => addIncome(i.source, i.amount));
         data.expenses.forEach(e => addExpense(e));
         calculateBudget();
+      } else {
+        // Recurring from previous month
+        const [year, m] = month.split("-");
+        const prevMonth = (parseInt(m) === 1) ? `${parseInt(year) - 1}-12` : `${year}-${(parseInt(m) - 1).toString().padStart(2, '0')}`;
+        const prevRef = db.collection("budgets").doc(userId + "_" + prevMonth);
+        const prevDoc = await prevRef.get();
+
+        if (prevDoc.exists) {
+          const data = prevDoc.data();
+          data.incomes.forEach(i => addIncome(i.source, i.amount));
+          data.expenses.forEach(e => addExpense({
+            ...e, paid: false, spent: 0, due: ""
+          }));
+          calculateBudget();
+        }
       }
     });
   }
