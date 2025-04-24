@@ -12,7 +12,7 @@
       font-family: 'Segoe UI', sans-serif;
       background: #f9fafb;
       padding: 20px;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
     }
 
@@ -28,6 +28,12 @@
       padding: 15px;
       border-radius: 5px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    .notification.unread {
+      border-left-color: #ffc107;
+      background: #fff9e6;
     }
 
     .notification time {
@@ -35,6 +41,23 @@
       font-size: 12px;
       color: #888;
       margin-top: 8px;
+    }
+
+    button.mark-read {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    button.mark-read:hover {
+      background: #218838;
     }
 
     #loading {
@@ -91,7 +114,7 @@
           .doc(user.uid)
           .collection("notifications")
           .orderBy("timestamp", "desc")
-          .limit(20)
+          .limit(50)
           .get();
 
         loading.style.display = "none";
@@ -104,17 +127,36 @@
         snapshot.forEach(doc => {
           const n = doc.data();
           const div = document.createElement("div");
-          div.className = "notification";
+          div.className = "notification" + (!n.read ? " unread" : "");
+
           div.innerHTML = `
             <div>${n.message || "No message provided."}</div>
             <time>${n.timestamp ? new Date(n.timestamp.toDate()).toLocaleString() : "Unknown time"}</time>
+            ${!n.read ? `<button class="mark-read" onclick="markAsRead('${doc.id}')">Mark as Read</button>` : ""}
           `;
+
           container.appendChild(div);
         });
       } catch (error) {
         loading.innerText = "⚠️ Failed to load notifications.";
         console.error("Error loading notifications:", error);
       }
+
+      window.markAsRead = async function(docId) {
+        const notifRef = db
+          .collection("users")
+          .doc(user.uid)
+          .collection("notifications")
+          .doc(docId);
+
+        try {
+          await notifRef.update({ read: true });
+          location.reload();
+        } catch (err) {
+          alert("❌ Failed to mark as read.");
+          console.error("Mark as read failed:", err);
+        }
+      };
     });
   </script>
 </body>
