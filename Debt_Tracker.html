@@ -180,31 +180,34 @@
     }
 
     // Save debts to localStorage and Firebase
-    function saveDebts() {
-      const data = [];
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        data.push({
-          name: inputs[0].value,
-          balance: inputs[2].value,
-          rate: inputs[3].value,
-          payment: inputs[4].value,
-          limit: inputs[1].value // Saving limit data
-        });
-      });
+function saveDebts() {
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    data.push({
+      name: inputs[0].value,
+      balance: inputs[2].value,
+      rate: inputs[3].value,
+      payment: inputs[4].value,
+      limit: inputs[1].value // ✅ Saving limit data
+    });
+  });
 
-      // Save to localStorage
-      localStorage.setItem("debtData", JSON.stringify(data));
+  // Save to localStorage
+  localStorage.setItem("debtData", JSON.stringify(data));
 
-      // Save to Firebase
-      const user = firebase.auth().currentUser;
-      if (user) {
-        const debtRef = firebase.firestore().collection('debts').doc(user.uid);
-        debtRef.set({ debts: data });
-      }
+  // Save to Firebase (✅ Corrected section here)
+  const user = firebase.auth().currentUser;
+  if (user) {
+    const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+    debtRef.set({
+      debts: data,
+      creditUtilization: creditUtilization.toFixed(2)  // ✅ Save utilization too!
+    });
+  }
 
-      alert("Saved!");
-    }
+  alert("Saved!");
+}
 
     // Load debts from localStorage and Firebase
     function loadDebts() {
