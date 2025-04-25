@@ -37,7 +37,7 @@
     <thead>
       <tr>
         <th>Debt Name</th>
-        <th>Limit</th</th>
+        <th>Limit ($)</th</th>
         <th>Balance ($)</th>
         <th>Interest Rate (%)</th>
         <th>Min Payment ($)</th>
@@ -69,6 +69,7 @@
       const row = document.createElement("tr");
       row.innerHTML = `
         <td><input value="${name}" oninput="calculateSummary()" /></td>
+        <td><input value="${Limit}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
