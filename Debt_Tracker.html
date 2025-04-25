@@ -185,6 +185,14 @@
         });
       });
       localStorage.setItem("debtData", JSON.stringify(data));
+
+      // Save debts to Firebase
+      const user = firebase.auth().currentUser;
+      if (user) {
+        const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+        debtRef.set({ debts: data });
+      }
+
       alert("Saved!");
     }
 
@@ -193,6 +201,20 @@
       tableBody.innerHTML = "";
       data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
       calculateSummary();
+
+      // Load debts from Firebase
+      const user = firebase.auth().currentUser;
+      if (user) {
+        const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+        debtRef.get().then(doc => {
+          if (doc.exists) {
+            const debts = doc.data().debts || [];
+            tableBody.innerHTML = "";
+            debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+            calculateSummary();
+          }
+        });
+      }
     }
 
     function amortizeRow(btn) {
