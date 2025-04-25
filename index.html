@@ -174,7 +174,7 @@
 
     const debts = await db.collection("debts").doc(user.uid).get();
     if (debts.exists) {
-      // Total debts by CFI
+      // Total debts calculation
       const totalDebts = (debts.data().debts || [])
         .reduce((sum, d) => sum + d.balance, 0);
       document.getElementById("topDebtsTile").innerText = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
