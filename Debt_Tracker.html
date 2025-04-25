@@ -129,7 +129,7 @@
             const data = doc.data().debts || [];
             tableBody.innerHTML = "";
             data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-            calculateSummary();
+            calculateSummary(); // Calculate after loading data
           } else {
             alert("No debts found!");
           }
@@ -174,7 +174,7 @@
 
     function removeRow(btn) {
       btn.parentElement.parentElement.remove();
-      calculateSummary();
+      calculateSummary(); // Recalculate after removing debt
     }
 
     function exportToExcel() {
