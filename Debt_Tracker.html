@@ -1,301 +1,229 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – Full Featured</title>
-  <link rel="icon" type="image/png" href="favicon.png" /> <!-- ✅ Custom favicon added -->
+<script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+    authDomain: "mobile-debt-tracker.firebaseapp.com",
+    projectId: "mobile-debt-tracker"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const tableBody = document.querySelector("#debtTable tbody");
 
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
+  let creditUtilization = 0; // ✅ GLOBAL CREDIT UTILIZATION variable
 
-  <style>
-    body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
-    nav { text-align: center; margin-bottom: 20px; }
-    nav a { font-weight: bold; color: #007BFF; font-size: 16px; text-decoration: none; }
-    h1 { text-align: center; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-    th { background-color: #222; color: #fff; }
-    .priority-urgent { background-color: #ffe5e5; }
-    .priority-medium { background-color: #fff3cd; }
-    .priority-low { background-color: #e6f4ea; }
-    button {
-      margin: 5px;
-      padding: 8px 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover { background: #0056b3; }
-    .summary { margin-top: 20px; font-size: 18px; }
-  </style>
-</head>
-<body>
-  <nav><a href="index.html">⬅️ Back to Dashboard</a></nav>
-  <h1>Debt Tracker – Full Featured</h1>
-  <table id="debtTable">
-    <thead>
-      <tr>
-        <th>Debt Name</th>
-        <th>Limit ($)</th>
-        <th>Balance ($)</th>
-        <th>Interest Rate (%)</th>
-        <th>Min Payment ($)</th>
-        <th>Months Left</th>
-        <th>CFI</th>
-        <th>Total Interest</th>
-        <th>Priority</th>
-        <th>Amortize</th>
-        <th>Delete</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <button onclick="addDebt()">+ Add Debt</button>
-  <button onclick="saveDebts()">💾 Save</button>
-  <button onclick="loadDebts()">📂 Load</button>
-  <button onclick="exportToExcel()">📥 Export to Excel</button>
-  <button onclick="window.print()">🖨️ Print Page</button>
-
-  <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0</div>
-
-  <div id="amortizationModal" style="display:none;padding:20px;background:white;position:fixed;top:10%;left:50%;transform:translateX(-50%);max-height:80vh;overflow:auto;box-shadow:0 0 15px rgba(0,0,0,0.4);z-index:1000;width:90%;"></div>
-
-  <script>
-    // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const tableBody = document.querySelector("#debtTable tbody");
-
-    // Add debt row
-    function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><input value="${name}" oninput="calculateSummary()" /></td>
-        <td><input type="number" value="${limit}" oninput="calculateSummary()" /></td>
-        <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
-        <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
-        <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
-        <td class="monthsLeft">-</td>
-        <td class="cfi">-</td>
-        <td class="interest">-</td>
-        <td class="priority">-</td>
-        <td><button onclick="amortizeRow(this)">📄</button></td>
-        <td><button onclick="removeRow(this)" style="background:#dc3545;">❌</button></td>
-      `;
-      tableBody.appendChild(row);
-      calculateSummary();
-    }
-
-    // Calculate months left
-    function calcRealMonths(balance, rate, payment) {
-      const r = rate / 100 / 12;
-      if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
-      return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
-    }
-
-    // Calculate total interest
-    function calcTotalInterest(balance, rate, payment) {
-      let r = rate / 100 / 12, total = 0, month = 0;
-      while (balance > 0 && month < 1000) {
-        const interest = balance * r;
-        const principal = payment - interest;
-        if (principal <= 0) break;
-        balance -= principal;
-        total += interest;
-        month++;
-      }
-      return total;
-    }
-
-    // Get priority tag
-    function getPriorityTag(cfi) {
-      if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
-      if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
-      return { tag: "✅ Low", class: "priority-low" };
-    }
-
- function calculateSummary() {
-  let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
-  let creditBalance = 0, creditLimit = 0;
-
-  // 🔁 Loop over each row
-  tableBody.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    const name = inputs[0].value;
-    const limit = parseFloat(inputs[1].value) || 0;
-    const balance = parseFloat(inputs[2].value) || 0;
-    const rate = parseFloat(inputs[3].value) || 0;
-    const payment = parseFloat(inputs[4].value) || 0;
-
-    // All-debt totals
-    totalBalance += balance;
-    totalPayment += payment;
-    totalLimit += limit;
-
-    // ✅ Revolving credit tracking only (limits must be > 0)
-    if (limit > 0) {
-      creditBalance += balance;
-      creditLimit += limit;
-    }
-
-    if (balance > 0 && rate > 0 && payment > 0) {
-      const months = calcRealMonths(balance, rate, payment);
-      const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-      const interest = calcTotalInterest(balance, rate, payment);
-      const { tag, class: priorityClass } = getPriorityTag(cfi);
-
-      row.querySelector(".monthsLeft").innerText = months;
-      row.querySelector(".cfi").innerText = cfi;
-      row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-      row.querySelector(".priority").innerText = tag;
-      row.className = priorityClass;
-
-      totalInterest += interest;
-    }
-  }); // 🔚 End of loop
-
-  // ✅ Now calculate credit utilization and show it in summary bar
-  let creditUtilization = creditLimit > 0 ? (creditBalance / creditLimit) * 100 : 0;
-
-  document.getElementById("summaryText").innerText =
-    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
-}
-
-    // Remove row
-    function removeRow(btn) {
-      btn.parentElement.parentElement.remove();
-      calculateSummary();
-    }
-
-    // Save debts to localStorage and Firebase
-function saveDebts() {
-  const data = [];
-  tableBody.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    data.push({
-      name: inputs[0].value,
-      balance: inputs[2].value,
-      rate: inputs[3].value,
-      payment: inputs[4].value,
-      limit: inputs[1].value // ✅ Saving limit data
-    });
-  });
-
-  // Save to localStorage
-  localStorage.setItem("debtData", JSON.stringify(data));
-
-  // Save to Firebase (✅ Corrected section here)
-  const user = firebase.auth().currentUser;
-  if (user) {
-    const debtRef = firebase.firestore().collection('debts').doc(user.uid);
-    debtRef.set({
-      debts: data,
-      creditUtilization: creditUtilization.toFixed(2)  // ✅ Save utilization too!
-    });
+  // Add debt row
+  function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input value="${name}" oninput="calculateSummary()" /></td>
+      <td><input type="number" value="${limit}" oninput="calculateSummary()" /></td>
+      <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
+      <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
+      <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
+      <td class="monthsLeft">-</td>
+      <td class="cfi">-</td>
+      <td class="interest">-</td>
+      <td class="priority">-</td>
+      <td><button onclick="amortizeRow(this)">📄</button></td>
+      <td><button onclick="removeRow(this)" style="background:#dc3545;">❌</button></td>
+    `;
+    tableBody.appendChild(row);
+    calculateSummary();
   }
 
-  alert("Saved!");
-}
+  // Calculate months left
+  function calcRealMonths(balance, rate, payment) {
+    const r = rate / 100 / 12;
+    if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
+    return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
+  }
 
-    // Load debts from localStorage and Firebase
-    function loadDebts() {
-      const data = JSON.parse(localStorage.getItem("debtData")) || [];
-      tableBody.innerHTML = "";
-      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-      calculateSummary();
-
-      // Load debts from Firebase
-      const user = firebase.auth().currentUser;
-      if (user) {
-        const debtRef = firebase.firestore().collection('debts').doc(user.uid);
-        debtRef.get().then(doc => {
-          if (doc.exists) {
-            const debts = doc.data().debts || [];
-            tableBody.innerHTML = "";
-            debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-            calculateSummary();
-          }
-        });
-      }
+  // Calculate total interest
+  function calcTotalInterest(balance, rate, payment) {
+    let r = rate / 100 / 12, total = 0, month = 0;
+    while (balance > 0 && month < 1000) {
+      const interest = balance * r;
+      const principal = payment - interest;
+      if (principal <= 0) break;
+      balance -= principal;
+      total += interest;
+      month++;
     }
+    return total;
+  }
 
-    // Amortize row
-    function amortizeRow(btn) {
-      const row = btn.closest("tr");
+  // Get priority tag
+  function getPriorityTag(cfi) {
+    if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
+    if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
+    return { tag: "✅ Low", class: "priority-low" };
+  }
+
+  // Calculate Summary
+  function calculateSummary() {
+    let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
+    let creditBalance = 0, creditLimit = 0;
+
+    tableBody.querySelectorAll("tr").forEach(row => {
       const inputs = row.querySelectorAll("input");
       const name = inputs[0].value;
-      let balance = parseFloat(inputs[2].value);
-      const rate = parseFloat(inputs[3].value);
-      const payment = parseFloat(inputs[4].value);
-      if (!balance || !rate || !payment) return;
+      const limit = parseFloat(inputs[1].value) || 0;
+      const balance = parseFloat(inputs[2].value) || 0;
+      const rate = parseFloat(inputs[3].value) || 0;
+      const payment = parseFloat(inputs[4].value) || 0;
 
-      const r = rate / 100 / 12;
-      let month = 1, html = "", totalInterest = 0;
-      const today = new Date().toLocaleDateString();
-      html += `<div style='text-align:right; margin-bottom:10px;'>
-        <button onclick="printAmortization()">🖨️ Print</button>
-        <button onclick="document.getElementById('amortizationModal').style.display='none'">❌ Close</button>
-      </div>
-      <h2 style='text-align:center;'>Amortization Schedule – ${name}</h2>
-      <p><strong>Prepared by:</strong> Ronell Bradley</p>
-      <p><strong>Date Generated:</strong> ${today}</p>
-      <table style='width:100%; border-collapse:collapse;' border='1'>
-        <thead><tr><th>Month</th><th>Start Balance</th><th>Interest</th><th>Principal</th><th>End Balance</th></tr></thead><tbody>`;
+      totalBalance += balance;
+      totalPayment += payment;
+      totalLimit += limit;
 
-      while (balance > 0 && month <= 240) {
-        const interest = balance * r;
-        const principal = Math.min(payment - interest, balance);
-        const end = balance - principal;
-        html += `<tr>
-          <td>${month}</td>
-          <td>$${balance.toFixed(2)}</td>
-          <td>$${interest.toFixed(2)}</td>
-          <td>$${principal.toFixed(2)}</td>
-          <td>$${Math.max(0,end).toFixed(2)}</td>
-        </tr>`;
-        totalInterest += interest;
-        balance = end;
-        month++;
+      if (limit > 0) {
+        creditBalance += balance;
+        creditLimit += limit;
       }
 
-      html += `</tbody></table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
-      document.getElementById("amortizationModal").innerHTML = html;
-      document.getElementById("amortizationModal").style.display = "block";
+      if (balance > 0 && rate > 0 && payment > 0) {
+        const months = calcRealMonths(balance, rate, payment);
+        const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+        const interest = calcTotalInterest(balance, rate, payment);
+        const { tag, class: priorityClass } = getPriorityTag(cfi);
+
+        row.querySelector(".monthsLeft").innerText = months;
+        row.querySelector(".cfi").innerText = cfi;
+        row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+        row.querySelector(".priority").innerText = tag;
+        row.className = priorityClass;
+
+        totalInterest += interest;
+      }
+    });
+
+    creditUtilization = creditLimit > 0 ? (creditBalance / creditLimit) * 100 : 0; // ✅ GLOBAL variable updated here
+
+    document.getElementById("summaryText").innerText =
+      `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
+  }
+
+  // Save debts to localStorage and Firebase
+  function saveDebts() {
+    const data = [];
+    tableBody.querySelectorAll("tr").forEach(row => {
+      const inputs = row.querySelectorAll("input");
+      data.push({
+        name: inputs[0].value,
+        balance: inputs[2].value,
+        rate: inputs[3].value,
+        payment: inputs[4].value,
+        limit: inputs[1].value
+      });
+    });
+
+    // Save to localStorage
+    localStorage.setItem("debtData", JSON.stringify(data));
+
+    // Save to Firebase correctly
+    const user = firebase.auth().currentUser;
+    if (user) {
+      const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+      debtRef.set({
+        debts: data,
+        creditUtilization: creditUtilization.toFixed(2)  // ✅ Save utilization too!
+      });
     }
 
-    // Print amortization
-    function printAmortization() {
-      const modal = document.getElementById("amortizationModal").cloneNode(true);
-      const buttons = modal.querySelectorAll("button");
-      buttons.forEach(btn => btn.remove());
+    alert("Saved!");
+  }
 
-      const win = window.open("", "", "height=900,width=1200");
-      win.document.write("<html><head><title>Print</title>");
-      win.document.write("<style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#f0f0f0;}</style>");
-      win.document.write("</head><body>" + modal.innerHTML + "</body></html>");
-      win.document.close();
-      win.focus();
-      win.print();
-      win.close();
+  // Remove row
+  function removeRow(btn) {
+    btn.parentElement.parentElement.remove();
+    calculateSummary();
+  }
+
+  // Load debts from localStorage and Firebase
+  function loadDebts() {
+    const data = JSON.parse(localStorage.getItem("debtData")) || [];
+    tableBody.innerHTML = "";
+    data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+    calculateSummary();
+
+    // Load debts from Firebase
+    const user = firebase.auth().currentUser;
+    if (user) {
+      const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+      debtRef.get().then(doc => {
+        if (doc.exists) {
+          const debts = doc.data().debts || [];
+          tableBody.innerHTML = "";
+          debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+          calculateSummary();
+        }
+      });
+    }
+  }
+
+  // Amortization Modal
+  function amortizeRow(btn) {
+    const row = btn.closest("tr");
+    const inputs = row.querySelectorAll("input");
+    const name = inputs[0].value;
+    let balance = parseFloat(inputs[2].value);
+    const rate = parseFloat(inputs[3].value);
+    const payment = parseFloat(inputs[4].value);
+    if (!balance || !rate || !payment) return;
+
+    const r = rate / 100 / 12;
+    let month = 1, html = "", totalInterest = 0;
+    const today = new Date().toLocaleDateString();
+    html += `<div style='text-align:right; margin-bottom:10px;'>
+      <button onclick="printAmortization()">🖨️ Print</button>
+      <button onclick="document.getElementById('amortizationModal').style.display='none'">❌ Close</button>
+    </div>
+    <h2 style='text-align:center;'>Amortization Schedule – ${name}</h2>
+    <p><strong>Prepared by:</strong> Ronell Bradley</p>
+    <p><strong>Date Generated:</strong> ${today}</p>
+    <table style='width:100%; border-collapse:collapse;' border='1'>
+      <thead><tr><th>Month</th><th>Start Balance</th><th>Interest</th><th>Principal</th><th>End Balance</th></tr></thead><tbody>`;
+
+    while (balance > 0 && month <= 240) {
+      const interest = balance * r;
+      const principal = Math.min(payment - interest, balance);
+      const end = balance - principal;
+      html += `<tr>
+        <td>${month}</td>
+        <td>$${balance.toFixed(2)}</td>
+        <td>$${interest.toFixed(2)}</td>
+        <td>$${principal.toFixed(2)}</td>
+        <td>$${Math.max(0,end).toFixed(2)}</td>
+      </tr>`;
+      totalInterest += interest;
+      balance = end;
+      month++;
     }
 
-    window.onload = function () {
-      loadDebts();
-      const addBtn = document.querySelector('button[onclick="addDebt()"]');
-      if (addBtn) addBtn.onclick = () => addDebt();
-    };
-  </script>
-</body>
-</html>
+    html += `</tbody></table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
+    document.getElementById("amortizationModal").innerHTML = html;
+    document.getElementById("amortizationModal").style.display = "block";
+  }
+
+  // Print amortization
+  function printAmortization() {
+    const modal = document.getElementById("amortizationModal").cloneNode(true);
+    const buttons = modal.querySelectorAll("button");
+    buttons.forEach(btn => btn.remove());
+
+    const win = window.open("", "", "height=900,width=1200");
+    win.document.write("<html><head><title>Print</title>");
+    win.document.write("<style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#f0f0f0;}</style>");
+    win.document.write("</head><body>" + modal.innerHTML + "</body></html>");
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  }
+
+  window.onload = function () {
+    loadDebts();
+    const addBtn = document.querySelector('button[onclick="addDebt()"]');
+    if (addBtn) addBtn.onclick = () => addDebt();
+  };
+</script>
