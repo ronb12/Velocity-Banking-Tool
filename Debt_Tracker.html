@@ -149,10 +149,10 @@
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
 
-        // Check if we have all the expected input elements
+        // Ensure we have exactly 9 input fields for each row
         if (inputs.length < 9) {
-          console.warn("Missing input field in row:", row); // Debugging log
-          return; // Skip this row if there are missing input elements
+          console.warn("Missing input field in row:", row);
+          return; // Skip this row if it doesn't have all the input fields
         }
 
         try {
