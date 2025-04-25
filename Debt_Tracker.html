@@ -44,6 +44,7 @@
         <th>CFI</th>
         <th>Total Interest</th>
         <th>Priority</th>
+        <th>Limit ($)</th> <!-- Added column for Credit Card Limit -->
         <th>Amortize</th>
         <th>Delete</th>
       </tr>
@@ -64,7 +65,7 @@
   <script>
     const tableBody = document.querySelector("#debtTable tbody");
 
-    function addDebt(name = '', balance = '', rate = '', payment = '') {
+    function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td><input value="${name}" oninput="calculateSummary()" /></td>
@@ -75,6 +76,7 @@
         <td class="cfi">-</td>
         <td class="interest">-</td>
         <td class="priority">-</td>
+        <td><input type="number" value="${limit}" oninput="calculateSummary()" class="limitInput"/></td> <!-- Added Limit Input -->
         <td><button onclick="amortizeRow(this)">📄</button></td>
         <td><button onclick="removeRow(this)" style="background:#dc3545;">❌</button></td>
       `;
@@ -108,7 +110,7 @@
     }
 
     function calculateSummary() {
-      let totalBalance = 0, totalPayment = 0, totalInterest = 0;
+      let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
 
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
@@ -116,6 +118,7 @@
         const balance = parseFloat(inputs[1].value) || 0;
         const rate = parseFloat(inputs[2].value) || 0;
         const payment = parseFloat(inputs[3].value) || 0;
+        const limit = parseFloat(inputs[8].value) || 0;
 
         const months = calcRealMonths(balance, rate, payment);
         const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
@@ -131,10 +134,11 @@
         totalBalance += balance;
         totalPayment += payment;
         totalInterest += interest;
+        totalLimit += limit;  // Add limit to total
       });
 
       document.getElementById("summaryText").innerText =
-        `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)}`;
+        `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)}`;
     }
 
     function removeRow(btn) {
@@ -143,7 +147,7 @@
     }
 
     function exportToExcel() {
-      const rows = [["Name","Balance","Rate","Payment","Months","CFI","Interest","Priority"]];
+      const rows = [["Name","Balance","Rate","Payment","Months","CFI","Interest","Priority","Limit"]];
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
         rows.push([
@@ -154,7 +158,8 @@
           row.querySelector(".monthsLeft").innerText,
           row.querySelector(".cfi").innerText,
           row.querySelector(".interest").innerText,
-          row.querySelector(".priority").innerText
+          row.querySelector(".priority").innerText,
+          inputs[8].value // Limit column added for export
         ]);
       });
       const csv = rows.map(r => r.join(",")).join("\n");
@@ -173,7 +178,8 @@
           name: inputs[0].value,
           balance: inputs[1].value,
           rate: inputs[2].value,
-          payment: inputs[3].value
+          payment: inputs[3].value,
+          limit: inputs[8].value // Saving limit data
         });
       });
       localStorage.setItem("debtData", JSON.stringify(data));
@@ -183,7 +189,7 @@
     function loadDebts() {
       const data = JSON.parse(localStorage.getItem("debtData")) || [];
       tableBody.innerHTML = "";
-      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment));
+      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
       calculateSummary();
     }
 
