@@ -154,6 +154,7 @@
           totalPayment += payment;
           totalInterest += interest;
           totalLimit += limit;  // Add limit to total
+          creditUtilization = (totalBalance / totalLimit) * 100;
         }
       });
 
