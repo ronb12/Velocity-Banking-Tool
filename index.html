@@ -186,20 +186,26 @@
   // Load debts and sync dashboard data
   async function loadDebts(user) {
     const debtsSnapshot = await db.collection("debt").doc(user.uid).collection("debtDetails").get();
+    console.log("Debts snapshot: ", debtsSnapshot);
+
     if (debtsSnapshot.empty) {
       console.log('No debts found');
       return;
     }
 
-    // Get debts and update top 3 by CFI
     let debtsData = [];
     debtsSnapshot.forEach(doc => {
+      console.log("Debt doc data: ", doc.data());  // Log each document's data
       debtsData.push(doc.data());
     });
+
+    console.log("Debts Data: ", debtsData);  // Log all debts fetched
 
     // Sort by CFI and get top 3 debts
     debtsData.sort((a, b) => (b.balance / b.payment) - (a.balance / a.payment));  // Sorting by CFI (balance/payment)
     const top3Debts = debtsData.slice(0, 3);
+
+    console.log("Top 3 Debts: ", top3Debts);  // Log the top 3 debts
 
     // Display top 3 debts in the dashboard
     let topDebtsHTML = "<h3>Top 3 Debts by CFI</h3>";
