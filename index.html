@@ -179,6 +179,18 @@
         .reduce((sum, d) => sum + d.balance, 0);
       document.getElementById("topDebtsTile").innerText = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
 
+      // Top 3 debts by CFI
+      const sortedDebts = (debts.data().debts || []).sort((a, b) => {
+        const cfiA = a.balance / a.payment;
+        const cfiB = b.balance / b.payment;
+        return cfiB - cfiA;
+      }).slice(0, 3);
+
+      const topDebtsList = sortedDebts.map((d, i) => {
+        return `<div>${i + 1}. ${d.name}: $${d.balance} | CFI: ${(d.balance / d.payment).toFixed(2)}</div>`;
+      }).join("");
+      document.getElementById("topDebtsTile").innerHTML += `<br>Top 3 Debts by CFI: <br>${topDebtsList}`;
+
       // Credit utilization calculation
       const creditDebt = (debts.data().debts || []).filter(d => d.type === 'credit');
       const creditUsed = creditDebt.reduce((sum, d) => sum + d.balance, 0);
