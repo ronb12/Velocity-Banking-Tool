@@ -129,7 +129,6 @@
     projectId: "mobile-debt-tracker"
   };
 
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
 
   const auth = firebase.auth();
@@ -180,44 +179,39 @@
     }
   });
 
-  // Fetching and calculating top 3 debts by CFI, and credit utilization
-  auth.onAuthStateChanged(async user => {
-    if (!user) return;
+  // Load debts and sync dashboard data
+  async function loadDebts() {
+    const userRef = db.collection("users").doc(auth.currentUser.uid);
+    const debtsSnapshot = await userRef.collection("debts").get();
+    
+    // Get debts and update top 3 by CFI
+    let debtsData = [];
+    debtsSnapshot.forEach(doc => {
+      debtsData.push(doc.data());
+    });
 
-    const debtsRef = db.collection("debts").doc(user.uid);
-    const debtsDoc = await debtsRef.get();
-    if (debtsDoc.exists) {
-      const debtsData = debtsDoc.data().debts || [];
+    // Sort by CFI and get top 3 debts
+    debtsData.sort((a, b) => (b.balance / b.payment) - (a.balance / a.payment));  // Sorting by CFI (balance/payment)
+    const top3Debts = debtsData.slice(0, 3);
 
-      // Total Debts Calculation
-      const totalDebts = debtsData.reduce((sum, debt) => sum + debt.balance, 0);
-      document.getElementById("topDebtsTile").innerText = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
+    // Display top 3 debts in the dashboard
+    let topDebtsHTML = "<h3>Top 3 Debts by CFI</h3>";
+    top3Debts.forEach(debt => {
+      topDebtsHTML += `<div>${debt.name} - Balance: $${debt.balance}, Payment: $${debt.payment}, CFI: ${(debt.balance / debt.payment).toFixed(2)}</div>`;
+    });
+    document.getElementById("topDebtsTile").innerHTML = topDebtsHTML;
 
-      // Credit Utilization Calculation
-      const creditDebts = debtsData.filter(d => d.type === 'credit');
-      const creditUsed = creditDebts.reduce((sum, debt) => sum + debt.balance, 0);
-      const creditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
-      const utilization = creditLimit ? ((creditUsed / creditLimit) * 100).toFixed(1) : 0;
-      document.getElementById("creditUtilizationTile").innerText = `💳 Credit Utilization: ${utilization}%`;
+    // Calculate total credit utilization
+    const creditDebts = debtsData.filter(debt => debt.type === 'credit');
+    const totalCreditUsed = creditDebts.reduce((sum, debt) => sum + debt.balance, 0);
+    const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
+    const creditUtilization = (totalCreditLimit > 0) ? ((totalCreditUsed / totalCreditLimit) * 100).toFixed(1) : 0;
+    document.getElementById("creditUtilizationTile").innerHTML = `💳 Credit Utilization: ${creditUtilization}%`;
+  }
 
-      // Top 3 Debts by CFI
-      const topDebtsByCFI = debtsData
-        .map(debt => ({
-          ...debt,
-          cfi: debt.balance / debt.payment // Calculate CFI
-        }))
-        .sort((a, b) => b.cfi - a.cfi) // Sort by CFI descending
-        .slice(0, 3); // Get top 3
-
-      const topDebtsTile = document.getElementById("topDebtsTile");
-      topDebtsTile.innerHTML = `<h3>Top 3 Debts by CFI</h3>`;
-      topDebtsByCFI.forEach(debt => {
-        const debtElement = document.createElement("div");
-        debtElement.innerHTML = `${debt.name} (CFI: ${debt.cfi}) - Balance: $${debt.balance.toFixed(2)} - Payment: $${debt.payment}`;
-        topDebtsTile.appendChild(debtElement);
-      });
-    }
-  });
+  window.onload = function() {
+    loadDebts();
+  }
 </script>
 
 </body>
