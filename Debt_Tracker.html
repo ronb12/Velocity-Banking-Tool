@@ -37,6 +37,7 @@
     <thead>
       <tr>
         <th>Debt Name</th>
+        <th>Limit ($)</th> <!-- Added column for Credit Card Limit -->
         <th>Balance ($)</th>
         <th>Interest Rate (%)</th>
         <th>Min Payment ($)</th>
@@ -44,7 +45,6 @@
         <th>CFI</th>
         <th>Total Interest</th>
         <th>Priority</th>
-        <th>Limit ($)</th> <!-- Added column for Credit Card Limit -->
         <th>Amortize</th>
         <th>Delete</th>
       </tr>
@@ -86,6 +86,7 @@
       const row = document.createElement("tr");
       row.innerHTML = `
         <td><input value="${name}" oninput="calculateSummary()" /></td>
+        <td><input type="number" value="${limit}" oninput="calculateSummary()" class="limitInput" /></td> <!-- Added Limit Input here -->
         <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
@@ -93,7 +94,6 @@
         <td class="cfi">-</td>
         <td class="interest">-</td>
         <td class="priority">-</td>
-        <td><input type="number" value="${limit}" oninput="calculateSummary()" class="limitInput"/></td> <!-- Added Limit Input -->
         <td><button onclick="amortizeRow(this)">📄</button></td>
         <td><button onclick="removeRow(this)" style="background:#dc3545;">❌</button></td>
       `;
