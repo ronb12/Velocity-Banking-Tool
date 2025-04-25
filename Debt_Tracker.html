@@ -6,6 +6,11 @@
   <title>Debt Tracker – Full Featured</title>
   <link rel="icon" type="image/png" href="favicon.png" /> <!-- ✅ Custom favicon added -->
 
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
+
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
     nav { text-align: center; margin-bottom: 20px; }
@@ -63,8 +68,17 @@
   <div id="amortizationModal" style="display:none;padding:20px;background:white;position:fixed;top:10%;left:50%;transform:translateX(-50%);max-height:80vh;overflow:auto;box-shadow:0 0 15px rgba(0,0,0,0.4);z-index:1000;width:90%;"></div>
 
   <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
     const tableBody = document.querySelector("#debtTable tbody");
 
+    // Add debt row
     function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
       const row = document.createElement("tr");
       row.innerHTML = `
@@ -84,12 +98,14 @@
       calculateSummary();
     }
 
+    // Calculate months left
     function calcRealMonths(balance, rate, payment) {
       const r = rate / 100 / 12;
       if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
       return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
     }
 
+    // Calculate total interest
     function calcTotalInterest(balance, rate, payment) {
       let r = rate / 100 / 12, total = 0, month = 0;
       while (balance > 0 && month < 1000) {
@@ -103,12 +119,14 @@
       return total;
     }
 
+    // Get priority tag
     function getPriorityTag(cfi) {
       if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
       if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
       return { tag: "✅ Low", class: "priority-low" };
     }
 
+    // Calculate summary
     function calculateSummary() {
       let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
 
@@ -143,35 +161,13 @@
         `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)}`;
     }
 
+    // Remove row
     function removeRow(btn) {
       btn.parentElement.parentElement.remove();
       calculateSummary();
     }
 
-    function exportToExcel() {
-      const rows = [["Name","Balance","Rate","Payment","Months","CFI","Interest","Priority","Limit"]];
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        rows.push([
-          inputs[0].value,
-          inputs[2].value,
-          inputs[3].value,
-          inputs[4].value,
-          row.querySelector(".monthsLeft").innerText,
-          row.querySelector(".cfi").innerText,
-          row.querySelector(".interest").innerText,
-          row.querySelector(".priority").innerText,
-          inputs[1].value // Limit column added for export
-        ]);
-      });
-      const csv = rows.map(r => r.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "debt_tracker.csv";
-      a.click();
-    }
-
+    // Save debts to localStorage and Firebase
     function saveDebts() {
       const data = [];
       tableBody.querySelectorAll("tr").forEach(row => {
@@ -184,9 +180,11 @@
           limit: inputs[1].value // Saving limit data
         });
       });
+
+      // Save to localStorage
       localStorage.setItem("debtData", JSON.stringify(data));
 
-      // Save debts to Firebase
+      // Save to Firebase
       const user = firebase.auth().currentUser;
       if (user) {
         const debtRef = firebase.firestore().collection('debts').doc(user.uid);
@@ -196,6 +194,7 @@
       alert("Saved!");
     }
 
+    // Load debts from localStorage and Firebase
     function loadDebts() {
       const data = JSON.parse(localStorage.getItem("debtData")) || [];
       tableBody.innerHTML = "";
@@ -217,6 +216,7 @@
       }
     }
 
+    // Amortize row
     function amortizeRow(btn) {
       const row = btn.closest("tr");
       const inputs = row.querySelectorAll("input");
@@ -260,6 +260,7 @@
       document.getElementById("amortizationModal").style.display = "block";
     }
 
+    // Print amortization
     function printAmortization() {
       const modal = document.getElementById("amortizationModal").cloneNode(true);
       const buttons = modal.querySelectorAll("button");
