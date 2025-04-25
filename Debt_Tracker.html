@@ -9,7 +9,7 @@
   const db = firebase.firestore();
   const tableBody = document.querySelector("#debtTable tbody");
 
-  let creditUtilization = 0; // ✅ GLOBAL CREDIT UTILIZATION variable
+  let creditUtilization = 0; // ✅ GLOBAL
 
   // Add debt row
   function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
@@ -31,34 +31,6 @@
     calculateSummary();
   }
 
-  // Calculate months left
-  function calcRealMonths(balance, rate, payment) {
-    const r = rate / 100 / 12;
-    if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
-    return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
-  }
-
-  // Calculate total interest
-  function calcTotalInterest(balance, rate, payment) {
-    let r = rate / 100 / 12, total = 0, month = 0;
-    while (balance > 0 && month < 1000) {
-      const interest = balance * r;
-      const principal = payment - interest;
-      if (principal <= 0) break;
-      balance -= principal;
-      total += interest;
-      month++;
-    }
-    return total;
-  }
-
-  // Get priority tag
-  function getPriorityTag(cfi) {
-    if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
-    if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
-    return { tag: "✅ Low", class: "priority-low" };
-  }
-
   // Calculate Summary
   function calculateSummary() {
     let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
@@ -66,7 +38,6 @@
 
     tableBody.querySelectorAll("tr").forEach(row => {
       const inputs = row.querySelectorAll("input");
-      const name = inputs[0].value;
       const limit = parseFloat(inputs[1].value) || 0;
       const balance = parseFloat(inputs[2].value) || 0;
       const rate = parseFloat(inputs[3].value) || 0;
@@ -97,58 +68,80 @@
       }
     });
 
-    creditUtilization = creditLimit > 0 ? (creditBalance / creditLimit) * 100 : 0; // ✅ GLOBAL variable updated here
+    // ✅ Update global credit utilization
+    creditUtilization = creditLimit > 0 ? (creditBalance / creditLimit) * 100 : 0;
 
     document.getElementById("summaryText").innerText =
       `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
   }
 
-// Save debts to localStorage and Firebase
-function saveDebts() {
-  calculateSummary();  // ✅ First, refresh totals and utilization
+  // Save debts to localStorage and Firebase
+  function saveDebts() {
+    calculateSummary(); // ✅ Always recalculate first
 
-  const data = [];
-  tableBody.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    data.push({
-      name: inputs[0].value,
-      balance: inputs[2].value,
-      rate: inputs[3].value,
-      payment: inputs[4].value,
-      limit: inputs[1].value
+    const data = [];
+    tableBody.querySelectorAll("tr").forEach(row => {
+      const inputs = row.querySelectorAll("input");
+      data.push({
+        name: inputs[0].value,
+        balance: inputs[2].value,
+        rate: inputs[3].value,
+        payment: inputs[4].value,
+        limit: inputs[1].value
+      });
     });
-  });
 
-  // Save to localStorage
-  localStorage.setItem("debtData", JSON.stringify(data));
+    localStorage.setItem("debtData", JSON.stringify(data));
 
-  // Save to Firebase
-  const user = firebase.auth().currentUser;
-  if (user) {
-    const debtRef = firebase.firestore().collection('debts').doc(user.uid);
-    debtRef.set({
-      debts: data,
-      creditUtilization: creditUtilization.toFixed(2)
-    });
+    const user = firebase.auth().currentUser;
+    if (user) {
+      const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+      debtRef.set({
+        debts: data,
+        creditUtilization: creditUtilization.toFixed(2) // ✅ Save correct utilization
+      });
+    }
+
+    alert(`Saved! 💳 Credit Utilization: ${creditUtilization.toFixed(2)}%`);
   }
 
-  alert("Saved!");
-}
+  // Other helper functions (no changes needed)
+  function calcRealMonths(balance, rate, payment) {
+    const r = rate / 100 / 12;
+    if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
+    return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
+  }
 
-  // Remove row
+  function calcTotalInterest(balance, rate, payment) {
+    let r = rate / 100 / 12, total = 0, month = 0;
+    while (balance > 0 && month < 1000) {
+      const interest = balance * r;
+      const principal = payment - interest;
+      if (principal <= 0) break;
+      balance -= principal;
+      total += interest;
+      month++;
+    }
+    return total;
+  }
+
+  function getPriorityTag(cfi) {
+    if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
+    if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
+    return { tag: "✅ Low", class: "priority-low" };
+  }
+
   function removeRow(btn) {
     btn.parentElement.parentElement.remove();
     calculateSummary();
   }
 
-  // Load debts from localStorage and Firebase
   function loadDebts() {
     const data = JSON.parse(localStorage.getItem("debtData")) || [];
     tableBody.innerHTML = "";
     data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
     calculateSummary();
 
-    // Load debts from Firebase
     const user = firebase.auth().currentUser;
     if (user) {
       const debtRef = firebase.firestore().collection('debts').doc(user.uid);
@@ -161,66 +154,6 @@ function saveDebts() {
         }
       });
     }
-  }
-
-  // Amortization Modal
-  function amortizeRow(btn) {
-    const row = btn.closest("tr");
-    const inputs = row.querySelectorAll("input");
-    const name = inputs[0].value;
-    let balance = parseFloat(inputs[2].value);
-    const rate = parseFloat(inputs[3].value);
-    const payment = parseFloat(inputs[4].value);
-    if (!balance || !rate || !payment) return;
-
-    const r = rate / 100 / 12;
-    let month = 1, html = "", totalInterest = 0;
-    const today = new Date().toLocaleDateString();
-    html += `<div style='text-align:right; margin-bottom:10px;'>
-      <button onclick="printAmortization()">🖨️ Print</button>
-      <button onclick="document.getElementById('amortizationModal').style.display='none'">❌ Close</button>
-    </div>
-    <h2 style='text-align:center;'>Amortization Schedule – ${name}</h2>
-    <p><strong>Prepared by:</strong> Ronell Bradley</p>
-    <p><strong>Date Generated:</strong> ${today}</p>
-    <table style='width:100%; border-collapse:collapse;' border='1'>
-      <thead><tr><th>Month</th><th>Start Balance</th><th>Interest</th><th>Principal</th><th>End Balance</th></tr></thead><tbody>`;
-
-    while (balance > 0 && month <= 240) {
-      const interest = balance * r;
-      const principal = Math.min(payment - interest, balance);
-      const end = balance - principal;
-      html += `<tr>
-        <td>${month}</td>
-        <td>$${balance.toFixed(2)}</td>
-        <td>$${interest.toFixed(2)}</td>
-        <td>$${principal.toFixed(2)}</td>
-        <td>$${Math.max(0,end).toFixed(2)}</td>
-      </tr>`;
-      totalInterest += interest;
-      balance = end;
-      month++;
-    }
-
-    html += `</tbody></table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
-    document.getElementById("amortizationModal").innerHTML = html;
-    document.getElementById("amortizationModal").style.display = "block";
-  }
-
-  // Print amortization
-  function printAmortization() {
-    const modal = document.getElementById("amortizationModal").cloneNode(true);
-    const buttons = modal.querySelectorAll("button");
-    buttons.forEach(btn => btn.remove());
-
-    const win = window.open("", "", "height=900,width=1200");
-    win.document.write("<html><head><title>Print</title>");
-    win.document.write("<style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#f0f0f0;}</style>");
-    win.document.write("</head><body>" + modal.innerHTML + "</body></html>");
-    win.document.close();
-    win.focus();
-    win.print();
-    win.close();
   }
 
   window.onload = function () {
