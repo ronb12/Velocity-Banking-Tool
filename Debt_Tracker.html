@@ -52,10 +52,10 @@
     <tbody></tbody>
   </table>
 
-  <button onclick="addDebt()">+ Add Debt</button>
-  <button onclick="saveDebts()">💾 Save</button>
-  <button onclick="loadDebts()">📂 Load</button>
-  <button onclick="exportToExcel()">📥 Export to Excel</button>
+  <button id="addDebtBtn">+ Add Debt</button>
+  <button id="saveDebtsBtn">💾 Save</button>
+  <button id="loadDebtsBtn">📂 Load</button>
+  <button id="exportToExcelBtn">📥 Export to Excel</button>
   <button onclick="window.print()">🖨️ Print Page</button>
 
   <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0</div>
@@ -78,6 +78,12 @@
     const db = firebase.firestore();
 
     const tableBody = document.querySelector("#debtTable tbody");
+
+    // Add Event Listeners
+    document.getElementById("addDebtBtn").addEventListener("click", () => addDebt());
+    document.getElementById("saveDebtsBtn").addEventListener("click", () => saveDebts());
+    document.getElementById("loadDebtsBtn").addEventListener("click", () => loadDebts());
+    document.getElementById("exportToExcelBtn").addEventListener("click", () => exportToExcel());
 
     function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
       const row = document.createElement("tr");
@@ -137,51 +143,47 @@
         .catch(error => alert("Error loading data: " + error.message));
     }
 
-   function calculateSummary() {
-  let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
+    function calculateSummary() {
+      let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
 
-  tableBody.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
+      tableBody.querySelectorAll("tr").forEach(row => {
+        const inputs = row.querySelectorAll("input");
 
-    // Check if we have all the expected input elements
-    if (inputs.length < 9) {
-      console.warn("Missing input field in row:", row); // Debugging log
-      return; // Skip this row if there are missing input elements
-    }
+        // Check if we have all the expected input elements
+        if (inputs.length < 9) {
+          console.warn("Missing input field in row:", row); // Debugging log
+          return; // Skip this row if there are missing input elements
+        }
 
-    try {
-      const name = inputs[0].value;
-      const balance = parseFloat(inputs[1].value) || 0;
-      const rate = parseFloat(inputs[2].value) || 0;
-      const payment = parseFloat(inputs[3].value) || 0;
-      const limit = parseFloat(inputs[8].value) || 0;
+        try {
+          const name = inputs[0].value;
+          const balance = parseFloat(inputs[1].value) || 0;
+          const rate = parseFloat(inputs[2].value) || 0;
+          const payment = parseFloat(inputs[3].value) || 0;
+          const limit = parseFloat(inputs[8].value) || 0;
 
-      // Ensure we are not using invalid values
-      if (balance > 0 && rate > 0 && payment > 0) {
-        const months = calcRealMonths(balance, rate, payment);
-        const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-        const interest = calcTotalInterest(balance, rate, payment);
-        const { tag, class: priorityClass } = getPriorityTag(cfi);
+          // Ensure we are not using invalid values
+          if (balance > 0 && rate > 0 && payment > 0) {
+            const months = calcRealMonths(balance, rate, payment);
+            const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+            const interest = calcTotalInterest(balance, rate, payment);
+            const { tag, class: priorityClass } = getPriorityTag(cfi);
 
-        row.querySelector(".monthsLeft").innerText = months;
-        row.querySelector(".cfi").innerText = cfi;
-        row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-        row.querySelector(".priority").innerText = tag;
-        row.className = priorityClass;
+            row.querySelector(".monthsLeft").innerText = months;
+            row.querySelector(".cfi").innerText = cfi;
+            row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+            row.querySelector(".priority").innerText = tag;
+            row.className = priorityClass;
 
-        totalBalance += balance;
-        totalPayment += payment;
-        totalInterest += interest;
-        totalLimit += limit;  // Add limit to total
-      }
-    } catch (error) {
-      console.error("Error processing row:", row, error);
-    }
-  });
-
-  document.getElementById("summaryText").innerText =
-    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)}`;
-}
+            totalBalance += balance;
+            totalPayment += payment;
+            totalInterest += interest;
+            totalLimit += limit;  // Add limit to total
+          }
+        } catch (error) {
+          console.error("Error processing row:", row, error);
+        }
+      });
 
       document.getElementById("summaryText").innerText =
         `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)}`;
