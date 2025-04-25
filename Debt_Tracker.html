@@ -37,6 +37,7 @@
     <thead>
       <tr>
         <th>Debt Name</th>
+        <th>Limit ($)</th> <!-- Limit input first -->
         <th>Balance ($)</th>
         <th>Interest Rate (%)</th>
         <th>Min Payment ($)</th>
@@ -44,7 +45,6 @@
         <th>CFI</th>
         <th>Total Interest</th>
         <th>Priority</th>
-        <th>Limit ($)</th> <!-- Added column for Credit Card Limit -->
         <th>Amortize</th>
         <th>Delete</th>
       </tr>
@@ -89,6 +89,7 @@
       const row = document.createElement("tr");
       row.innerHTML = `
         <td><input value="${name}" oninput="calculateSummary()" /></td>
+        <td><input type="number" value="${limit}" oninput="calculateSummary()" class="limitInput" /></td> <!-- Limit input before Balance -->
         <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
@@ -96,7 +97,6 @@
         <td class="cfi">-</td>
         <td class="interest">-</td>
         <td class="priority">-</td>
-        <td><input type="number" value="${limit}" oninput="calculateSummary()" class="limitInput"/></td> <!-- Added Limit Input -->
         <td><button onclick="amortizeRow(this)">📄</button></td>
         <td><button onclick="removeRow(this)" style="background:#dc3545;">❌</button></td>
       `;
@@ -113,10 +113,10 @@
         const inputs = row.querySelectorAll("input");
         data.push({
           name: inputs[0].value,
-          balance: inputs[1].value,
-          rate: inputs[2].value,
-          payment: inputs[3].value,
-          limit: inputs[8].value // Saving limit data
+          balance: inputs[2].value,
+          rate: inputs[3].value,
+          payment: inputs[4].value,
+          limit: inputs[1].value // Saving limit data
         });
       });
 
@@ -157,10 +157,10 @@
 
         try {
           const name = inputs[0].value;
-          const balance = parseFloat(inputs[1].value) || 0;
-          const rate = parseFloat(inputs[2].value) || 0;
-          const payment = parseFloat(inputs[3].value) || 0;
-          const limit = parseFloat(inputs[8].value) || 0;
+          const balance = parseFloat(inputs[2].value) || 0;
+          const rate = parseFloat(inputs[3].value) || 0;
+          const payment = parseFloat(inputs[4].value) || 0;
+          const limit = parseFloat(inputs[1].value) || 0;
 
           // Ensure we are not using invalid values
           if (balance > 0 && rate > 0 && payment > 0) {
@@ -200,14 +200,14 @@
         const inputs = row.querySelectorAll("input");
         rows.push([
           inputs[0].value,
-          inputs[1].value,
           inputs[2].value,
           inputs[3].value,
+          inputs[4].value,
           row.querySelector(".monthsLeft").innerText,
           row.querySelector(".cfi").innerText,
           row.querySelector(".interest").innerText,
           row.querySelector(".priority").innerText,
-          inputs[8].value // Limit column added for export
+          inputs[1].value // Limit column added for export
         ]);
       });
       const csv = rows.map(r => r.join(",")).join("\n");
