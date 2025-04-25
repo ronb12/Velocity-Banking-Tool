@@ -183,20 +183,24 @@
     }
   });
 
-  // Load debts and sync dashboard data
   async function loadDebts(user) {
     const debtsSnapshot = await db.collection("users").doc(user.uid).collection("debts").get();
 
     if (debtsSnapshot.empty) {
-      console.log('No debts found');
-      return;
+        console.log('No debts found');
+        return;
     }
 
     let debtsData = [];
     debtsSnapshot.forEach(doc => {
-      console.log("Debt doc data: ", doc.data());  // Log each document's data
-      debtsData.push(doc.data());
+        console.log("Debt doc data: ", doc.data());  // This logs the data for each debt
+        debtsData.push(doc.data());
     });
+
+    console.log("All Debts Data: ", debtsData);  // This logs the entire debts array
+
+    // Continue with your sorting and display logic
+}
 
     console.log("Debts Data: ", debtsData);  // Log all debts fetched
 
