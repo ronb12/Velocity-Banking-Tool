@@ -103,35 +103,37 @@
       `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
   }
 
-  // Save debts to localStorage and Firebase
-  function saveDebts() {
-    const data = [];
-    tableBody.querySelectorAll("tr").forEach(row => {
-      const inputs = row.querySelectorAll("input");
-      data.push({
-        name: inputs[0].value,
-        balance: inputs[2].value,
-        rate: inputs[3].value,
-        payment: inputs[4].value,
-        limit: inputs[1].value
-      });
+// Save debts to localStorage and Firebase
+function saveDebts() {
+  calculateSummary();  // ✅ First, refresh totals and utilization
+
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    data.push({
+      name: inputs[0].value,
+      balance: inputs[2].value,
+      rate: inputs[3].value,
+      payment: inputs[4].value,
+      limit: inputs[1].value
     });
+  });
 
-    // Save to localStorage
-    localStorage.setItem("debtData", JSON.stringify(data));
+  // Save to localStorage
+  localStorage.setItem("debtData", JSON.stringify(data));
 
-    // Save to Firebase correctly
-    const user = firebase.auth().currentUser;
-    if (user) {
-      const debtRef = firebase.firestore().collection('debts').doc(user.uid);
-      debtRef.set({
-        debts: data,
-        creditUtilization: creditUtilization.toFixed(2)  // ✅ Save utilization too!
-      });
-    }
-
-    alert("Saved!");
+  // Save to Firebase
+  const user = firebase.auth().currentUser;
+  if (user) {
+    const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+    debtRef.set({
+      debts: data,
+      creditUtilization: creditUtilization.toFixed(2)
+    });
   }
+
+  alert("Saved!");
+}
 
   // Remove row
   function removeRow(btn) {
