@@ -5,11 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -33,15 +32,9 @@
       color: white;
       cursor: pointer;
     }
-    .logout {
-      right: 20px;
-      background: #dc3545;
-    }
-    .profile-btn {
-      left: 20px;
-      background: #28a745;
-    }
-    .tools {
+    .logout { right: 20px; background: #dc3545; }
+    .profile-btn { left: 20px; background: #28a745; }
+    .tools, .dashboard, .export-buttons {
       padding: 20px;
     }
     .tool-link {
@@ -54,12 +47,16 @@
       border-radius: 8px;
       text-decoration: none;
     }
-    canvas {
-      max-width: 600px;
-      margin: 20px auto;
-    }
-    .export-buttons {
+    .dashboard-tile {
+      display: inline-block;
       margin: 10px;
+      padding: 15px;
+      background: white;
+      border-left: 5px solid #007bff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      min-width: 180px;
+      font-weight: bold;
     }
     .alert {
       background: #ffc107;
@@ -82,19 +79,26 @@
   </style>
 </head>
 <body>
-
 <header>
   🚀 Bradley's Dashboard
   <button class="profile-btn" onclick="toggleProfile()">👤 My Profile</button>
   <button class="logout" onclick="logout()">🔒 Logout</button>
 </header>
 
-<div id="notification" class="alert" style="display: none;">🔔 Notification will appear here.</div>
+<div id="notification" class="alert" style="display: none;">🔔 Notifications will appear here.</div>
 
 <div id="profileBox">
   <h3>👤 Your Profile</h3>
   <p id="profileEmail">Email: ...</p>
   <p id="profileJoinDate">Joined: ...</p>
+</div>
+
+<div class="dashboard" id="dashboardTiles">
+  <div class="dashboard-tile" id="netWorthTile">🧮 Total Net Worth: $0.00</div>
+  <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
+  <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
+  <div class="dashboard-tile" id="topDebtsTile">🔥 Top 3 Debts: Loading...</div>
+  <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: 0%</div>
 </div>
 
 <div class="tools">
@@ -112,80 +116,76 @@
   <a class="tool-link" href="notifications.html">📥 Notifications Center</a>
 </div>
 
-<canvas id="monthlyChart"></canvas>
-
 <div class="export-buttons">
-  <button onclick="exportPDF()">📄 Export PDF</button>
-  <button onclick="exportCSV()">📊 Export CSV</button>
-  <button onclick="syncCalendar()">📅 Sync to Google Calendar</button>
+  <button onclick="alert('PDF Export Coming Soon')">📄 Export PDF</button>
+  <button onclick="alert('CSV Export Coming Soon')">📊 Export CSV</button>
+  <button onclick="alert('Google Calendar Sync Coming Soon')">📅 Sync Calendar</button>
 </div>
 
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
     authDomain: "mobile-debt-tracker.firebaseapp.com",
-    projectId: "mobile-debt-tracker",
-    storageBucket: "mobile-debt-tracker.firebasestorage.app",
-    messagingSenderId: "153601029964",
-    appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
+    projectId: "mobile-debt-tracker"
   };
-
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
 
   function logout() {
-    auth.signOut().then(() => {
-      window.location.href = "login.html";
-    });
+    auth.signOut().then(() => window.location.href = "login.html");
   }
 
   function toggleProfile() {
     const box = document.getElementById("profileBox");
-    box.style.display = (box.style.display === "none" || box.style.display === "") ? "block" : "none";
+    box.style.display = box.style.display === "none" ? "block" : "none";
   }
 
   auth.onAuthStateChanged(async user => {
     if (!user) return window.location.href = "login.html";
-    try {
-      const userRef = db.collection("users").doc(user.uid);
-      let doc = await userRef.get();
-      if (!doc.exists) {
-        const newData = { email: user.email, joined: new Date().toISOString() };
-        await userRef.set(newData);
-        doc = await userRef.get();
-      }
-      const data = doc.data();
-      document.getElementById("notification").style.display = "block";
-      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
-    } catch (e) {
-      document.getElementById("notification").innerText = "⚠️ Profile sync failed.";
-      console.error("Firestore error:", e);
+    const userRef = db.collection("users").doc(user.uid);
+    const doc = await userRef.get();
+    if (!doc.exists) {
+      await userRef.set({ email: user.email, joined: new Date().toISOString() });
+    }
+    const data = (await userRef.get()).data();
+    document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
+    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
+    document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
+    document.getElementById("notification").style.display = "block";
+
+    // Dashboard Sync
+    const networth = await db.collection("networth").doc(user.uid).get();
+    if (networth.exists) {
+      const assets = networth.data().assets || [];
+      const liabilities = networth.data().liabilities || [];
+      const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
+      const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
+      document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
+    }
+
+    const budget = await db.collection("budgets").doc(user.uid + "_" + new Date().toISOString().slice(0,7)).get();
+    if (budget.exists) {
+      const income = budget.data().incomes.reduce((sum, i) => sum + i.amount, 0);
+      const expenses = budget.data().expenses.reduce((sum, e) => sum + e.budgeted, 0);
+      document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
+      document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
+    }
+
+    const debts = await db.collection("debts").doc(user.uid).get();
+    if (debts.exists) {
+      const topDebts = (debts.data().debts || [])
+        .sort((a,b) => b.interest - a.interest)
+        .slice(0, 3)
+        .map(d => d.name).join(", ");
+      document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+      const creditDebt = (debts.data().debts || []).filter(d => d.type === 'credit');
+      const creditUsed = creditDebt.reduce((sum, d) => sum + d.balance, 0);
+      const creditLimit = creditDebt.reduce((sum, d) => sum + (d.limit || 0), 0);
+      const utilization = creditLimit ? ((creditUsed / creditLimit) * 100).toFixed(1) : 0;
+      document.getElementById("creditUtilizationTile").innerText = `💳 Credit Utilization: ${utilization}%`;
     }
   });
-
-  function exportPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.text("Bradley's Dashboard Summary", 10, 10);
-    doc.save("dashboard.pdf");
-  }
-
-  function exportCSV() {
-    const data = [["Month", "Spending"], ["Jan", 500], ["Feb", 400], ["Mar", 600], ["Apr", 700], ["May", 650]];
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "dashboard.csv";
-    a.click();
-  }
-
-  function syncCalendar() {
-    alert("📅 Google Calendar sync coming soon.");
-  }
 </script>
 
 </body>
