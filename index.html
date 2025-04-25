@@ -5,10 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -123,88 +119,36 @@
 </div>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-    authDomain: "mobile-debt-tracker.firebaseapp.com",
-    projectId: "mobile-debt-tracker"
-  };
+  // Local storage-based debt management code
 
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
-  // Logout function
+  // Function to logout
   function logout() {
-    auth.signOut().then(() => {
-      window.location.href = "login.html"; // Redirect to login page after sign out
-    }).catch(error => {
-      console.error("Error signing out: ", error);
-    });
+    alert("You have logged out!");
+    // Implement actual logout functionality if needed
   }
 
-  // Toggle Profile visibility
+  // Toggle profile visibility
   function toggleProfile() {
     const box = document.getElementById("profileBox");
     box.style.display = (box.style.display === "none") ? "block" : "none";
   }
 
-  // Handle user authentication state changes
-  auth.onAuthStateChanged(async user => {
-    if (!user) {
-      console.log('User not authenticated!');
-      window.location.href = "login.html"; // Redirect to login if no user
+  // Function to load debts from local storage
+  function loadDebts() {
+    const debtsData = JSON.parse(localStorage.getItem("debtData")) || [];
+
+    if (debtsData.length === 0) {
+      console.log('No debts found in localStorage');
       return;
     }
 
-    try {
-      const userRef = db.collection("users").doc(user.uid);
-      const doc = await userRef.get();
-      
-      // If the user document doesn't exist, create it
-      if (!doc.exists) {
-        await userRef.set({ 
-          email: user.email, 
-          joined: new Date().toISOString() // Timestamp when the user joined
-        });
-      }
-
-      // Access user data
-      const data = doc.data();
-      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
-      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-      document.getElementById("notification").style.display = "block";
-
-      // Call to load debts only if user is logged in
-      await loadDebts(user);
-    } catch (error) {
-      console.error("Error fetching user data: ", error);
-    }
-  });
-
-  // Load debts and sync dashboard data
-  async function loadDebts(user) {
-    const debtsSnapshot = await db.collection("users").doc(user.uid).collection("debts").get();
-
-    if (debtsSnapshot.empty) {
-      console.log('No debts found');
-      return;
-    }
-
-    let debtsData = [];
-    debtsSnapshot.forEach(doc => {
-      console.log("Debt doc data: ", doc.data());  // This logs the data for each debt
-      debtsData.push(doc.data());
-    });
-
-    console.log("All Debts Data: ", debtsData);  // This logs the entire debts array
+    // Update Total Debts
+    const totalDebts = debtsData.reduce((sum, debt) => sum + parseFloat(debt.balance), 0);
+    document.getElementById("topDebtsTile").innerHTML = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
 
     // Sort by CFI and get top 3 debts
     debtsData.sort((a, b) => (b.balance / b.payment) - (a.balance / a.payment));  // Sorting by CFI (balance/payment)
     const top3Debts = debtsData.slice(0, 3);
-
-    console.log("Top 3 Debts: ", top3Debts);  // Log the top 3 debts
 
     // Display top 3 debts in the dashboard
     let topDebtsHTML = "<h3>Top 3 Debts by CFI</h3>";
@@ -215,10 +159,33 @@
 
     // Calculate total credit utilization
     const creditDebts = debtsData.filter(debt => debt.type === 'credit');
-    const totalCreditUsed = creditDebts.reduce((sum, debt) => sum + debt.balance, 0);
-    const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
+    const totalCreditUsed = creditDebts.reduce((sum, debt) => sum + parseFloat(debt.balance), 0);
+    const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + parseFloat(debt.limit), 0);
     const creditUtilization = (totalCreditLimit > 0) ? ((totalCreditUsed / totalCreditLimit) * 100).toFixed(1) : 0;
     document.getElementById("creditUtilizationTile").innerHTML = `💳 Credit Utilization: ${creditUtilization}%`;
+  }
+
+  // Function to save debts to localStorage
+  function saveDebts() {
+    const data = [];
+    const tableBody = document.querySelector("#debtTable tbody");
+    tableBody.querySelectorAll("tr").forEach(row => {
+      const inputs = row.querySelectorAll("input");
+      data.push({
+        name: inputs[0].value,
+        balance: inputs[1].value,
+        rate: inputs[2].value,
+        payment: inputs[3].value,
+        limit: inputs[4].value
+      });
+    });
+    localStorage.setItem("debtData", JSON.stringify(data));
+    alert("Debts saved to localStorage!");
+  }
+
+  // Load debts when the page loads
+  window.onload = function () {
+    loadDebts();
   }
 </script>
 
