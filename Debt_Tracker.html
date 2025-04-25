@@ -62,7 +62,21 @@
 
   <div id="amortizationModal" style="display:none;padding:20px;background:white;position:fixed;top:10%;left:50%;transform:translateX(-50%);max-height:80vh;overflow:auto;box-shadow:0 0 15px rgba(0,0,0,0.4);z-index:1000;width:90%;"></div>
 
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
     const tableBody = document.querySelector("#debtTable tbody");
 
     function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
@@ -84,29 +98,43 @@
       calculateSummary();
     }
 
-    function calcRealMonths(balance, rate, payment) {
-      const r = rate / 100 / 12;
-      if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
-      return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
+    function saveDebts() {
+      const user = auth.currentUser;
+      if (!user) return alert("You need to be logged in to save data.");
+      
+      const data = [];
+      tableBody.querySelectorAll("tr").forEach(row => {
+        const inputs = row.querySelectorAll("input");
+        data.push({
+          name: inputs[0].value,
+          balance: inputs[1].value,
+          rate: inputs[2].value,
+          payment: inputs[3].value,
+          limit: inputs[8].value // Saving limit data
+        });
+      });
+
+      db.collection("debts").doc(user.uid).set({ debts: data })
+        .then(() => alert("Data saved successfully!"))
+        .catch(error => alert("Error saving data: " + error.message));
     }
 
-    function calcTotalInterest(balance, rate, payment) {
-      let r = rate / 100 / 12, total = 0, month = 0;
-      while (balance > 0 && month < 1000) {
-        const interest = balance * r;
-        const principal = payment - interest;
-        if (principal <= 0) break;
-        balance -= principal;
-        total += interest;
-        month++;
-      }
-      return total;
-    }
-
-    function getPriorityTag(cfi) {
-      if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
-      if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
-      return { tag: "✅ Low", class: "priority-low" };
+    function loadDebts() {
+      const user = auth.currentUser;
+      if (!user) return alert("You need to be logged in to load data.");
+      
+      db.collection("debts").doc(user.uid).get()
+        .then(doc => {
+          if (doc.exists) {
+            const data = doc.data().debts || [];
+            tableBody.innerHTML = "";
+            data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+            calculateSummary();
+          } else {
+            alert("No debts found!");
+          }
+        })
+        .catch(error => alert("Error loading data: " + error.message));
     }
 
     function calculateSummary() {
@@ -170,85 +198,29 @@
       a.click();
     }
 
-    function saveDebts() {
-      const data = [];
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        data.push({
-          name: inputs[0].value,
-          balance: inputs[1].value,
-          rate: inputs[2].value,
-          payment: inputs[3].value,
-          limit: inputs[8].value // Saving limit data
-        });
-      });
-      localStorage.setItem("debtData", JSON.stringify(data));
-      alert("Saved!");
-    }
-
-    function loadDebts() {
-      const data = JSON.parse(localStorage.getItem("debtData")) || [];
-      tableBody.innerHTML = "";
-      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-      calculateSummary();
-    }
-
-    function amortizeRow(btn) {
-      const row = btn.closest("tr");
-      const inputs = row.querySelectorAll("input");
-      const name = inputs[0].value;
-      let balance = parseFloat(inputs[1].value);
-      const rate = parseFloat(inputs[2].value);
-      const payment = parseFloat(inputs[3].value);
-      if (!balance || !rate || !payment) return;
-
+    function calcRealMonths(balance, rate, payment) {
       const r = rate / 100 / 12;
-      let month = 1, html = "", totalInterest = 0;
-      const today = new Date().toLocaleDateString();
-      html += `<div style='text-align:right; margin-bottom:10px;'>
-        <button onclick="printAmortization()">🖨️ Print</button>
-        <button onclick="document.getElementById('amortizationModal').style.display='none'">❌ Close</button>
-      </div>
-      <h2 style='text-align:center;'>Amortization Schedule – ${name}</h2>
-      <p><strong>Prepared by:</strong> Ronell Bradley</p>
-      <p><strong>Date Generated:</strong> ${today}</p>
-      <table style='width:100%; border-collapse:collapse;' border='1'>
-        <thead><tr><th>Month</th><th>Start Balance</th><th>Interest</th><th>Principal</th><th>End Balance</th></tr></thead><tbody>`;
+      if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
+      return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
+    }
 
-      while (balance > 0 && month <= 240) {
+    function calcTotalInterest(balance, rate, payment) {
+      let r = rate / 100 / 12, total = 0, month = 0;
+      while (balance > 0 && month < 1000) {
         const interest = balance * r;
-        const principal = Math.min(payment - interest, balance);
-        const end = balance - principal;
-        html += `<tr>
-          <td>${month}</td>
-          <td>$${balance.toFixed(2)}</td>
-          <td>$${interest.toFixed(2)}</td>
-          <td>$${principal.toFixed(2)}</td>
-          <td>$${Math.max(0,end).toFixed(2)}</td>
-        </tr>`;
-        totalInterest += interest;
-        balance = end;
+        const principal = payment - interest;
+        if (principal <= 0) break;
+        balance -= principal;
+        total += interest;
         month++;
       }
-
-      html += `</tbody></table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
-      document.getElementById("amortizationModal").innerHTML = html;
-      document.getElementById("amortizationModal").style.display = "block";
+      return total;
     }
 
-    function printAmortization() {
-      const modal = document.getElementById("amortizationModal").cloneNode(true);
-      const buttons = modal.querySelectorAll("button");
-      buttons.forEach(btn => btn.remove());
-
-      const win = window.open("", "", "height=900,width=1200");
-      win.document.write("<html><head><title>Print</title>");
-      win.document.write("<style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#f0f0f0;}</style>");
-      win.document.write("</head><body>" + modal.innerHTML + "</body></html>");
-      win.document.close();
-      win.focus();
-      win.print();
-      win.close();
+    function getPriorityTag(cfi) {
+      if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
+      if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
+      return { tag: "✅ Low", class: "priority-low" };
     }
 
     window.onload = function () {
