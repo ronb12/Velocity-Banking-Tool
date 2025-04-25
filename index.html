@@ -97,7 +97,7 @@
   <div class="dashboard-tile" id="netWorthTile">🧮 Total Net Worth: $0.00</div>
   <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
   <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
-  <div class="dashboard-tile" id="topDebtsTile">🔥 Top 3 Debts: Loading...</div>
+  <div class="dashboard-tile" id="topDebtsTile">🔥 Total Debts: $0.00</div>
   <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: 0%</div>
 </div>
 
@@ -174,11 +174,12 @@
 
     const debts = await db.collection("debts").doc(user.uid).get();
     if (debts.exists) {
-      const topDebts = (debts.data().debts || [])
-        .sort((a,b) => b.interest - a.interest)
-        .slice(0, 3)
-        .map(d => d.name).join(", ");
-      document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+      // Total debts by CFI
+      const totalDebts = (debts.data().debts || [])
+        .reduce((sum, d) => sum + d.balance, 0);
+      document.getElementById("topDebtsTile").innerText = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
+
+      // Credit utilization calculation
       const creditDebt = (debts.data().debts || []).filter(d => d.type === 'credit');
       const creditUsed = creditDebt.reduce((sum, d) => sum + d.balance, 0);
       const creditLimit = creditDebt.reduce((sum, d) => sum + (d.limit || 0), 0);
