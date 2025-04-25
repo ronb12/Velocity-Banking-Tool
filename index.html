@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -72,6 +76,18 @@
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
+    /* Update layout to match new structure */
+    #dashboardTiles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr); /* 3 columns layout */
+      grid-gap: 20px;
+    }
+    #topDebtsTile {
+      grid-column: span 3; /* Make Top 3 Debts span the entire row */
+    }
+    .dashboard-tile {
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -93,8 +109,8 @@
   <div class="dashboard-tile" id="netWorthTile">🧮 Total Net Worth: $0.00</div>
   <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
   <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
-  <div class="dashboard-tile" id="topDebtsTile">🔥 Total Debts: $0.00</div>
   <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: 0%</div>
+  <div class="dashboard-tile" id="topDebtsTile">🔥 Total Debts: $0.00</div>
 </div>
 
 <div class="tools">
@@ -119,28 +135,81 @@
 </div>
 
 <script>
-  // Local storage-based debt management code
+  // Firebase setup and initialization
+  const firebaseConfig = {
+    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+    authDomain: "mobile-debt-tracker.firebaseapp.com",
+    projectId: "mobile-debt-tracker"
+  };
 
-  // Function to logout
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // Logout function
   function logout() {
-    alert("You have logged out!");
-    // Implement actual logout functionality if needed
+    auth.signOut().then(() => {
+      window.location.href = "login.html"; // Redirect to login page after sign out
+    }).catch(error => {
+      console.error("Error signing out: ", error);
+    });
   }
 
-  // Toggle profile visibility
+  // Toggle Profile visibility
   function toggleProfile() {
     const box = document.getElementById("profileBox");
     box.style.display = (box.style.display === "none") ? "block" : "none";
   }
 
-  // Function to load debts from local storage
-  function loadDebts() {
-    const debtsData = JSON.parse(localStorage.getItem("debtData")) || [];
-
-    if (debtsData.length === 0) {
-      console.log('No debts found in localStorage');
+  // Handle user authentication state changes
+  auth.onAuthStateChanged(async user => {
+    if (!user) {
+      console.log('User not authenticated!');
+      window.location.href = "login.html"; // Redirect to login if no user
       return;
     }
+
+    try {
+      const userRef = db.collection("users").doc(user.uid);
+      const doc = await userRef.get();
+      
+      // If the user document doesn't exist, create it
+      if (!doc.exists) {
+        await userRef.set({ 
+          email: user.email, 
+          joined: new Date().toISOString() // Timestamp when the user joined
+        });
+      }
+
+      // Access user data
+      const data = doc.data();
+      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
+      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
+      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
+      document.getElementById("notification").style.display = "block";
+
+      // Call to load debts only if user is logged in
+      await loadDebts(user);
+    } catch (error) {
+      console.error("Error fetching user data: ", error);
+    }
+  });
+
+  async function loadDebts(user) {
+    const debtsSnapshot = await db.collection("users").doc(user.uid).collection("debts").get();
+
+    if (debtsSnapshot.empty) {
+        console.log('No debts found');
+        return;
+    }
+
+    let debtsData = [];
+    debtsSnapshot.forEach(doc => {
+        debtsData.push(doc.data());
+    });
+
+    console.log("Debts Data: ", debtsData);  // Log all debts fetched
 
     // Update Total Debts
     const totalDebts = debtsData.reduce((sum, debt) => sum + parseFloat(debt.balance), 0);
@@ -159,33 +228,10 @@
 
     // Calculate total credit utilization
     const creditDebts = debtsData.filter(debt => debt.type === 'credit');
-    const totalCreditUsed = creditDebts.reduce((sum, debt) => sum + parseFloat(debt.balance), 0);
-    const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + parseFloat(debt.limit), 0);
+    const totalCreditUsed = creditDebts.reduce((sum, debt) => sum + debt.balance, 0);
+    const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
     const creditUtilization = (totalCreditLimit > 0) ? ((totalCreditUsed / totalCreditLimit) * 100).toFixed(1) : 0;
     document.getElementById("creditUtilizationTile").innerHTML = `💳 Credit Utilization: ${creditUtilization}%`;
-  }
-
-  // Function to save debts to localStorage
-  function saveDebts() {
-    const data = [];
-    const tableBody = document.querySelector("#debtTable tbody");
-    tableBody.querySelectorAll("tr").forEach(row => {
-      const inputs = row.querySelectorAll("input");
-      data.push({
-        name: inputs[0].value,
-        balance: inputs[1].value,
-        rate: inputs[2].value,
-        payment: inputs[3].value,
-        limit: inputs[4].value
-      });
-    });
-    localStorage.setItem("debtData", JSON.stringify(data));
-    alert("Debts saved to localStorage!");
-  }
-
-  // Load debts when the page loads
-  window.onload = function () {
-    loadDebts();
   }
 </script>
 
