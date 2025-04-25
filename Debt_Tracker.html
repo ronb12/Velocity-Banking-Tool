@@ -137,36 +137,51 @@
         .catch(error => alert("Error loading data: " + error.message));
     }
 
-    function calculateSummary() {
-      let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
+   function calculateSummary() {
+  let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
 
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        const name = inputs[0].value;
-        const balance = parseFloat(inputs[1].value) || 0;
-        const rate = parseFloat(inputs[2].value) || 0;
-        const payment = parseFloat(inputs[3].value) || 0;
-        const limit = parseFloat(inputs[8].value) || 0;
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
 
-        // Ensure we are not using invalid values
-        if (balance > 0 && rate > 0 && payment > 0) {
-          const months = calcRealMonths(balance, rate, payment);
-          const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-          const interest = calcTotalInterest(balance, rate, payment);
-          const { tag, class: priorityClass } = getPriorityTag(cfi);
+    // Check if we have all the expected input elements
+    if (inputs.length < 9) {
+      console.warn("Missing input field in row:", row); // Debugging log
+      return; // Skip this row if there are missing input elements
+    }
 
-          row.querySelector(".monthsLeft").innerText = months;
-          row.querySelector(".cfi").innerText = cfi;
-          row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-          row.querySelector(".priority").innerText = tag;
-          row.className = priorityClass;
+    try {
+      const name = inputs[0].value;
+      const balance = parseFloat(inputs[1].value) || 0;
+      const rate = parseFloat(inputs[2].value) || 0;
+      const payment = parseFloat(inputs[3].value) || 0;
+      const limit = parseFloat(inputs[8].value) || 0;
 
-          totalBalance += balance;
-          totalPayment += payment;
-          totalInterest += interest;
-          totalLimit += limit;  // Add limit to total
-        }
-      });
+      // Ensure we are not using invalid values
+      if (balance > 0 && rate > 0 && payment > 0) {
+        const months = calcRealMonths(balance, rate, payment);
+        const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+        const interest = calcTotalInterest(balance, rate, payment);
+        const { tag, class: priorityClass } = getPriorityTag(cfi);
+
+        row.querySelector(".monthsLeft").innerText = months;
+        row.querySelector(".cfi").innerText = cfi;
+        row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+        row.querySelector(".priority").innerText = tag;
+        row.className = priorityClass;
+
+        totalBalance += balance;
+        totalPayment += payment;
+        totalInterest += interest;
+        totalLimit += limit;  // Add limit to total
+      }
+    } catch (error) {
+      console.error("Error processing row:", row, error);
+    }
+  });
+
+  document.getElementById("summaryText").innerText =
+    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)}`;
+}
 
       document.getElementById("summaryText").innerText =
         `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)}`;
