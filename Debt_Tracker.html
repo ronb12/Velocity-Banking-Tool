@@ -37,7 +37,6 @@
     <thead>
       <tr>
         <th>Debt Name</th>
-        <th>Limit ($)</th> <!-- Limit input first -->
         <th>Balance ($)</th>
         <th>Interest Rate (%)</th>
         <th>Min Payment ($)</th>
@@ -45,6 +44,7 @@
         <th>CFI</th>
         <th>Total Interest</th>
         <th>Priority</th>
+        <th>Limit ($)</th> <!-- Added column for Credit Card Limit -->
         <th>Amortize</th>
         <th>Delete</th>
       </tr>
@@ -52,13 +52,13 @@
     <tbody></tbody>
   </table>
 
-  <button id="addDebtBtn">+ Add Debt</button>
-  <button id="saveDebtsBtn">💾 Save</button>
-  <button id="loadDebtsBtn">📂 Load</button>
-  <button id="exportToExcelBtn">📥 Export to Excel</button>
+  <button onclick="addDebt()">+ Add Debt</button>
+  <button onclick="saveDebts()">💾 Save</button>
+  <button onclick="loadDebts()">📂 Load</button>
+  <button onclick="exportToExcel()">📥 Export to Excel</button>
   <button onclick="window.print()">🖨️ Print Page</button>
 
-  <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0</div>
+  <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0</div>
 
   <div id="amortizationModal" style="display:none;padding:20px;background:white;position:fixed;top:10%;left:50%;transform:translateX(-50%);max-height:80vh;overflow:auto;box-shadow:0 0 15px rgba(0,0,0,0.4);z-index:1000;width:90%;"></div>
 
@@ -67,11 +67,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
       authDomain: "mobile-debt-tracker.firebaseapp.com",
       projectId: "mobile-debt-tracker"
     };
+
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -79,17 +81,11 @@
 
     const tableBody = document.querySelector("#debtTable tbody");
 
-    // Add Event Listeners
-    document.getElementById("addDebtBtn").addEventListener("click", () => addDebt());
-    document.getElementById("saveDebtsBtn").addEventListener("click", () => saveDebts());
-    document.getElementById("loadDebtsBtn").addEventListener("click", () => loadDebts());
-    document.getElementById("exportToExcelBtn").addEventListener("click", () => exportToExcel());
-
+    // Add Debt Row
     function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td><input value="${name}" oninput="calculateSummary()" /></td>
-        <td><input type="number" value="${limit}" oninput="calculateSummary()" class="limitInput" /></td> <!-- Limit input before Balance -->
         <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
         <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
@@ -97,6 +93,7 @@
         <td class="cfi">-</td>
         <td class="interest">-</td>
         <td class="priority">-</td>
+        <td><input type="number" value="${limit}" oninput="calculateSummary()" class="limitInput"/></td> <!-- Added Limit Input -->
         <td><button onclick="amortizeRow(this)">📄</button></td>
         <td><button onclick="removeRow(this)" style="background:#dc3545;">❌</button></td>
       `;
@@ -104,6 +101,7 @@
       calculateSummary();
     }
 
+    // Save Debts to Firebase
     function saveDebts() {
       const user = auth.currentUser;
       if (!user) return alert("You need to be logged in to save data.");
@@ -113,10 +111,10 @@
         const inputs = row.querySelectorAll("input");
         data.push({
           name: inputs[0].value,
-          balance: inputs[2].value,
-          rate: inputs[3].value,
-          payment: inputs[4].value,
-          limit: inputs[1].value // Saving limit data
+          balance: inputs[1].value,
+          rate: inputs[2].value,
+          payment: inputs[3].value,
+          limit: inputs[8].value // Saving limit data
         });
       });
 
@@ -125,6 +123,7 @@
         .catch(error => alert("Error saving data: " + error.message));
     }
 
+    // Load Debts from Firebase
     function loadDebts() {
       const user = auth.currentUser;
       if (!user) return alert("You need to be logged in to load data.");
@@ -143,45 +142,35 @@
         .catch(error => alert("Error loading data: " + error.message));
     }
 
+    // Calculate Summary of Debts
     function calculateSummary() {
       let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
 
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value;
+        const balance = parseFloat(inputs[1].value) || 0;
+        const rate = parseFloat(inputs[2].value) || 0;
+        const payment = parseFloat(inputs[3].value) || 0;
+        const limit = parseFloat(inputs[8].value) || 0;
 
-        // Ensure we have exactly 9 input fields for each row
-        if (inputs.length < 9) {
-          console.warn("Missing input field in row:", row);
-          return; // Skip this row if it doesn't have all the input fields
-        }
+        // Ensure we are not using invalid values
+        if (balance > 0 && rate > 0 && payment > 0) {
+          const months = calcRealMonths(balance, rate, payment);
+          const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+          const interest = calcTotalInterest(balance, rate, payment);
+          const { tag, class: priorityClass } = getPriorityTag(cfi);
 
-        try {
-          const name = inputs[0].value;
-          const balance = parseFloat(inputs[2].value) || 0;
-          const rate = parseFloat(inputs[3].value) || 0;
-          const payment = parseFloat(inputs[4].value) || 0;
-          const limit = parseFloat(inputs[1].value) || 0;
+          row.querySelector(".monthsLeft").innerText = months;
+          row.querySelector(".cfi").innerText = cfi;
+          row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+          row.querySelector(".priority").innerText = tag;
+          row.className = priorityClass;
 
-          // Ensure we are not using invalid values
-          if (balance > 0 && rate > 0 && payment > 0) {
-            const months = calcRealMonths(balance, rate, payment);
-            const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-            const interest = calcTotalInterest(balance, rate, payment);
-            const { tag, class: priorityClass } = getPriorityTag(cfi);
-
-            row.querySelector(".monthsLeft").innerText = months;
-            row.querySelector(".cfi").innerText = cfi;
-            row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-            row.querySelector(".priority").innerText = tag;
-            row.className = priorityClass;
-
-            totalBalance += balance;
-            totalPayment += payment;
-            totalInterest += interest;
-            totalLimit += limit;  // Add limit to total
-          }
-        } catch (error) {
-          console.error("Error processing row:", row, error);
+          totalBalance += balance;
+          totalPayment += payment;
+          totalInterest += interest;
+          totalLimit += limit;  // Add limit to total
         }
       });
 
@@ -189,25 +178,27 @@
         `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)}`;
     }
 
+    // Remove Debt Row
     function removeRow(btn) {
       btn.parentElement.parentElement.remove();
-      calculateSummary(); // Recalculate after removing debt
+      calculateSummary();
     }
 
+    // Export Debts to Excel
     function exportToExcel() {
       const rows = [["Name","Balance","Rate","Payment","Months","CFI","Interest","Priority","Limit"]];
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
         rows.push([
           inputs[0].value,
+          inputs[1].value,
           inputs[2].value,
           inputs[3].value,
-          inputs[4].value,
           row.querySelector(".monthsLeft").innerText,
           row.querySelector(".cfi").innerText,
           row.querySelector(".interest").innerText,
           row.querySelector(".priority").innerText,
-          inputs[1].value // Limit column added for export
+          inputs[8].value // Limit column added for export
         ]);
       });
       const csv = rows.map(r => r.join(",")).join("\n");
@@ -218,29 +209,64 @@
       a.click();
     }
 
-    function calcRealMonths(balance, rate, payment) {
-      const r = rate / 100 / 12;
-      if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
-      return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
-    }
+    // Amortization Functions
+    function amortizeRow(btn) {
+      const row = btn.closest("tr");
+      const inputs = row.querySelectorAll("input");
+      const name = inputs[0].value;
+      let balance = parseFloat(inputs[1].value);
+      const rate = parseFloat(inputs[2].value);
+      const payment = parseFloat(inputs[3].value);
+      if (!balance || !rate || !payment) return;
 
-    function calcTotalInterest(balance, rate, payment) {
-      let r = rate / 100 / 12, total = 0, month = 0;
-      while (balance > 0 && month < 1000) {
+      const r = rate / 100 / 12;
+      let month = 1, html = "", totalInterest = 0;
+      const today = new Date().toLocaleDateString();
+      html += `<div style='text-align:right; margin-bottom:10px;'>
+        <button onclick="printAmortization()">🖨️ Print</button>
+        <button onclick="document.getElementById('amortizationModal').style.display='none'">❌ Close</button>
+      </div>
+      <h2 style='text-align:center;'>Amortization Schedule – ${name}</h2>
+      <p><strong>Prepared by:</strong> Ronell Bradley</p>
+      <p><strong>Date Generated:</strong> ${today}</p>
+      <table style='width:100%; border-collapse:collapse;' border='1'>
+        <thead><tr><th>Month</th><th>Start Balance</th><th>Interest</th><th>Principal</th><th>End Balance</th></tr></thead><tbody>`;
+
+      while (balance > 0 && month <= 240) {
         const interest = balance * r;
-        const principal = payment - interest;
-        if (principal <= 0) break;
-        balance -= principal;
-        total += interest;
+        const principal = Math.min(payment - interest, balance);
+        const end = balance - principal;
+        html += `<tr>
+          <td>${month}</td>
+          <td>$${balance.toFixed(2)}</td>
+          <td>$${interest.toFixed(2)}</td>
+          <td>$${principal.toFixed(2)}</td>
+          <td>$${Math.max(0,end).toFixed(2)}</td>
+        </tr>`;
+        totalInterest += interest;
+        balance = end;
         month++;
       }
-      return total;
+
+      html += `</tbody></table><p><strong>Total Interest:</strong> $${totalInterest.toFixed(2)}</p>`;
+      document.getElementById("amortizationModal").innerHTML = html;
+      document.getElementById("amortizationModal").style.display = "block";
     }
 
-    function getPriorityTag(cfi) {
-      if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
-      if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
-      return { tag: "✅ Low", class: "priority-low" };
+    // Print Amortization Schedule
+    function printAmortization() {
+      const modal = document.getElementById("amortizationModal").cloneNode(true);
+      const buttons = modal.querySelectorAll("button");
+      buttons.forEach(btn => btn.remove());
+
+      const win = window.open("", "", "height=900,width=1200");
+      win.document.write("<html><head><title>Print</title>");
+      win.document.write("<style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:center;}th{background:#f0f0f0;}</style>");
+      win.document.write("</head><body>" + modal.innerHTML + "</body></html>");
+      win.document.close();
+      win.focus();
+      win.print();
+      win.close();
     }
 
     window.onload = function () {
