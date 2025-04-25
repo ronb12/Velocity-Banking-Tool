@@ -126,41 +126,52 @@
       return { tag: "✅ Low", class: "priority-low" };
     }
 
-    // Calculate summary
-    function calculateSummary() {
-      let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
+ function calculateSummary() {
+  let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
+  let creditBalance = 0, creditLimit = 0;
 
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const inputs = row.querySelectorAll("input");
-        const name = inputs[0].value;
-        const limit = parseFloat(inputs[1].value) || 0;
-        const balance = parseFloat(inputs[2].value) || 0;
-        const rate = parseFloat(inputs[3].value) || 0;
-        const payment = parseFloat(inputs[4].value) || 0;
+  // 🔁 Loop over each row
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const name = inputs[0].value;
+    const limit = parseFloat(inputs[1].value) || 0;
+    const balance = parseFloat(inputs[2].value) || 0;
+    const rate = parseFloat(inputs[3].value) || 0;
+    const payment = parseFloat(inputs[4].value) || 0;
 
-        if (balance > 0 && rate > 0 && payment > 0) {
-          const months = calcRealMonths(balance, rate, payment);
-          const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-          const interest = calcTotalInterest(balance, rate, payment);
-          const { tag, class: priorityClass } = getPriorityTag(cfi);
+    // All-debt totals
+    totalBalance += balance;
+    totalPayment += payment;
+    totalLimit += limit;
 
-          row.querySelector(".monthsLeft").innerText = months;
-          row.querySelector(".cfi").innerText = cfi;
-          row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-          row.querySelector(".priority").innerText = tag;
-          row.className = priorityClass;
-
-          totalBalance += balance;
-          totalPayment += payment;
-          totalInterest += interest;
-          totalLimit += limit;  // Add limit to total
-          creditUtilization = (totalBalance / totalLimit) * 100;
-        }
-      });
-
-      document.getElementById("summaryText").innerText =
-        `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${totalLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
+    // ✅ Revolving credit tracking only (limits must be > 0)
+    if (limit > 0) {
+      creditBalance += balance;
+      creditLimit += limit;
     }
+
+    if (balance > 0 && rate > 0 && payment > 0) {
+      const months = calcRealMonths(balance, rate, payment);
+      const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+      const interest = calcTotalInterest(balance, rate, payment);
+      const { tag, class: priorityClass } = getPriorityTag(cfi);
+
+      row.querySelector(".monthsLeft").innerText = months;
+      row.querySelector(".cfi").innerText = cfi;
+      row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+      row.querySelector(".priority").innerText = tag;
+      row.className = priorityClass;
+
+      totalInterest += interest;
+    }
+  }); // 🔚 End of loop
+
+  // ✅ Now calculate credit utilization and show it in summary bar
+  let creditUtilization = creditLimit > 0 ? (creditBalance / creditLimit) * 100 : 0;
+
+  document.getElementById("summaryText").innerText =
+    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
+}
 
     // Remove row
     function removeRow(btn) {
