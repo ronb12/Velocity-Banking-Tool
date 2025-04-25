@@ -154,7 +154,7 @@
     document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
     document.getElementById("notification").style.display = "block";
 
-    // Dashboard Sync
+ // Dashboard Sync
     const networth = await db.collection("networth").doc(user.uid).get();
     if (networth.exists) {
       const assets = networth.data().assets || [];
@@ -186,25 +186,25 @@
       const utilization = creditLimit ? ((creditUsed / creditLimit) * 100).toFixed(1) : 0;
       document.getElementById("creditUtilizationTile").innerText = `💳 Credit Utilization: ${utilization}%`;
 
-      // Sort debts by CFI (Balance / Payment) and display top 3
-      const sortedDebts = debts
-        .map(d => ({
-          ...d,
-          cfi: (d.balance / d.payment).toFixed(2)
-        }))
-        .sort((a, b) => b.cfi - a.cfi)
-        .slice(0, 3); // Get top 3 debts by CFI
+      // Get the top 3 debts by CFI
+      const sortedDebts = debts.data().debts.map(d => ({
+        ...d,
+        cfi: (d.balance / d.payment).toFixed(2) // Calculate CFI as balance divided by payment
+      }))
+      .sort((a, b) => b.cfi - a.cfi) // Sort by CFI in descending order
+      .slice(0, 3); // Get top 3
 
       const topDebtsTile = document.getElementById("topDebtsTile");
       topDebtsTile.innerHTML = `<h3>Top 3 Debts by CFI</h3>`;
       sortedDebts.forEach(debt => {
         const debtElement = document.createElement("div");
-        debtElement.innerHTML = `${debt.name} (CFI: ${debt.cfi}) - Balance: $${debt.balance.toFixed(2)}`;
+        debtElement.innerHTML = `${debt.name} (CFI: ${debt.cfi}) - Balance: $${debt.balance.toFixed(2)} - Payment: $${debt.payment}`;
         topDebtsTile.appendChild(debtElement);
       });
     }
   });
 </script>
+
 
 </body>
 </html>
