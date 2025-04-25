@@ -157,9 +157,21 @@ function saveDebts() {
     }
   }
 
-  window.onload = function () {
-    loadDebts();
-    const addBtn = document.querySelector('button[onclick="addDebt()"]');
-    if (addBtn) addBtn.onclick = () => addDebt();
-  };
+window.onload = function () {
+  loadDebts();
+  const addBtn = document.querySelector('button[onclick="addDebt()"]');
+  if (addBtn) addBtn.onclick = () => addDebt();
+
+  // ✅ Auto-Save Debt Tracker whenever user types or edits
+  const table = document.querySelector("#debtTable");
+  if (table) {
+    table.addEventListener("input", function() {
+      clearTimeout(window.autoSaveTimer);
+      window.autoSaveTimer = setTimeout(() => {
+        saveDebts(); // ✅ Auto-save after 1 second of no typing
+      }, 1000);
+    });
+  } // ✅ close if(table)
+}; // ✅ close window.onload
+
 </script>
