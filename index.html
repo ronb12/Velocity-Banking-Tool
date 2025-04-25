@@ -179,51 +179,39 @@
       console.error("Error fetching user data: ", error);
     }
   });
-</script>
 
- // Dashboard Sync
-    const networth = await db.collection("networth").doc(user.uid).get();
-    if (networth.exists) {
-      const assets = networth.data().assets || [];
-      const liabilities = networth.data().liabilities || [];
-      const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
-      const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
-      document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
-    }
+  // Fetching and calculating top 3 debts by CFI, and credit utilization
+  auth.onAuthStateChanged(async user => {
+    if (!user) return;
 
-    const budget = await db.collection("budgets").doc(user.uid + "_" + new Date().toISOString().slice(0,7)).get();
-    if (budget.exists) {
-      const income = budget.data().incomes.reduce((sum, i) => sum + i.amount, 0);
-      const expenses = budget.data().expenses.reduce((sum, e) => sum + e.budgeted, 0);
-      document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
-      document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
-    }
+    const debtsRef = db.collection("debts").doc(user.uid);
+    const debtsDoc = await debtsRef.get();
+    if (debtsDoc.exists) {
+      const debtsData = debtsDoc.data().debts || [];
 
-    const debts = await db.collection("debts").doc(user.uid).get();
-    if (debts.exists) {
-      // Total debts calculation
-      const totalDebts = (debts.data().debts || [])
-        .reduce((sum, d) => sum + d.balance, 0);
+      // Total Debts Calculation
+      const totalDebts = debtsData.reduce((sum, debt) => sum + debt.balance, 0);
       document.getElementById("topDebtsTile").innerText = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
 
-      // Credit utilization calculation
-      const creditDebt = (debts.data().debts || []).filter(d => d.type === 'credit');
-      const creditUsed = creditDebt.reduce((sum, d) => sum + d.balance, 0);
-      const creditLimit = creditDebt.reduce((sum, d) => sum + (d.limit || 0), 0);
+      // Credit Utilization Calculation
+      const creditDebts = debtsData.filter(d => d.type === 'credit');
+      const creditUsed = creditDebts.reduce((sum, debt) => sum + debt.balance, 0);
+      const creditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
       const utilization = creditLimit ? ((creditUsed / creditLimit) * 100).toFixed(1) : 0;
       document.getElementById("creditUtilizationTile").innerText = `💳 Credit Utilization: ${utilization}%`;
 
-      // Get the top 3 debts by CFI
-      const sortedDebts = debts.data().debts.map(d => ({
-        ...d,
-        cfi: (d.balance / d.payment).toFixed(2) // Calculate CFI as balance divided by payment
-      }))
-      .sort((a, b) => b.cfi - a.cfi) // Sort by CFI in descending order
-      .slice(0, 3); // Get top 3
+      // Top 3 Debts by CFI
+      const topDebtsByCFI = debtsData
+        .map(debt => ({
+          ...debt,
+          cfi: debt.balance / debt.payment // Calculate CFI
+        }))
+        .sort((a, b) => b.cfi - a.cfi) // Sort by CFI descending
+        .slice(0, 3); // Get top 3
 
       const topDebtsTile = document.getElementById("topDebtsTile");
       topDebtsTile.innerHTML = `<h3>Top 3 Debts by CFI</h3>`;
-      sortedDebts.forEach(debt => {
+      topDebtsByCFI.forEach(debt => {
         const debtElement = document.createElement("div");
         debtElement.innerHTML = `${debt.name} (CFI: ${debt.cfi}) - Balance: $${debt.balance.toFixed(2)} - Payment: $${debt.payment}`;
         topDebtsTile.appendChild(debtElement);
@@ -231,7 +219,6 @@
     }
   });
 </script>
-
 
 </body>
 </html>
