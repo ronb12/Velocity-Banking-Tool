@@ -76,18 +76,6 @@
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
-    /* Update layout to match new structure */
-    #dashboardTiles {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr); /* 3 columns layout */
-      grid-gap: 20px;
-    }
-    #topDebtsTile {
-      grid-column: span 3; /* Make Top 3 Debts span the entire row */
-    }
-    .dashboard-tile {
-      text-align: left;
-    }
   </style>
 </head>
 <body>
@@ -109,8 +97,8 @@
   <div class="dashboard-tile" id="netWorthTile">🧮 Total Net Worth: $0.00</div>
   <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
   <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
+  <div class="dashboard-tile" id="topDebtsTile">🔥 Top 3 Debts: Loading...</div>
   <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: 0%</div>
-  <div class="dashboard-tile" id="topDebtsTile">🔥 Total Debts: $0.00</div>
 </div>
 
 <div class="tools">
@@ -135,104 +123,69 @@
 </div>
 
 <script>
-  // Firebase setup and initialization
   const firebaseConfig = {
     apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
     authDomain: "mobile-debt-tracker.firebaseapp.com",
     projectId: "mobile-debt-tracker"
   };
-
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
 
-  // Logout function
   function logout() {
-    auth.signOut().then(() => {
-      window.location.href = "login.html"; // Redirect to login page after sign out
-    }).catch(error => {
-      console.error("Error signing out: ", error);
-    });
+    auth.signOut().then(() => window.location.href = "login.html");
   }
 
-  // Toggle Profile visibility
   function toggleProfile() {
     const box = document.getElementById("profileBox");
-    box.style.display = (box.style.display === "none") ? "block" : "none";
+    box.style.display = box.style.display === "none" ? "block" : "none";
   }
 
-  // Handle user authentication state changes
   auth.onAuthStateChanged(async user => {
-    if (!user) {
-      console.log('User not authenticated!');
-      window.location.href = "login.html"; // Redirect to login if no user
-      return;
+    if (!user) return window.location.href = "login.html";
+    const userRef = db.collection("users").doc(user.uid);
+    const doc = await userRef.get();
+    if (!doc.exists) {
+      await userRef.set({ email: user.email, joined: new Date().toISOString() });
+    }
+    const data = (await userRef.get()).data();
+    document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
+    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
+    document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
+    document.getElementById("notification").style.display = "block";
+
+    // Dashboard Sync
+    const networth = await db.collection("networth").doc(user.uid).get();
+    if (networth.exists) {
+      const assets = networth.data().assets || [];
+      const liabilities = networth.data().liabilities || [];
+      const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
+      const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
+      document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
     }
 
-    try {
-      const userRef = db.collection("users").doc(user.uid);
-      const doc = await userRef.get();
-      
-      // If the user document doesn't exist, create it
-      if (!doc.exists) {
-        await userRef.set({ 
-          email: user.email, 
-          joined: new Date().toISOString() // Timestamp when the user joined
-        });
-      }
+    const budget = await db.collection("budgets").doc(user.uid + "_" + new Date().toISOString().slice(0,7)).get();
+    if (budget.exists) {
+      const income = budget.data().incomes.reduce((sum, i) => sum + i.amount, 0);
+      const expenses = budget.data().expenses.reduce((sum, e) => sum + e.budgeted, 0);
+      document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
+      document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
+    }
 
-      // Access user data
-      const data = doc.data();
-      document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-      document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
-      document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-      document.getElementById("notification").style.display = "block";
-
-      // Call to load debts only if user is logged in
-      await loadDebts(user);
-    } catch (error) {
-      console.error("Error fetching user data: ", error);
+    const debts = await db.collection("debts").doc(user.uid).get();
+    if (debts.exists) {
+      const topDebts = (debts.data().debts || [])
+        .sort((a,b) => b.interest - a.interest)
+        .slice(0, 3)
+        .map(d => d.name).join(", ");
+      document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+      const creditDebt = (debts.data().debts || []).filter(d => d.type === 'credit');
+      const creditUsed = creditDebt.reduce((sum, d) => sum + d.balance, 0);
+      const creditLimit = creditDebt.reduce((sum, d) => sum + (d.limit || 0), 0);
+      const utilization = creditLimit ? ((creditUsed / creditLimit) * 100).toFixed(1) : 0;
+      document.getElementById("creditUtilizationTile").innerText = `💳 Credit Utilization: ${utilization}%`;
     }
   });
-
-  async function loadDebts(user) {
-    const debtsSnapshot = await db.collection("users").doc(user.uid).collection("debts").get();
-
-    if (debtsSnapshot.empty) {
-        console.log('No debts found');
-        return;
-    }
-
-    let debtsData = [];
-    debtsSnapshot.forEach(doc => {
-        debtsData.push(doc.data());
-    });
-
-    console.log("Debts Data: ", debtsData);  // Log all debts fetched
-
-    // Update Total Debts
-    const totalDebts = debtsData.reduce((sum, debt) => sum + parseFloat(debt.balance), 0);
-    document.getElementById("topDebtsTile").innerHTML = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
-
-    // Sort by CFI and get top 3 debts
-    debtsData.sort((a, b) => (b.balance / b.payment) - (a.balance / a.payment));  // Sorting by CFI (balance/payment)
-    const top3Debts = debtsData.slice(0, 3);
-
-    // Display top 3 debts in the dashboard
-    let topDebtsHTML = "<h3>Top 3 Debts by CFI</h3>";
-    top3Debts.forEach(debt => {
-      topDebtsHTML += `<div>${debt.name} - Balance: $${debt.balance}, Payment: $${debt.payment}, CFI: ${(debt.balance / debt.payment).toFixed(2)}</div>`;
-    });
-    document.getElementById("topDebtsTile").innerHTML = topDebtsHTML;
-
-    // Calculate total credit utilization
-    const creditDebts = debtsData.filter(debt => debt.type === 'credit');
-    const totalCreditUsed = creditDebts.reduce((sum, debt) => sum + debt.balance, 0);
-    const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
-    const creditUtilization = (totalCreditLimit > 0) ? ((totalCreditUsed / totalCreditLimit) * 100).toFixed(1) : 0;
-    document.getElementById("creditUtilizationTile").innerHTML = `💳 Credit Utilization: ${creditUtilization}%`;
-  }
 </script>
 
 </body>
