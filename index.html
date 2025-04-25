@@ -129,8 +129,8 @@
     projectId: "mobile-debt-tracker"
   };
 
+  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
-
   const auth = firebase.auth();
   const db = firebase.firestore();
 
@@ -152,6 +152,7 @@
   // Handle user authentication state changes
   auth.onAuthStateChanged(async user => {
     if (!user) {
+      console.log('User not authenticated!');
       window.location.href = "login.html"; // Redirect to login if no user
       return;
     }
@@ -174,16 +175,22 @@
       document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
       document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
       document.getElementById("notification").style.display = "block";
+
+      // Call to load debts only if user is logged in
+      await loadDebts(user);
     } catch (error) {
       console.error("Error fetching user data: ", error);
     }
   });
 
   // Load debts and sync dashboard data
-  async function loadDebts() {
-    const userRef = db.collection("users").doc(auth.currentUser.uid);
-    const debtsSnapshot = await userRef.collection("debts").get();
-    
+  async function loadDebts(user) {
+    const debtsSnapshot = await db.collection("debts").doc(user.uid).collection("debtDetails").get();
+    if (debtsSnapshot.empty) {
+      console.log('No debts found');
+      return;
+    }
+
     // Get debts and update top 3 by CFI
     let debtsData = [];
     debtsSnapshot.forEach(doc => {
@@ -207,10 +214,6 @@
     const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
     const creditUtilization = (totalCreditLimit > 0) ? ((totalCreditUsed / totalCreditLimit) * 100).toFixed(1) : 0;
     document.getElementById("creditUtilizationTile").innerHTML = `💳 Credit Utilization: ${creditUtilization}%`;
-  }
-
-  window.onload = function() {
-    loadDebts();
   }
 </script>
 
