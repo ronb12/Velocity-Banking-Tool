@@ -148,21 +148,24 @@
         const payment = parseFloat(inputs[3].value) || 0;
         const limit = parseFloat(inputs[8].value) || 0;
 
-        const months = calcRealMonths(balance, rate, payment);
-        const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
-        const interest = calcTotalInterest(balance, rate, payment);
-        const { tag, class: priorityClass } = getPriorityTag(cfi);
+        // Ensure we are not using invalid values
+        if (balance > 0 && rate > 0 && payment > 0) {
+          const months = calcRealMonths(balance, rate, payment);
+          const cfi = payment > 0 ? (balance / payment).toFixed(2) : 0;
+          const interest = calcTotalInterest(balance, rate, payment);
+          const { tag, class: priorityClass } = getPriorityTag(cfi);
 
-        row.querySelector(".monthsLeft").innerText = months;
-        row.querySelector(".cfi").innerText = cfi;
-        row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-        row.querySelector(".priority").innerText = tag;
-        row.className = priorityClass;
+          row.querySelector(".monthsLeft").innerText = months;
+          row.querySelector(".cfi").innerText = cfi;
+          row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+          row.querySelector(".priority").innerText = tag;
+          row.className = priorityClass;
 
-        totalBalance += balance;
-        totalPayment += payment;
-        totalInterest += interest;
-        totalLimit += limit;  // Add limit to total
+          totalBalance += balance;
+          totalPayment += payment;
+          totalInterest += interest;
+          totalLimit += limit;  // Add limit to total
+        }
       });
 
       document.getElementById("summaryText").innerText =
