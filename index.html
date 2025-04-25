@@ -183,8 +183,9 @@
     }
   });
 
+  // Load debts and sync dashboard data
   async function loadDebts(user) {
-    const debtsSnapshot = await db.collection("debt").get();  // Ensure you have the correct collection path
+    const debtsSnapshot = await db.collection("users").doc(user.uid).collection("debts").get();
 
     if (debtsSnapshot.empty) {
       console.log('No debts found');
@@ -199,31 +200,25 @@
 
     console.log("All Debts Data: ", debtsData);  // This logs the entire debts array
 
-    // Continue with your sorting and display logic
-    // Example: Calculate total debts and credit utilization, then update dashboard tiles
-    updateDashboard(debtsData);
-  }
+    // Sort by CFI and get top 3 debts
+    debtsData.sort((a, b) => (b.balance / b.payment) - (a.balance / a.payment));  // Sorting by CFI (balance/payment)
+    const top3Debts = debtsData.slice(0, 3);
 
-  // Update the dashboard with calculated data
-  function updateDashboard(debtsData) {
-    let totalDebts = 0;
-    let totalCreditUsed = 0;
-    let totalLimit = 0;
+    console.log("Top 3 Debts: ", top3Debts);  // Log the top 3 debts
 
-    debtsData.forEach(debt => {
-      totalDebts += debt.balance;
-      totalLimit += debt.limit;
-      if (debt.type === "credit") {
-        totalCreditUsed += debt.balance;
-      }
+    // Display top 3 debts in the dashboard
+    let topDebtsHTML = "<h3>Top 3 Debts by CFI</h3>";
+    top3Debts.forEach(debt => {
+      topDebtsHTML += `<div>${debt.name} - Balance: $${debt.balance}, Payment: $${debt.payment}, CFI: ${(debt.balance / debt.payment).toFixed(2)}</div>`;
     });
+    document.getElementById("topDebtsTile").innerHTML = topDebtsHTML;
 
-    // Calculate credit utilization
-    const creditUtilization = (totalLimit > 0) ? ((totalCreditUsed / totalLimit) * 100).toFixed(2) : 0;
-
-    // Update dashboard tiles
-    document.getElementById("topDebtsTile").innerText = `🔥 Total Debts: $${totalDebts.toFixed(2)}`;
-    document.getElementById("creditUtilizationTile").innerText = `💳 Credit Utilization: ${creditUtilization}%`;
+    // Calculate total credit utilization
+    const creditDebts = debtsData.filter(debt => debt.type === 'credit');
+    const totalCreditUsed = creditDebts.reduce((sum, debt) => sum + debt.balance, 0);
+    const totalCreditLimit = creditDebts.reduce((sum, debt) => sum + debt.limit, 0);
+    const creditUtilization = (totalCreditLimit > 0) ? ((totalCreditUsed / totalCreditLimit) * 100).toFixed(1) : 0;
+    document.getElementById("creditUtilizationTile").innerHTML = `💳 Credit Utilization: ${creditUtilization}%`;
   }
 </script>
 
