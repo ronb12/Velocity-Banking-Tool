@@ -74,36 +74,37 @@
     document.getElementById("summaryText").innerText =
       `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
   }
+function saveDebts() {
+  calculateSummary(); // ✅ Make sure the latest balances + utilization are calculated!
 
-  // Save debts to localStorage and Firebase
-  function saveDebts() {
-    calculateSummary(); // ✅ Always recalculate first
-
-    const data = [];
-    tableBody.querySelectorAll("tr").forEach(row => {
-      const inputs = row.querySelectorAll("input");
-      data.push({
-        name: inputs[0].value,
-        balance: inputs[2].value,
-        rate: inputs[3].value,
-        payment: inputs[4].value,
-        limit: inputs[1].value
-      });
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    data.push({
+      name: inputs[0].value,
+      balance: inputs[2].value,
+      rate: inputs[3].value,
+      payment: inputs[4].value,
+      limit: inputs[1].value
     });
+  });
 
-    localStorage.setItem("debtData", JSON.stringify(data));
+  localStorage.setItem("debtData", JSON.stringify(data));
 
-    const user = firebase.auth().currentUser;
-    if (user) {
-      const debtRef = firebase.firestore().collection('debts').doc(user.uid);
-      debtRef.set({
-        debts: data,
-        creditUtilization: creditUtilization.toFixed(2) // ✅ Save correct utilization
-      });
-    }
+  const user = firebase.auth().currentUser;
+  if (user) {
+    const debtRef = firebase.firestore().collection('debts').doc(user.uid);
 
-    alert(`Saved! 💳 Credit Utilization: ${creditUtilization.toFixed(2)}%`);
+    console.log("✅ Saving Credit Utilization:", creditUtilization); // 🛠 Add this
+
+    debtRef.set({
+      debts: data,
+      creditUtilization: creditUtilization.toFixed(2)
+    });
   }
+
+  alert(`Saved! 💳 Credit Utilization: ${creditUtilization.toFixed(2)}%`);
+}
 
   // Other helper functions (no changes needed)
   function calcRealMonths(balance, rate, payment) {
