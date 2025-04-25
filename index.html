@@ -179,11 +179,9 @@
         .slice(0, 3)
         .map(d => d.name).join(", ");
       document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
-      const creditDebt = (debts.data().debts || []).filter(d => d.type === 'credit');
-      const creditUsed = creditDebt.reduce((sum, d) => sum + d.balance, 0);
-      const creditLimit = creditDebt.reduce((sum, d) => sum + (d.limit || 0), 0);
-      const utilization = creditLimit ? ((creditUsed / creditLimit) * 100).toFixed(1) : 0;
+      const utilization = debts.data().creditUtilization || 0;
       document.getElementById("creditUtilizationTile").innerText = `💳 Credit Utilization: ${utilization}%`;
+
     }
   });
 </script>
