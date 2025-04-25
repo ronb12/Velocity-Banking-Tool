@@ -185,8 +185,7 @@
 
   // Load debts and sync dashboard data
   async function loadDebts(user) {
-    const debtsSnapshot = await db.collection("debt").doc(user.uid).collection("debtDetails").get();
-    console.log("Debts snapshot: ", debtsSnapshot);
+    const debtsSnapshot = await db.collection("users").doc(user.uid).collection("debts").get();
 
     if (debtsSnapshot.empty) {
       console.log('No debts found');
