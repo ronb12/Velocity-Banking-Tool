@@ -1,26 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <script src="sync.js" defer></script>
-   <script src="global.js" defer></script>
-   <script src="theme.js" defer></script>
-   <style>
-/* ✅ Save Status Text */
-#saveStatus {
-  font-size: 13px;
-  color: green;
-  text-align: right;
-  margin-top: 5px;
-  margin-bottom: -15px;
-  margin-right: 10px;
-  opacity: 0;
-  transition: opacity 0.5s ease, color 0.5s ease;
-}
-/* ✅ When showing (we toggle opacity) */
-#saveStatus.show {
-  opacity: 1;
-}
-</style>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Debt Tracker – Full Featured</title>
@@ -30,6 +10,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <!-- ✅ Your global project scripts -->
+  <script src="global.js" defer></script>
+  <script src="sync.js" defer></script>
+  <script src="theme.js" defer></script>
 
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
@@ -42,28 +27,17 @@
     .priority-urgent { background-color: #ffe5e5; }
     .priority-medium { background-color: #fff3cd; }
     .priority-low { background-color: #e6f4ea; }
-    button {
-      margin: 5px;
-      padding: 8px 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+    button { margin: 5px; padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0056b3; }
     .summary { margin-top: 20px; font-size: 18px; }
-    #saveStatus {
-      font-size: 14px;
-      color: green;
-      text-align: right;
-      margin-top: 5px;
-    }
+    #saveStatus { font-size: 14px; color: green; text-align: right; margin-top: 5px; }
   </style>
 </head>
+
 <body>
   <nav><a href="index.html">⬅️ Back to Dashboard</a></nav>
   <h1>Debt Tracker – Full Featured</h1>
+
   <table id="debtTable">
     <thead>
       <tr>
@@ -90,18 +64,13 @@
   <button onclick="window.print()">🖨️ Print Page</button>
 
   <div id="saveStatus"></div>
-  <div class="summary" id="summaryText">Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0</div>
+  <div class="summary" id="summaryText">
+    Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
+  </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker"
-    };
-    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const tableBody = document.querySelector("#debtTable tbody");
-
     let creditUtilization = 0;
 
     function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
@@ -167,7 +136,6 @@
 
     function saveDebts() {
       calculateSummary();
-
       const data = [];
       tableBody.querySelectorAll("tr").forEach(row => {
         const inputs = row.querySelectorAll("input");
@@ -179,22 +147,12 @@
           limit: inputs[1].value
         });
       });
-
       localStorage.setItem("debtData", JSON.stringify(data));
 
       const user = firebase.auth().currentUser;
       if (user) {
-        const debtRef = firebase.firestore().collection('debts').doc(user.uid);
-        debtRef.set({
-          debts: data,
-          creditUtilization: creditUtilization.toFixed(2)
-        }).then(() => {
-          const now = new Date();
-          document.getElementById("saveStatus").innerText = `💾 Auto-Saved at ${now.toLocaleTimeString()}`;
-          setTimeout(() => {
-            document.getElementById("saveStatus").innerText = '';
-          }, 3000);
-        });
+        const debtRef = db.collection('debts').doc(user.uid);
+        debtRef.set({ debts: data, creditUtilization: creditUtilization.toFixed(2) });
       }
     }
 
@@ -236,7 +194,7 @@
 
       const user = firebase.auth().currentUser;
       if (user) {
-        const debtRef = firebase.firestore().collection('debts').doc(user.uid);
+        const debtRef = db.collection('debts').doc(user.uid);
         debtRef.get().then(doc => {
           if (doc.exists) {
             const debts = doc.data().debts || [];
@@ -248,11 +206,8 @@
       }
     }
 
-    window.onload = function () {
+    window.onload = function() {
       loadDebts();
-      const addBtn = document.querySelector('button[onclick="addDebt()"]');
-      if (addBtn) addBtn.onclick = () => addDebt();
-
       const table = document.querySelector("#debtTable");
       if (table) {
         table.addEventListener("input", function() {
@@ -266,3 +221,4 @@
   </script>
 </body>
 </html>
+
