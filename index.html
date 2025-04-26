@@ -179,28 +179,29 @@
         .slice(0, 3)
         .map(d => d.name).join(", ");
       document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+
       const rawUtil = debts.data().creditUtilization;
-const utilization = rawUtil !== undefined ? parseFloat(rawUtil).toFixed(2) : "0.00";
-const utilTile = document.getElementById("creditUtilizationTile");
-let badge = ""; // Add this
+      const utilization = rawUtil !== undefined ? parseFloat(rawUtil).toFixed(2) : "0.00";
+      const utilTile = document.getElementById("creditUtilizationTile");
+      let badge = "";
 
-const utilValue = parseFloat(utilization);
+      const utilValue = parseFloat(utilization);
 
-// 🎨 Color Coding + Badge
-if (utilValue < 30) {
-  utilTile.style.borderLeft = "5px solid #28a745"; // green
-  badge = "(Good ✅)";
-} else if (utilValue < 50) {
-  utilTile.style.borderLeft = "5px solid #ffc107"; // yellow
-  badge = "(Warning ⚠️)";
-} else {
-  utilTile.style.borderLeft = "5px solid #dc3545"; // red
-  badge = "(Danger ❌)";
-}
+      // 🎨 Color Coding + Badge
+      if (utilValue < 30) {
+        utilTile.style.borderLeft = "5px solid #28a745"; // green
+        badge = "(Good ✅)";
+      } else if (utilValue < 50) {
+        utilTile.style.borderLeft = "5px solid #ffc107"; // yellow
+        badge = "(Warning ⚠️)";
+      } else {
+        utilTile.style.borderLeft = "5px solid #dc3545"; // red
+        badge = "(Danger ❌)";
+      }
 
-utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
- }
-});
+      utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
+    }
+  });
 </script>
 
 </body>
