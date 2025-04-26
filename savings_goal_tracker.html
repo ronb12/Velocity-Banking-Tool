@@ -1,156 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="sync.js" defer></script>
-
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>💰 Savings Goal Tracker</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savings Goal Tracker</title>
+  <link rel="stylesheet" href="theme.css">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 950px;
-      margin: auto;
-      background: #fff;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    h1 {
-      text-align: center;
-      color: #2c3e50;
-    }
-
-    #goalStats, #totalSavedSummary {
-      font-weight: bold;
-      margin-top: 10px;
-      color: #007bff;
-      text-align: center;
-    }
-
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-
-    input {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-    }
-
-    .progress-bar {
-      height: 20px;
-      background-color: #e0e0e0;
-      border-radius: 6px;
-      overflow: hidden;
-      margin-top: 5px;
-    }
-
-    .progress {
-      height: 100%;
-      background-color: #28a745;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-
-    .progress-label {
-      margin-top: 5px;
-      font-size: 0.9em;
-      color: #333;
-    }
-
-    button {
-      margin: 10px 10px 0 0;
-      padding: 10px 15px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    .back {
-      display: inline-block;
-      margin-bottom: 20px;
-      padding: 10px 20px;
-      background: #007bff;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-    }
-
-    .flash {
-      animation: flashYellow 1s ease;
-    }
-
-    @keyframes flashYellow {
-      0% { background-color: #ffffcc; }
-      100% { background-color: transparent; }
-    }
-
-    @media print {
-      button, .back, #goalStats, #totalSavedSummary {
-        display: none;
-      }
-      input {
-        border: none;
-      }
-    }
-
-    @media screen and (max-width: 600px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-      }
-      th {
-        background: #007bff;
-        color: white;
-      }
-      td {
-        border-bottom: none;
-        padding: 5px 0;
-      }
-      td input {
-        width: 100%;
-      }
-    }
+    body { font-family: Arial, sans-serif; background: #f5f7fa; padding: 20px; }
+    .container { max-width: 960px; margin: auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    .back-button { display: inline-block; margin-bottom: 20px; background: #007bff; color: #fff; padding: 10px 15px; border-radius: 6px; font-weight: bold; text-decoration: none; }
+    .back-button:hover { background: #0056b3; }
+    h1 { text-align: center; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; font-size: 14px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background: #007bff; color: white; }
+    input { width: 100%; padding: 8px; box-sizing: border-box; }
+    .progress-bar { height: 20px; background: #e0e0e0; border-radius: 6px; overflow: hidden; margin-top: 5px; }
+    .progress { height: 100%; background: #28a745; width: 0%; transition: width 0.3s ease; }
+    .progress-label { margin-top: 5px; font-size: 0.9em; color: #333; }
+    button { margin: 10px 5px 0 0; padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background-color: #0056b3; }
+    .completed-row { background: #e6f4ea; }
+    .section-header { margin-top: 40px; font-size: 20px; font-weight: bold; }
+    #completedSection { margin-top: 20px; }
   </style>
 </head>
 
 <body>
 <div class="container">
-  <a class="back" href="index.html">🔙 Back to Dashboard</a>
+  <a class="back-button" href="index.html">🔙 Back to Dashboard</a>
   <h1>💰 Savings Goal Tracker</h1>
 
   <div id="goalStats"></div>
   <div id="totalSavedSummary"></div>
 
-  <table id="goalsTable">
+  <h2 class="section-header">🎯 Active Goals</h2>
+  <table id="activeGoalsTable">
     <thead>
       <tr>
         <th>Goal Name</th>
@@ -166,17 +51,33 @@
   <button onclick="addGoal()">+ Add Savings Goal</button>
   <button onclick="exportGoals()">📤 Export Goals</button>
   <button onclick="printGoals()">🖨️ Print Goals</button>
+
+  <div id="completedSection">
+    <h2 class="section-header">✅ Completed Goals</h2>
+    <button onclick="toggleCompletedGoals()">👀 Hide Completed Goals</button>
+    <table id="completedGoalsTable">
+      <thead>
+        <tr>
+          <th>Goal Name</th>
+          <th>Target Amount ($)</th>
+          <th>Saved So Far ($)</th>
+          <th>Progress</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button onclick="clearCompletedGoals()">🧹 Clear Completed Goals</button>
+  </div>
 </div>
 
 <script>
 const STORAGE_KEY = 'savings_goals';
+let completedVisible = true;
 
 function addGoal(name = '', target = 0, saved = 0) {
-  const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
+  const table = saved >= target ? document.querySelector('#completedGoalsTable tbody') : document.querySelector('#activeGoalsTable tbody');
   const newRow = table.insertRow();
-  newRow.classList.add('flash');
-  setTimeout(() => newRow.classList.remove('flash'), 1000);
-  newRow.scrollIntoView({ behavior: "smooth", block: "center" });
 
   const nameCell = newRow.insertCell(0);
   const targetCell = newRow.insertCell(1);
@@ -192,6 +93,11 @@ function addGoal(name = '', target = 0, saved = 0) {
     <div class="progress-label"></div>
   `;
   deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
+
+  if (saved >= target && target > 0) {
+    newRow.classList.add('completed-row');
+    nameCell.innerHTML = `✅ ${nameCell.innerHTML}`;
+  }
 
   updateProgress(newRow);
 }
@@ -211,6 +117,7 @@ function updateProgress(input) {
   progress.style.width = percent + '%';
   label.textContent = `$${saved.toFixed(2)} of $${target.toFixed(2)} saved`;
 
+  archiveCompletedGoals();
   saveGoals();
 }
 
@@ -221,30 +128,38 @@ function deleteRow(button) {
 }
 
 function saveGoals() {
-  const rows = document.querySelectorAll('#goalsTable tbody tr');
+  const activeRows = document.querySelectorAll('#activeGoalsTable tbody tr');
+  const completedRows = document.querySelectorAll('#completedGoalsTable tbody tr');
   const data = [];
-  let completed = 0;
-  let totalSaved = 0;
 
-  rows.forEach(row => {
+  activeRows.forEach(row => {
     const name = row.cells[0].querySelector('input').value;
     const target = parseFloat(row.cells[1].querySelector('input').value || 0);
     const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
     data.push({ name, target, saved });
-    if (saved >= target && target > 0) completed++;
-    totalSaved += saved;
+  });
+
+  completedRows.forEach(row => {
+    const name = row.cells[0].querySelector('input').value.replace('✅ ', '');
+    const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+    const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+    data.push({ name, target, saved });
   });
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  document.getElementById('goalStats').textContent = `🎯 ${completed} of ${data.length} goals completed! (${((completed / (data.length || 1)) * 100).toFixed(1)}%)`;
-  document.getElementById('totalSavedSummary').textContent = `💵 Total Saved Across All Goals: $${totalSaved.toFixed(2)}`;
+  updateStats();
 }
 
 function loadGoals() {
   const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  document.querySelector('#activeGoalsTable tbody').innerHTML = '';
+  document.querySelector('#completedGoalsTable tbody').innerHTML = '';
+
   savedData.forEach(goal => {
     addGoal(goal.name, goal.target, goal.saved);
   });
+
+  updateStats();
 }
 
 function printGoals() {
@@ -252,9 +167,9 @@ function printGoals() {
 }
 
 function exportGoals() {
-  const rows = document.querySelectorAll('#goalsTable tbody tr');
+  const allRows = document.querySelectorAll('#activeGoalsTable tbody tr, #completedGoalsTable tbody tr');
   let csv = 'Goal Name,Target,Current Saved\n';
-  rows.forEach(row => {
+  allRows.forEach(row => {
     const name = row.cells[0].querySelector('input').value;
     const target = row.cells[1].querySelector('input').value;
     const saved = row.cells[2].querySelector('input').value;
@@ -269,9 +184,54 @@ function exportGoals() {
   a.click();
 }
 
-window.onload = () => {
-  loadGoals();
-};
+function archiveCompletedGoals() {
+  const rows = document.querySelectorAll('#activeGoalsTable tbody tr');
+  rows.forEach(row => {
+    const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+    const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+    if (saved >= target && target > 0) {
+      const nameInput = row.cells[0].querySelector('input');
+      nameInput.value = '✅ ' + nameInput.value;
+      document.querySelector('#completedGoalsTable tbody').appendChild(row);
+      row.classList.add('completed-row');
+    }
+  });
+  updateStats();
+}
+
+function clearCompletedGoals() {
+  document.querySelector('#completedGoalsTable tbody').innerHTML = '';
+  saveGoals();
+}
+
+function toggleCompletedGoals() {
+  const section = document.getElementById('completedSection');
+  completedVisible = !completedVisible;
+  section.style.display = completedVisible ? 'block' : 'none';
+
+  const toggleButton = document.querySelector('#completedSection button');
+  toggleButton.innerHTML = completedVisible ? '👀 Hide Completed Goals' : '👁️ Show Completed Goals';
+}
+
+function updateStats() {
+  const activeRows = document.querySelectorAll('#activeGoalsTable tbody tr');
+  const completedRows = document.querySelectorAll('#completedGoalsTable tbody tr');
+  const totalGoals = activeRows.length + completedRows.length;
+  const completed = completedRows.length;
+
+  let totalSaved = 0;
+  document.querySelectorAll('tbody tr').forEach(row => {
+    totalSaved += parseFloat(row.cells[2].querySelector('input').value || 0);
+  });
+
+  const completionPercent = totalGoals > 0 ? ((completed / totalGoals) * 100).toFixed(1) : 0;
+
+  document.getElementById('goalStats').innerHTML = `🎯 ${completed} of ${totalGoals} goals completed! (${completionPercent}%)`;
+  document.getElementById('totalSavedSummary').innerHTML = `💵 Total Saved Across All Goals: $${totalSaved.toFixed(2)}`;
+}
+
+window.onload = loadGoals;
 </script>
+
 </body>
 </html>
