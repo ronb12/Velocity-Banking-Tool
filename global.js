@@ -155,6 +155,16 @@ function setupNetWorthAutoSave() {
     });
   }
 }
+// ✅ Master Activity Logger
+function logActivity(message) {
+  const feedKey = 'activityFeedLogs';
+  const feed = JSON.parse(localStorage.getItem(feedKey) || '[]');
+  feed.push({
+    message,
+    timestamp: Date.now()
+  });
+  localStorage.setItem(feedKey, JSON.stringify(feed));
+}
 
 // ✅ Theme Toggle
 function toggleTheme() {
