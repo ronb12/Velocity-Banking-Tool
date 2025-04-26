@@ -1,9 +1,10 @@
-const CACHE_NAME = "debt-tracker-cache-v1";
+const CACHE_NAME = "finance-hub-cache-v2";
 const urlsToCache = [
   "index.html",
-  "favicon.png",
   "manifest.json",
   "service-worker.js",
+  "icon-192.png",
+  "icon-512.png",
   "https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js",
   "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"
@@ -14,8 +15,10 @@ self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log("Opened cache");
-        return cache.addAll(urlsToCache);
+        console.log("✅ Cache Opened");
+        return cache.addAll(urlsToCache).catch(error => {
+          console.error("❌ Error caching files:", error);
+        });
       })
   );
 });
