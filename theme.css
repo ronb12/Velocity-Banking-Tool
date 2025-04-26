@@ -1,11 +1,18 @@
-/* Normal Light Mode */
-body {
-  background: #fff;
-  color: #000;
+// ✅ Toggle between Light and Dark Mode
+function toggleTheme() {
+  const currentTheme = localStorage.getItem('theme') || 'light';
+  if (currentTheme === 'light') {
+    document.body.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.body.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }
 }
 
-/* 🌙 Dark Mode when .dark class is active */
-body.dark {
-  background: #000;
-  color: #fff;
-}
+// ✅ Load saved theme on page load
+window.addEventListener('load', () => {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+  }
+});
