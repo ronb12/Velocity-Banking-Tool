@@ -3,6 +3,33 @@
 <head>
    <script src="sync.js" defer></script>
    <script src="global.js" defer></script>
+   <!DOCTYPE html>
+<html lang="en">
+<head>
+   <script src="sync.js" defer></script>
+   <script src="global.js" defer></script>
+   <style>
+/* ✅ Save Status Text */
+#saveStatus {
+  font-size: 13px;
+  color: green;
+  text-align: right;
+  margin-top: 5px;
+  margin-bottom: -15px;
+  margin-right: 10px;
+  opacity: 0;
+  transition: opacity 0.5s ease, color 0.5s ease;
+}
+
+/* ✅ When showing (we toggle opacity) */
+#saveStatus.show {
+  opacity: 1;
+}
+</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Debt Tracker – Full Featured</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>💰 Bradley's Zero-Based Budget Tracker</title>
