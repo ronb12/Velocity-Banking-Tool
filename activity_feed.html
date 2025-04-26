@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📜 Master Activity Feed</title>
-  
+
+  <script src="sync.js" defer></script>
+  <script src="global.js" defer></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -105,7 +108,7 @@ function formatTime(date) {
 }
 
 function renderFeed() {
-  const feed = JSON.parse(localStorage.getItem('masterActivityFeed') || '[]').reverse();
+  const feed = JSON.parse(localStorage.getItem('activityFeedLogs') || '[]').reverse();
   const grouped = {};
 
   feed.forEach(entry => {
@@ -128,9 +131,9 @@ function renderFeed() {
       div.className = 'entry';
       div.innerHTML = `
         <div class="left">
-          <div class="entry-icon">${entry.icon}</div>
+          <div class="entry-icon">${entry.icon || '📝'}</div>
           <div>
-            <div class="entry-text">${entry.text}</div>
+            <div class="entry-text">${entry.message || entry.text}</div>
             <div class="entry-time">${entry.time}</div>
           </div>
         </div>
@@ -143,15 +146,15 @@ function renderFeed() {
 }
 
 function exportActivity() {
-  const feed = JSON.parse(localStorage.getItem('masterActivityFeed') || '[]');
+  const feed = JSON.parse(localStorage.getItem('activityFeedLogs') || '[]');
   if (!feed.length) return alert('No activities to export.');
 
-  let csv = 'Date,Time,Type,Action\n';
+  let csv = 'Date,Time,Action\n';
   feed.forEach(entry => {
     const date = new Date(entry.timestamp);
     const dateStr = formatDate(date);
     const timeStr = formatTime(date);
-    csv += `"${dateStr}","${timeStr}","${entry.type}","${entry.text}"\n`;
+    csv += `"${dateStr}","${timeStr}","${entry.message || entry.text}"\n`;
   });
 
   const blob = new Blob([csv], { type: 'text/csv' });
