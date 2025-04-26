@@ -1,39 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <script src="sync.js" defer></script>
-   <script src="global.js" defer></script>
-   <script src="theme.js" defer></script>
-   <!DOCTYPE html>
-<html lang="en">
-<head>
-   <script src="sync.js" defer></script>
-   <script src="global.js" defer></script>
-   <style>
-/* ✅ Save Status Text */
-#saveStatus {
-  font-size: 13px;
-  color: green;
-  text-align: right;
-  margin-top: 5px;
-  margin-bottom: -15px;
-  margin-right: 10px;
-  opacity: 0;
-  transition: opacity 0.5s ease, color 0.5s ease;
-}
-
-/* ✅ When showing (we toggle opacity) */
-#saveStatus.show {
-  opacity: 1;
-}
-</style>
+  <script src="sync.js" defer></script>
+  <script src="global.js" defer></script>
+  <script src="theme.js" defer></script>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – Full Featured</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
-  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>Mobile Debt Tracker</title>
+  <title>📱 Mobile Debt Tracker</title>
+  <link rel="icon" href="favicon.png" />
+
   <style>
     :root {
       --bg-color: #f7f8fa;
@@ -138,6 +113,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="top-nav">
@@ -215,8 +191,8 @@
         let remaining = bal, months = 0;
 
         while (remaining > 0 && months < 1200) {
-          let interest = remaining * r;
-          let principal = pmt - interest;
+          const interest = remaining * r;
+          const principal = pmt - interest;
           if (principal <= 0) break;
           remaining -= principal;
           totalInterest += interest;
@@ -282,7 +258,7 @@
       reader.readAsText(file);
     }
 
-    window.onload = () => {
+    window.onload = function () {
       if (localStorage.getItem("debtData")) {
         try {
           const data = JSON.parse(localStorage.getItem("debtData"));
@@ -292,5 +268,6 @@
       update();
     };
   </script>
+
 </body>
 </html>
