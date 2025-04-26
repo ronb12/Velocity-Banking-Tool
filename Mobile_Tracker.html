@@ -10,7 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- ✅ Firebase Initialization (must be BEFORE your scripts) -->
+  <!-- ✅ Firebase Initialization -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
@@ -21,10 +21,6 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
   </script>
-
-  <!-- ✅ Your project scripts -->
-  <script src="sync.js" defer></script>
-  <script src="global.js" defer></script>
 
   <style>
     :root {
@@ -185,14 +181,36 @@ function switchTab(tabId, btn) {
 function addDebt(name = '', balance = '', rate = '', payment = '', due = '') {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input placeholder="Name" value="${name}" onchange="update()" /></td>
-    <td><input type="number" placeholder="Balance" value="${balance}" onchange="update()" /></td>
-    <td><input type="number" placeholder="Rate %" value="${rate}" onchange="update()" /></td>
-    <td><input type="number" placeholder="Min Pay" value="${payment}" onchange="update()" /></td>
-    <td><input type="date" value="${due}" onchange="update()" /></td>
-    <td><button onclick="this.closest('tr').remove(); update();">❌</button></td>
+    <td><input placeholder="Name" value="${name}" onchange="saveDebts()" /></td>
+    <td><input type="number" placeholder="Balance" value="${balance}" onchange="saveDebts()" /></td>
+    <td><input type="number" placeholder="Rate %" value="${rate}" onchange="saveDebts()" /></td>
+    <td><input type="number" placeholder="Min Pay" value="${payment}" onchange="saveDebts()" /></td>
+    <td><input type="date" value="${due}" onchange="saveDebts()" /></td>
+    <td><button onclick="this.closest('tr').remove(); saveDebts();">❌</button></td>
   `;
   tableBody.appendChild(row);
+  saveDebts();
+}
+
+function saveDebts() {
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const cells = row.querySelectorAll("input");
+    data.push({
+      name: cells[0].value,
+      balance: parseFloat(cells[1].value) || 0,
+      rate: parseFloat(cells[2].value) || 0,
+      payment: parseFloat(cells[3].value) || 0,
+      due: cells[4].value
+    });
+  });
+  localStorage.setItem("debtData", JSON.stringify(data));
+
+  const user = auth.currentUser;
+  if (user) {
+    db.collection("debts").doc(user.uid).set({ debts: data });
+  }
+
   update();
 }
 
@@ -270,19 +288,24 @@ function importCSV(event) {
       const [name, balance, rate, payment, due] = line.split(",");
       if (name) addDebt(name.trim(), balance, rate, payment, due);
     });
-    update();
+    saveDebts();
   };
   reader.readAsText(file);
 }
 
-window.onload = () => {
-  if (localStorage.getItem("debtData")) {
-    try {
-      const data = JSON.parse(localStorage.getItem("debtData"));
-      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
-    } catch {}
-  }
-  update();
+window.onload = function () {
+  auth.onAuthStateChanged(async user => {
+    if (!user) return window.location.href = "login.html";
+    const doc = await db.collection("debts").doc(user.uid).get();
+    if (doc.exists) {
+      const debts = doc.data().debts || [];
+      debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+    } else if (localStorage.getItem("debtData")) {
+      const localDebts = JSON.parse(localStorage.getItem("debtData"));
+      localDebts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+    }
+    update();
+  });
 };
 </script>
 
