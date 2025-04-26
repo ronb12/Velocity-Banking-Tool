@@ -1,10 +1,5 @@
-// ✅ Initialize Firebase (only once across the app)
-const firebaseConfig = {
-  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-  authDomain: "mobile-debt-tracker.firebaseapp.com",
-  projectId: "mobile-debt-tracker"
-};
-firebase.initializeApp(firebaseConfig);
+// ✅ NO Firebase.initializeApp here
+// ✅ Only reference the already-initialized firebase
 const auth = firebase.auth();
 const db = firebase.firestore();
 
@@ -19,7 +14,7 @@ function toggleProfile() {
   if (box) box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
-// ✅ Global Save Status (💾 Saving... / ✅ Auto-Saved)
+// ✅ Global Save Status
 function showSaving() {
   const saveStatus = document.getElementById("saveStatus");
   if (!saveStatus) return;
@@ -40,7 +35,7 @@ function showSaved() {
 
 // ✅ Global onAuthStateChanged
 auth.onAuthStateChanged(async user => {
-  if (!user) return window.location.href = "login.html"; // 🔒 Redirect to login
+  if (!user) return window.location.href = "login.html";
 
   const userRef = db.collection("users").doc(user.uid);
   const doc = await userRef.get();
@@ -74,11 +69,10 @@ auth.onAuthStateChanged(async user => {
   }
 });
 
-// ✅ Functions per page (safe auto-detection)
+// ✅ Functions per page
 
-// Debt Tracker
 function listenForDebtUpdates() {
-  const user = firebase.auth().currentUser;
+  const user = auth.currentUser;
   if (user) {
     db.collection("debts").doc(user.uid)
       .onSnapshot(doc => {
@@ -106,9 +100,8 @@ function setupDebtAutoSave() {
   }
 }
 
-// Budget Tracker
 function listenForBudgetUpdates() {
-  const user = firebase.auth().currentUser;
+  const user = auth.currentUser;
   if (user) {
     const month = new Date().toISOString().slice(0,7);
     db.collection("budgets").doc(user.uid + "_" + month)
@@ -134,9 +127,8 @@ function setupBudgetAutoSave() {
   }
 }
 
-// Net Worth Tracker
 function listenForNetWorthUpdates() {
-  const user = firebase.auth().currentUser;
+  const user = auth.currentUser;
   if (user) {
     db.collection("networth").doc(user.uid)
       .onSnapshot(doc => {
@@ -165,7 +157,7 @@ function setupNetWorthAutoSave() {
   }
 }
 
-// ✅ Toggle Theme Function (🚀 Should NOT be inside setup functions)
+// ✅ Theme Toggle
 function toggleTheme() {
   const currentTheme = localStorage.getItem('theme') || 'light';
   if (currentTheme === 'light') {
@@ -177,10 +169,8 @@ function toggleTheme() {
   }
 }
 
-// ✅ Load saved theme on page load
 window.addEventListener('load', () => {
   if (localStorage.getItem('theme') === 'dark') {
     document.body.classList.add('dark');
   }
 });
-
