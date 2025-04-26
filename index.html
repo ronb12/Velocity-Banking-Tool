@@ -2,8 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>📊 Mobile Debt Tracker</title>
+
+  <!-- ✅ Manifest and Service Worker for PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(function(registration) {
+          console.log('✅ Service Worker Registered:', registration.scope);
+        })
+        .catch(function(error) {
+          console.log('❌ Service Worker Registration Failed:', error);
+        });
+    }
+  </script>
 
   <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -92,8 +106,8 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      display: block;
       overflow-x: auto;
+      display: block;
       white-space: nowrap;
     }
     th, td {
@@ -128,7 +142,6 @@
     .toast {
       visibility: hidden;
       min-width: 250px;
-      margin-left: -125px;
       background-color: #28a745;
       color: white;
       text-align: center;
@@ -139,6 +152,7 @@
       left: 50%;
       bottom: 90px;
       font-size: 16px;
+      transform: translateX(-50%);
       opacity: 0;
       transition: opacity 0.5s ease, bottom 0.5s ease;
     }
@@ -190,7 +204,7 @@
   <button onclick="switchTab('calendar', this)">Calendar</button>
 </div>
 
-<!-- ✅ Toast Notification -->
+<!-- ✅ Toast -->
 <div id="toast" class="toast">✅ Changes Saved</div>
 
 <script>
@@ -237,7 +251,7 @@ function saveDebts() {
     db.collection("debts").doc(user.uid).set({ debts: data });
   }
   update();
-  showToast(); // ✅ Show "Saved" popup after saving
+  showToast();
 }
 
 function update() {
@@ -319,13 +333,12 @@ function importCSV(event) {
   reader.readAsText(file);
 }
 
-function showToast(message = "✅ Changes Saved") {
+function showToast() {
   const toast = document.getElementById("toast");
   if (!toast) return;
-  toast.textContent = message;
-  toast.className = "toast show";
+  toast.classList.add("show");
   setTimeout(() => {
-    toast.className = "toast";
+    toast.classList.remove("show");
   }, 2500);
 }
 
