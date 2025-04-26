@@ -4,11 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
+
+  <!-- Firebase libraries (✅ Only Once) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
+
+  <!-- ✅ Your project scripts -->
+  <script src="global.js" defer></script>
+  <script src="sync.js" defer></script>
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -76,8 +83,31 @@
       border-radius: 8px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
+
+    /* ✅ Dark Mode */
+    body.dark {
+      background: #121212;
+      color: #eee;
+    }
+    body.dark header {
+      background: #1a1a1a;
+    }
+    body.dark .tool-link {
+      background: #333;
+      color: #eee;
+    }
+    body.dark .dashboard-tile {
+      background: #1e1e1e;
+      color: #eee;
+      border-left-color: #66b2ff;
+    }
+    body.dark .alert {
+      background: #333;
+      color: #eee;
+    }
   </style>
 </head>
+
 <body>
 <header>
   🚀 Bradley's Dashboard
@@ -122,88 +152,6 @@
   <button onclick="alert('CSV Export Coming Soon')">📊 Export CSV</button>
   <button onclick="alert('Google Calendar Sync Coming Soon')">📅 Sync Calendar</button>
 </div>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-    authDomain: "mobile-debt-tracker.firebaseapp.com",
-    projectId: "mobile-debt-tracker"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
-  function logout() {
-    auth.signOut().then(() => window.location.href = "login.html");
-  }
-
-  function toggleProfile() {
-    const box = document.getElementById("profileBox");
-    box.style.display = box.style.display === "none" ? "block" : "none";
-  }
-
-  auth.onAuthStateChanged(async user => {
-    if (!user) return window.location.href = "login.html";
-    const userRef = db.collection("users").doc(user.uid);
-    const doc = await userRef.get();
-    if (!doc.exists) {
-      await userRef.set({ email: user.email, joined: new Date().toISOString() });
-    }
-    const data = (await userRef.get()).data();
-    document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
-    document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-    document.getElementById("notification").style.display = "block";
-
-    // Dashboard Sync
-    const networth = await db.collection("networth").doc(user.uid).get();
-    if (networth.exists) {
-      const assets = networth.data().assets || [];
-      const liabilities = networth.data().liabilities || [];
-      const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
-      const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
-      document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
-    }
-
-    const budget = await db.collection("budgets").doc(user.uid + "_" + new Date().toISOString().slice(0,7)).get();
-    if (budget.exists) {
-      const income = budget.data().incomes.reduce((sum, i) => sum + i.amount, 0);
-      const expenses = budget.data().expenses.reduce((sum, e) => sum + e.budgeted, 0);
-      document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
-      document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
-    }
-
-    const debts = await db.collection("debts").doc(user.uid).get();
-    if (debts.exists) {
-      const topDebts = (debts.data().debts || [])
-        .sort((a,b) => b.interest - a.interest)
-        .slice(0, 3)
-        .map(d => d.name).join(", ");
-      document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
-
-      const rawUtil = debts.data().creditUtilization;
-      const utilization = rawUtil !== undefined ? parseFloat(rawUtil).toFixed(2) : "0.00";
-      const utilTile = document.getElementById("creditUtilizationTile");
-      let badge = "";
-
-      const utilValue = parseFloat(utilization);
-
-      // 🎨 Color Coding + Badge
-      if (utilValue < 30) {
-        utilTile.style.borderLeft = "5px solid #28a745"; // green
-        badge = "(Good ✅)";
-      } else if (utilValue < 50) {
-        utilTile.style.borderLeft = "5px solid #ffc107"; // yellow
-        badge = "(Warning ⚠️)";
-      } else {
-        utilTile.style.borderLeft = "5px solid #dc3545"; // red
-        badge = "(Danger ❌)";
-      }
-
-      utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
-    }
-  });
-</script>
 
 </body>
 </html>
