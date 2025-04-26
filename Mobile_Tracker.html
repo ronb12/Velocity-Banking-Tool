@@ -1,13 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>📊 Mobile Debt Tracker</title>
+
+  <!-- ✅ Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <!-- ✅ Firebase Initialization (must be BEFORE your scripts) -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+
+  <!-- ✅ Your project scripts -->
   <script src="sync.js" defer></script>
   <script src="global.js" defer></script>
-  <script src="theme.js" defer></script>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <title>📱 Mobile Debt Tracker</title>
-  <link rel="icon" href="favicon.png" />
 
   <style>
     :root {
@@ -116,158 +133,158 @@
 
 <body>
 
-  <div class="top-nav">
-    <a href="index.html">⬅️ Back to Dashboard</a>
-    <h1>📊 Mobile Debt Tracker</h1>
-  </div>
+<div class="top-nav">
+  <a href="index.html">⬅️ Back to Dashboard</a>
+  <h1>📊 Mobile Debt Tracker</h1>
+</div>
 
-  <div id="debts" class="tab-content active">
-    <h2>Debts</h2>
-    <table id="debtTable">
-      <thead>
-        <tr>
-          <th>Name</th><th>Balance</th><th>Rate (%)</th><th>Min Pay</th><th>Due Date</th><th>❌</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button class="action" onclick="addDebt()">+ Add Debt</button>
-  </div>
+<div id="debts" class="tab-content active">
+  <h2>Debts</h2>
+  <table id="debtTable">
+    <thead>
+      <tr>
+        <th>Name</th><th>Balance</th><th>Rate (%)</th><th>Min Pay</th><th>Due Date</th><th>❌</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button class="action" onclick="addDebt()">+ Add Debt</button>
+</div>
 
-  <div id="summary" class="tab-content">
-    <h2>Summary</h2>
-    <p id="summaryText">Loading...</p>
-    <p id="interestText"></p>
-    <p id="payoffEstimate"></p>
-    <button class="action" onclick="exportToCSV()">📥 Export CSV</button>
-    <input type="file" accept=".csv" onchange="importCSV(event)" />
-  </div>
+<div id="summary" class="tab-content">
+  <h2>Summary</h2>
+  <p id="summaryText">Loading...</p>
+  <p id="interestText"></p>
+  <p id="payoffEstimate"></p>
+  <button class="action" onclick="exportToCSV()">📥 Export CSV</button>
+  <input type="file" accept=".csv" onchange="importCSV(event)" />
+</div>
 
-  <div id="calendar" class="tab-content">
-    <h2>📅 Calendar View</h2>
-    <ul id="calendarList"></ul>
-  </div>
+<div id="calendar" class="tab-content">
+  <h2>📅 Calendar View</h2>
+  <ul id="calendarList"></ul>
+</div>
 
-  <div class="tab-container">
-    <button class="active" onclick="switchTab('debts', this)">Debts</button>
-    <button onclick="switchTab('summary', this)">Summary</button>
-    <button onclick="switchTab('calendar', this)">Calendar</button>
-  </div>
+<div class="tab-container">
+  <button class="active" onclick="switchTab('debts', this)">Debts</button>
+  <button onclick="switchTab('summary', this)">Summary</button>
+  <button onclick="switchTab('calendar', this)">Calendar</button>
+</div>
 
-  <script>
-    const tableBody = document.querySelector("#debtTable tbody");
+<script>
+const tableBody = document.querySelector("#debtTable tbody");
 
-    function switchTab(tabId, btn) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      document.querySelectorAll('.tab-container button').forEach(el => el.classList.remove('active'));
-      btn.classList.add('active');
-      if (tabId === 'calendar') renderCalendar();
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelectorAll('.tab-container button').forEach(el => el.classList.remove('active'));
+  btn.classList.add('active');
+  if (tabId === 'calendar') renderCalendar();
+}
+
+function addDebt(name = '', balance = '', rate = '', payment = '', due = '') {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input placeholder="Name" value="${name}" onchange="update()" /></td>
+    <td><input type="number" placeholder="Balance" value="${balance}" onchange="update()" /></td>
+    <td><input type="number" placeholder="Rate %" value="${rate}" onchange="update()" /></td>
+    <td><input type="number" placeholder="Min Pay" value="${payment}" onchange="update()" /></td>
+    <td><input type="date" value="${due}" onchange="update()" /></td>
+    <td><button onclick="this.closest('tr').remove(); update();">❌</button></td>
+  `;
+  tableBody.appendChild(row);
+  update();
+}
+
+function update() {
+  let totalBalance = 0, totalPayment = 0, totalInterest = 0;
+  let maxMonths = 0;
+
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const [name, balance, rate, payment] = Array.from(row.querySelectorAll("input")).map(i => i.value);
+    const bal = parseFloat(balance) || 0;
+    const r = (parseFloat(rate) || 0) / 100 / 12;
+    const pmt = parseFloat(payment) || 0;
+    let remaining = bal, months = 0;
+
+    while (remaining > 0 && months < 1200) {
+      let interest = remaining * r;
+      let principal = pmt - interest;
+      if (principal <= 0) break;
+      remaining -= principal;
+      totalInterest += interest;
+      months++;
     }
 
-    function addDebt(name = '', balance = '', rate = '', payment = '', due = '') {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><input placeholder="Name" value="${name}" onchange="update()" /></td>
-        <td><input type="number" placeholder="Balance" value="${balance}" onchange="update()" /></td>
-        <td><input type="number" placeholder="Rate %" value="${rate}" onchange="update()" /></td>
-        <td><input type="number" placeholder="Min Pay" value="${payment}" onchange="update()" /></td>
-        <td><input type="date" value="${due}" onchange="update()" /></td>
-        <td><button onclick="this.closest('tr').remove(); update();">❌</button></td>
-      `;
-      tableBody.appendChild(row);
-      update();
-    }
+    if (months > maxMonths) maxMonths = months;
+    totalBalance += bal;
+    totalPayment += pmt;
+  });
 
-    function update() {
-      let totalBalance = 0, totalPayment = 0, totalInterest = 0;
-      let maxMonths = 0;
+  document.getElementById("summaryText").innerText = `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payment: $${totalPayment.toFixed(2)}`;
+  document.getElementById("interestText").innerText = `Est. Total Interest: $${totalInterest.toFixed(2)}`;
+  document.getElementById("payoffEstimate").innerText = maxMonths ? `Estimated Debt-Free Date: ${new Date(new Date().setMonth(new Date().getMonth() + maxMonths)).toLocaleDateString()}` : '';
+}
 
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const [name, balance, rate, payment] = Array.from(row.querySelectorAll("input")).map(i => i.value);
-        const bal = parseFloat(balance) || 0;
-        const r = (parseFloat(rate) || 0) / 100 / 12;
-        const pmt = parseFloat(payment) || 0;
-        let remaining = bal, months = 0;
+function renderCalendar() {
+  const calendarList = document.getElementById("calendarList");
+  calendarList.innerHTML = "";
+  let debts = [];
 
-        while (remaining > 0 && months < 1200) {
-          const interest = remaining * r;
-          const principal = pmt - interest;
-          if (principal <= 0) break;
-          remaining -= principal;
-          totalInterest += interest;
-          months++;
-        }
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const cells = row.querySelectorAll("input");
+    const name = cells[0].value;
+    const due = cells[4].value;
+    if (name && due) debts.push({ name, due });
+  });
 
-        if (months > maxMonths) maxMonths = months;
-        totalBalance += bal;
-        totalPayment += pmt;
-      });
+  debts.sort((a, b) => new Date(a.due) - new Date(b.due));
+  debts.forEach(d => {
+    const li = document.createElement("li");
+    li.textContent = `${new Date(d.due).toLocaleDateString()}: ${d.name}`;
+    calendarList.appendChild(li);
+  });
+}
 
-      document.getElementById("summaryText").innerText = `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payment: $${totalPayment.toFixed(2)}`;
-      document.getElementById("interestText").innerText = `Est. Total Interest: $${totalInterest.toFixed(2)}`;
-      document.getElementById("payoffEstimate").innerText = maxMonths ? `Estimated Debt-Free Date: ${new Date(new Date().setMonth(new Date().getMonth() + maxMonths)).toLocaleDateString()}` : '';
-    }
+function exportToCSV() {
+  const rows = [["Name", "Balance", "Rate", "Payment", "DueDate"]];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const cells = row.querySelectorAll("input");
+    rows.push([cells[0].value, cells[1].value, cells[2].value, cells[3].value, cells[4].value]);
+  });
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "debts.csv";
+  a.click();
+}
 
-    function renderCalendar() {
-      const calendarList = document.getElementById("calendarList");
-      calendarList.innerHTML = "";
-      let debts = [];
+function importCSV(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    const lines = reader.result.split("\n").slice(1);
+    tableBody.innerHTML = "";
+    lines.forEach(line => {
+      const [name, balance, rate, payment, due] = line.split(",");
+      if (name) addDebt(name.trim(), balance, rate, payment, due);
+    });
+    update();
+  };
+  reader.readAsText(file);
+}
 
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const cells = row.querySelectorAll("input");
-        const name = cells[0].value;
-        const due = cells[4].value;
-        if (name && due) debts.push({ name, due });
-      });
-
-      debts.sort((a, b) => new Date(a.due) - new Date(b.due));
-      debts.forEach(d => {
-        const li = document.createElement("li");
-        li.textContent = `${new Date(d.due).toLocaleDateString()}: ${d.name}`;
-        calendarList.appendChild(li);
-      });
-    }
-
-    function exportToCSV() {
-      const rows = [["Name", "Balance", "Rate", "Payment", "DueDate"]];
-      tableBody.querySelectorAll("tr").forEach(row => {
-        const cells = row.querySelectorAll("input");
-        rows.push([cells[0].value, cells[1].value, cells[2].value, cells[3].value, cells[4].value]);
-      });
-      const csv = rows.map(r => r.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "debts.csv";
-      a.click();
-    }
-
-    function importCSV(event) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        const lines = reader.result.split("\n").slice(1);
-        tableBody.innerHTML = "";
-        lines.forEach(line => {
-          const [name, balance, rate, payment, due] = line.split(",");
-          if (name) addDebt(name.trim(), balance, rate, payment, due);
-        });
-        update();
-      };
-      reader.readAsText(file);
-    }
-
-    window.onload = function () {
-      if (localStorage.getItem("debtData")) {
-        try {
-          const data = JSON.parse(localStorage.getItem("debtData"));
-          data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
-        } catch {}
-      }
-      update();
-    };
-  </script>
+window.onload = () => {
+  if (localStorage.getItem("debtData")) {
+    try {
+      const data = JSON.parse(localStorage.getItem("debtData"));
+      data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+    } catch {}
+  }
+  update();
+};
+</script>
 
 </body>
 </html>
