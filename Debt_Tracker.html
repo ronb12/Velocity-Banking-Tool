@@ -11,8 +11,22 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- ✅ Global project scripts -->
+  <!-- ✅ Initialize Firebase FIRST -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+
+  <!-- ✅ Global project scripts (AFTER Firebase initialized) -->
+  <script src="global.js" defer></script>
   <script src="sync.js" defer></script>
+  <script src="theme.js" defer></script>
 
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
@@ -69,7 +83,6 @@
   </div>
 
 <script>
-const db = firebase.firestore();
 const tableBody = document.querySelector("#debtTable tbody");
 let creditUtilization = 0;
 
@@ -150,7 +163,7 @@ function saveDebts() {
 
   localStorage.setItem("debtData", JSON.stringify(data));
 
-  const user = firebase.auth().currentUser;
+  const user = auth.currentUser;
   if (user) {
     const debtRef = db.collection('debts').doc(user.uid);
     debtRef.set({ debts: data, creditUtilization: creditUtilization.toFixed(2) });
@@ -193,7 +206,7 @@ function loadDebts() {
   data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
   calculateSummary();
 
-  const user = firebase.auth().currentUser;
+  const user = auth.currentUser;
   if (user) {
     const debtRef = db.collection('debts').doc(user.uid);
     debtRef.get().then(doc => {
