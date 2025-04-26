@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="sync.js" defer></script>
+  <script src="theme.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📜 Master Activity Feed</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg, #f4f6f8);
+      color: var(--text, #222);
+      margin: 0;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: var(--card, #fff);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      background: var(--accent, #007bff);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    #activityFeed {
+      margin-top: 20px;
+      list-style: none;
+      padding: 0;
+    }
+    .activity-item {
+      background: #f9f9f9;
+      margin-bottom: 10px;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: background 0.3s;
+    }
+    .activity-item:hover {
+      background: #e6f0ff;
+    }
+    .timestamp {
+      font-size: 0.8em;
+      color: #777;
+      margin-top: 5px;
+    }
+    button {
+      margin-top: 15px;
+      background: var(--accent, #007bff);
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .empty-feed {
+      text-align: center;
+      color: #777;
+      margin-top: 30px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <div class="container">
+    <a href="index.html" class="back-link">🔙 Back to Dashboard</a>
+    <h1>📜 Master Activity Feed</h1>
+
+    <ul id="activityFeed"></ul>
+
+    <div class="empty-feed" id="emptyFeed" style="display:none;">
+      No activity yet. Your achievements will appear here! ✨
+    </div>
+
+    <button onclick="exportFeed()">📤 Export Activity as CSV</button>
+  </div>
+
+  <script>
+    const feedKey = 'activityFeedLogs';
+
+    function loadActivityFeed() {
+      const feed = JSON.parse(localStorage.getItem(feedKey) || '[]');
+      const feedContainer = document.getElementById('activityFeed');
+      const emptyMessage = document.getElementById('emptyFeed');
+
+      feedContainer.innerHTML = '';
+
+      if (feed.length === 0) {
+        emptyMessage.style.display = 'block';
+        return;
+      } else {
+        emptyMessage.style.display = 'none';
+      }
+
+      feed.slice().reverse().forEach(entry => {
+        const li = document.createElement('li');
+        li.className = 'activity-item';
+        li.innerHTML = `
+          ${entry.message}
+          <div class="timestamp">${new Date(entry.timestamp).toLocaleString()}</div>
+        `;
+        feedContainer.appendChild(li);
+      });
+    }
+
+    function exportFeed() {
+      const feed = JSON.parse(localStorage.getItem(feedKey) || '[]');
+      if (feed.length === 0) {
+        alert('No activity to export.');
+        return;
+      }
+      let csv = 'Activity,Timestamp\n';
+      feed.forEach(entry => {
+        csv += `"${entry.message.replace(/"/g, '""')}","${new Date(entry.timestamp).toLocaleString()}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'activity_feed.csv';
+      a.click();
+    }
+
+    window.onload = loadActivityFeed;
+  </script>
+</body>
+</html>
