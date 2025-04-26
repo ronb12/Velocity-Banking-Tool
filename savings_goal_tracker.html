@@ -1,37 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <script src="sync.js" defer></script>
-   <script src="global.js" defer></script>
-   <!DOCTYPE html>
-<html lang="en">
-<head>
-   <script src="sync.js" defer></script>
-   <script src="global.js" defer></script>
-   <style>
-/* ✅ Save Status Text */
-#saveStatus {
-  font-size: 13px;
-  color: green;
-  text-align: right;
-  margin-top: 5px;
-  margin-bottom: -15px;
-  margin-right: 10px;
-  opacity: 0;
-  transition: opacity 0.5s ease, color 0.5s ease;
-}
-/* ✅ When showing (we toggle opacity) */
-#saveStatus.show {
-  opacity: 1;
-}
-</style>
+  <script src="sync.js" defer></script>
+  <script src="global.js" defer></script>
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – Full Featured</title>
+  <title>💰 Savings Goal Tracker</title>
   <link rel="icon" type="image/png" href="favicon.png" />
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Savings Goal Tracker</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -58,6 +35,7 @@
       font-weight: bold;
       margin-top: 10px;
       color: #007bff;
+      text-align: center;
     }
 
     table {
@@ -128,6 +106,15 @@
       border-radius: 6px;
     }
 
+    .flash {
+      animation: flashYellow 1s ease;
+    }
+
+    @keyframes flashYellow {
+      0% { background-color: #ffffcc; }
+      100% { background-color: transparent; }
+    }
+
     @media print {
       button, .back, #goalStats, #totalSavedSummary {
         display: none;
@@ -155,132 +142,137 @@
     }
   </style>
 </head>
+
 <body>
-  <div class="container">
-    <a class="back" href="index.html">🔙 Back to Dashboard</a>
-    <h1>💰 Savings Goal Tracker</h1>
-    <div id="goalStats"></div>
-    <div id="totalSavedSummary"></div>
+<div class="container">
+  <a class="back" href="index.html">🔙 Back to Dashboard</a>
+  <h1>💰 Savings Goal Tracker</h1>
 
-    <table id="goalsTable">
-      <thead>
-        <tr>
-          <th>Goal Name</th>
-          <th>Target Amount ($)</th>
-          <th>Saved So Far ($)</th>
-          <th>Progress</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <div id="goalStats"></div>
+  <div id="totalSavedSummary"></div>
 
-    <button onclick="addGoal()">+ Add Savings Goal</button>
-    <button onclick="exportGoals()">📤 Export Goals</button>
-    <button onclick="printGoals()">🖨️ Print Goals</button>
-  </div>
+  <table id="goalsTable">
+    <thead>
+      <tr>
+        <th>Goal Name</th>
+        <th>Target Amount ($)</th>
+        <th>Saved So Far ($)</th>
+        <th>Progress</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-  <script>
-    const STORAGE_KEY = 'savings_goals';
+  <button onclick="addGoal()">+ Add Savings Goal</button>
+  <button onclick="exportGoals()">📤 Export Goals</button>
+  <button onclick="printGoals()">🖨️ Print Goals</button>
+</div>
 
-    function addGoal(name = '', target = 0, saved = 0) {
-      const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
-      const newRow = table.insertRow();
+<script>
+const STORAGE_KEY = 'savings_goals';
 
-      const nameCell = newRow.insertCell(0);
-      const targetCell = newRow.insertCell(1);
-      const savedCell = newRow.insertCell(2);
-      const progressCell = newRow.insertCell(3);
-      const deleteCell = newRow.insertCell(4);
+function addGoal(name = '', target = 0, saved = 0) {
+  const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
+  const newRow = table.insertRow();
+  newRow.classList.add('flash');
+  setTimeout(() => newRow.classList.remove('flash'), 1000);
+  newRow.scrollIntoView({ behavior: "smooth", block: "center" });
 
-      nameCell.innerHTML = `<input type="text" value="${name}" oninput="saveGoals()" />`;
-      targetCell.innerHTML = `<input type="number" value="${target}" min="0" onchange="updateProgress(this)" />`;
-      savedCell.innerHTML = `<input type="number" value="${saved}" min="0" onchange="updateProgress(this)" />`;
-      progressCell.innerHTML = `
-        <div class="progress-bar"><div class="progress"></div></div>
-        <div class="progress-label"></div>
-      `;
-      deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
+  const nameCell = newRow.insertCell(0);
+  const targetCell = newRow.insertCell(1);
+  const savedCell = newRow.insertCell(2);
+  const progressCell = newRow.insertCell(3);
+  const deleteCell = newRow.insertCell(4);
 
-      updateProgress(newRow);
-    }
+  nameCell.innerHTML = `<input type="text" value="${name}" oninput="saveGoals()" />`;
+  targetCell.innerHTML = `<input type="number" value="${target}" min="0" onchange="updateProgress(this)" />`;
+  savedCell.innerHTML = `<input type="number" value="${saved}" min="0" onchange="updateProgress(this)" />`;
+  progressCell.innerHTML = `
+    <div class="progress-bar"><div class="progress"></div></div>
+    <div class="progress-label"></div>
+  `;
+  deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
 
-    function updateProgress(input) {
-      const row = input.closest('tr') || input;
-      const target = parseFloat(row.cells[1].querySelector('input').value || 0);
-      const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
-      const progress = row.cells[3].querySelector('.progress');
-      const label = row.cells[3].querySelector('.progress-label');
+  updateProgress(newRow);
+}
 
-      let percent = 0;
-      if (target > 0) {
-        percent = Math.min((saved / target) * 100, 100);
-      }
+function updateProgress(input) {
+  const row = input.closest('tr') || input;
+  const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+  const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+  const progress = row.cells[3].querySelector('.progress');
+  const label = row.cells[3].querySelector('.progress-label');
 
-      progress.style.width = percent + '%';
-      label.textContent = `$${saved.toFixed(2)} of $${target.toFixed(2)} saved`;
+  let percent = 0;
+  if (target > 0) {
+    percent = Math.min((saved / target) * 100, 100);
+  }
 
-      saveGoals();
-    }
+  progress.style.width = percent + '%';
+  label.textContent = `$${saved.toFixed(2)} of $${target.toFixed(2)} saved`;
 
-    function deleteRow(button) {
-      const row = button.closest("tr");
-      row.remove();
-      saveGoals();
-    }
+  saveGoals();
+}
 
-    function saveGoals() {
-      const rows = document.querySelectorAll('#goalsTable tbody tr');
-      const data = [];
-      let completed = 0;
-      let totalSaved = 0;
+function deleteRow(button) {
+  const row = button.closest("tr");
+  row.remove();
+  saveGoals();
+}
 
-      rows.forEach(row => {
-        const name = row.cells[0].querySelector('input').value;
-        const target = parseFloat(row.cells[1].querySelector('input').value || 0);
-        const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
-        data.push({ name, target, saved });
-        if (saved >= target && target > 0) completed++;
-        totalSaved += saved;
-      });
+function saveGoals() {
+  const rows = document.querySelectorAll('#goalsTable tbody tr');
+  const data = [];
+  let completed = 0;
+  let totalSaved = 0;
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      document.getElementById('goalStats').textContent = `🎯 ${completed} of ${data.length} goals completed!`;
-      document.getElementById('totalSavedSummary').textContent = `💵 Total Saved Across All Goals: $${totalSaved.toFixed(2)}`;
-    }
+  rows.forEach(row => {
+    const name = row.cells[0].querySelector('input').value;
+    const target = parseFloat(row.cells[1].querySelector('input').value || 0);
+    const saved = parseFloat(row.cells[2].querySelector('input').value || 0);
+    data.push({ name, target, saved });
+    if (saved >= target && target > 0) completed++;
+    totalSaved += saved;
+  });
 
-    function loadGoals() {
-      const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      savedData.forEach(goal => {
-        addGoal(goal.name, goal.target, goal.saved);
-      });
-    }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  document.getElementById('goalStats').textContent = `🎯 ${completed} of ${data.length} goals completed! (${((completed / (data.length || 1)) * 100).toFixed(1)}%)`;
+  document.getElementById('totalSavedSummary').textContent = `💵 Total Saved Across All Goals: $${totalSaved.toFixed(2)}`;
+}
 
-    function printGoals() {
-      window.print();
-    }
+function loadGoals() {
+  const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  savedData.forEach(goal => {
+    addGoal(goal.name, goal.target, goal.saved);
+  });
+}
 
-    function exportGoals() {
-      const rows = document.querySelectorAll('#goalsTable tbody tr');
-      let csv = 'Goal Name,Target,Current Saved\n';
-      rows.forEach(row => {
-        const name = row.cells[0].querySelector('input').value;
-        const target = row.cells[1].querySelector('input').value;
-        const saved = row.cells[2].querySelector('input').value;
-        csv += `"${name}","${target}","${saved}"\n`;
-      });
+function printGoals() {
+  window.print();
+}
 
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'savings_goals.csv';
-      a.click();
-    }
+function exportGoals() {
+  const rows = document.querySelectorAll('#goalsTable tbody tr');
+  let csv = 'Goal Name,Target,Current Saved\n';
+  rows.forEach(row => {
+    const name = row.cells[0].querySelector('input').value;
+    const target = row.cells[1].querySelector('input').value;
+    const saved = row.cells[2].querySelector('input').value;
+    csv += `"${name}","${target}","${saved}"\n`;
+  });
 
-    window.onload = () => {
-      loadGoals();
-    };
-  </script>
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'savings_goals.csv';
+  a.click();
+}
+
+window.onload = () => {
+  loadGoals();
+};
+</script>
 </body>
 </html>
