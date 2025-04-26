@@ -2,156 +2,348 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bradley's Velocity Banking Toolkit</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>📊 Mobile Debt Tracker</title>
 
-  <!-- Firebase libraries (✅ Only Once) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
-  <!-- ✅ Your project scripts -->
-  <script src="global.js" defer></script>
-  <script src="sync.js" defer></script>
+  <!-- ✅ Firebase Initialization -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
 
   <style>
+    :root {
+      --bg-color: #f7f8fa;
+      --text-color: #000;
+      --tab-bg: #007bff;
+      --tab-active: #0056b3;
+      --table-header: #333;
+      --button-bg: #007bff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #121212;
+        --text-color: #eee;
+        --tab-bg: #1e1e1e;
+        --tab-active: #333;
+        --table-header: #444;
+        --button-bg: #2c66d3;
+      }
+    }
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background: #f4f4f9;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    .top-nav {
+      background: var(--tab-active);
+      color: white;
+      padding: 15px;
       text-align: center;
     }
-    header {
-      background: #007bff;
-      color: white;
-      padding: 1em;
-      position: relative;
-    }
-    button.logout, button.profile-btn {
-      position: absolute;
-      top: 15px;
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: none;
-      color: white;
-      cursor: pointer;
-    }
-    .logout { right: 20px; background: #dc3545; }
-    .profile-btn { left: 20px; background: #28a745; }
-    .tools, .dashboard, .export-buttons {
-      padding: 20px;
-    }
-    .tool-link {
-      display: block;
-      margin: 10px auto;
-      padding: 12px;
-      background: #007bff;
-      color: white;
-      width: 300px;
-      border-radius: 8px;
+    .top-nav a {
+      color: #fff;
       text-decoration: none;
-    }
-    .dashboard-tile {
-      display: inline-block;
-      margin: 10px;
-      padding: 15px;
-      background: white;
-      border-left: 5px solid #007bff;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      min-width: 180px;
       font-weight: bold;
     }
-    .alert {
-      background: #ffc107;
-      color: black;
-      margin: 10px auto;
-      padding: 10px;
-      border-radius: 5px;
-      max-width: 500px;
+    .tab-container {
+      display: flex;
+      justify-content: space-around;
+      background: var(--tab-bg);
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 10;
     }
-    #profileBox {
-      display: none;
-      background: #fff;
-      border: 1px solid #ccc;
-      max-width: 400px;
-      margin: 20px auto;
+    .tab-container button {
+      flex: 1;
       padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      color: white;
+      background: none;
+      border: none;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
     }
-
-    /* ✅ Dark Mode */
-    body.dark {
-      background: #121212;
-      color: #eee;
+    .tab-container button.active {
+      background-color: var(--tab-active);
     }
-    body.dark header {
-      background: #1a1a1a;
+    .tab-content {
+      display: none;
+      padding: 20px 10px 80px;
     }
-    body.dark .tool-link {
-      background: #333;
-      color: #eee;
+    .tab-content.active {
+      display: block;
     }
-    body.dark .dashboard-tile {
-      background: #1e1e1e;
-      color: #eee;
-      border-left-color: #66b2ff;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
     }
-    body.dark .alert {
-      background: #333;
-      color: #eee;
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: var(--table-header);
+      color: white;
+    }
+    input {
+      width: 90%;
+      padding: 6px;
+      background: var(--bg-color);
+      color: var(--text-color);
+      border: 1px solid #888;
+    }
+    input[type="date"] {
+      padding: 4px;
+    }
+    button.action {
+      margin: 5px 0;
+      padding: 10px;
+      background: var(--button-bg);
+      color: white;
+      border: none;
+      width: 100%;
+      border-radius: 4px;
+    }
+    /* ✅ Toast Popup */
+    .toast {
+      visibility: hidden;
+      min-width: 250px;
+      margin-left: -125px;
+      background-color: #28a745;
+      color: white;
+      text-align: center;
+      border-radius: 6px;
+      padding: 12px;
+      position: fixed;
+      z-index: 20;
+      left: 50%;
+      bottom: 90px;
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity 0.5s ease, bottom 0.5s ease;
+    }
+    .toast.show {
+      visibility: visible;
+      opacity: 1;
+      bottom: 100px;
     }
   </style>
 </head>
 
 <body>
-<header>
-  🚀 Bradley's Dashboard
-  <button class="profile-btn" onclick="toggleProfile()">👤 My Profile</button>
-  <button onclick="toggleTheme()">🌓 Toggle Theme</button>
-  <button class="logout" onclick="logout()">🔒 Logout</button>
-</header>
 
-<div id="notification" class="alert" style="display: none;">🔔 Notifications will appear here.</div>
-
-<div id="profileBox">
-  <h3>👤 Your Profile</h3>
-  <p id="profileEmail">Email: ...</p>
-  <p id="profileJoinDate">Joined: ...</p>
+<div class="top-nav">
+  <a href="index.html">⬅️ Back to Dashboard</a>
+  <h1>📊 Mobile Debt Tracker</h1>
 </div>
 
-<div class="dashboard" id="dashboardTiles">
-  <div class="dashboard-tile" id="netWorthTile">🧮 Total Net Worth: $0.00</div>
-  <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
-  <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
-  <div class="dashboard-tile" id="topDebtsTile">🔥 Top 3 Debts: Loading...</div>
-  <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: 0%</div>
+<div id="debts" class="tab-content active">
+  <h2>Debts</h2>
+  <table id="debtTable">
+    <thead>
+      <tr>
+        <th>Name</th><th>Balance</th><th>Rate (%)</th><th>Min Pay</th><th>Due Date</th><th>❌</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button class="action" onclick="addDebt()">+ Add Debt</button>
 </div>
 
-<div class="tools">
-  <p>Welcome to your personal finance hub. Choose a tool:</p>
-  <a class="tool-link" href="budget.html">💰 Budget Tracker</a>
-  <a class="tool-link" href="Velocity_Calculator.html">📊 Velocity Calculator</a>
-  <a class="tool-link" href="Debt_Tracker.html">📋 Debt Tracker</a>
-  <a class="tool-link" href="1099_calculator.html">🧾 1099 Tax Calculator</a>
-  <a class="tool-link" href="Credit_Score_Estimator.html">💳 Credit Score Estimator</a>
-  <a class="tool-link" href="Mobile_Tracker.html">📱 Mobile Debt Tracker</a>
-  <a class="tool-link" href="net_worth_tracker.html">🧮 Net Worth Tracker</a>
-  <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goals</a>
-  <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
-  <a class="tool-link" href="activity_feed.html">🧾 Master Activity Feed</a>
-  <a class="tool-link" href="notifications.html">📥 Notifications Center</a>
+<div id="summary" class="tab-content">
+  <h2>Summary</h2>
+  <p id="summaryText">Loading...</p>
+  <p id="interestText"></p>
+  <p id="payoffEstimate"></p>
+  <button class="action" onclick="exportToCSV()">📥 Export CSV</button>
+  <input type="file" accept=".csv" onchange="importCSV(event)" />
 </div>
 
-<div class="export-buttons">
-  <button onclick="alert('PDF Export Coming Soon')">📄 Export PDF</button>
-  <button onclick="alert('CSV Export Coming Soon')">📊 Export CSV</button>
-  <button onclick="alert('Google Calendar Sync Coming Soon')">📅 Sync Calendar</button>
+<div id="calendar" class="tab-content">
+  <h2>📅 Calendar View</h2>
+  <ul id="calendarList"></ul>
 </div>
+
+<div class="tab-container">
+  <button class="active" onclick="switchTab('debts', this)">Debts</button>
+  <button onclick="switchTab('summary', this)">Summary</button>
+  <button onclick="switchTab('calendar', this)">Calendar</button>
+</div>
+
+<!-- ✅ Toast Notification -->
+<div id="toast" class="toast">✅ Changes Saved</div>
+
+<script>
+const tableBody = document.querySelector("#debtTable tbody");
+
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  document.querySelectorAll('.tab-container button').forEach(el => el.classList.remove('active'));
+  btn.classList.add('active');
+  if (tabId === 'calendar') renderCalendar();
+}
+
+function addDebt(name = '', balance = '', rate = '', payment = '', due = '') {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input placeholder="Name" value="${name}" onchange="saveDebts()" /></td>
+    <td><input type="number" placeholder="Balance" value="${balance}" onchange="saveDebts()" /></td>
+    <td><input type="number" placeholder="Rate %" value="${rate}" onchange="saveDebts()" /></td>
+    <td><input type="number" placeholder="Min Pay" value="${payment}" onchange="saveDebts()" /></td>
+    <td><input type="date" value="${due}" onchange="saveDebts()" /></td>
+    <td><button onclick="this.closest('tr').remove(); saveDebts();">❌</button></td>
+  `;
+  tableBody.appendChild(row);
+  saveDebts();
+}
+
+function saveDebts() {
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const cells = row.querySelectorAll("input");
+    data.push({
+      name: cells[0].value,
+      balance: parseFloat(cells[1].value) || 0,
+      rate: parseFloat(cells[2].value) || 0,
+      payment: parseFloat(cells[3].value) || 0,
+      due: cells[4].value
+    });
+  });
+  localStorage.setItem("debtData", JSON.stringify(data));
+
+  const user = auth.currentUser;
+  if (user) {
+    db.collection("debts").doc(user.uid).set({ debts: data });
+  }
+  update();
+  showToast(); // ✅ Show "Saved" popup after saving
+}
+
+function update() {
+  let totalBalance = 0, totalPayment = 0, totalInterest = 0;
+  let maxMonths = 0;
+
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const [name, balance, rate, payment] = Array.from(row.querySelectorAll("input")).map(i => i.value);
+    const bal = parseFloat(balance) || 0;
+    const r = (parseFloat(rate) || 0) / 100 / 12;
+    const pmt = parseFloat(payment) || 0;
+    let remaining = bal, months = 0;
+
+    while (remaining > 0 && months < 1200) {
+      let interest = remaining * r;
+      let principal = pmt - interest;
+      if (principal <= 0) break;
+      remaining -= principal;
+      totalInterest += interest;
+      months++;
+    }
+
+    if (months > maxMonths) maxMonths = months;
+    totalBalance += bal;
+    totalPayment += pmt;
+  });
+
+  document.getElementById("summaryText").innerText = `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payment: $${totalPayment.toFixed(2)}`;
+  document.getElementById("interestText").innerText = `Est. Total Interest: $${totalInterest.toFixed(2)}`;
+  document.getElementById("payoffEstimate").innerText = maxMonths ? `Estimated Debt-Free Date: ${new Date(new Date().setMonth(new Date().getMonth() + maxMonths)).toLocaleDateString()}` : '';
+}
+
+function renderCalendar() {
+  const calendarList = document.getElementById("calendarList");
+  calendarList.innerHTML = "";
+  let debts = [];
+
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const cells = row.querySelectorAll("input");
+    const name = cells[0].value;
+    const due = cells[4].value;
+    if (name && due) debts.push({ name, due });
+  });
+
+  debts.sort((a, b) => new Date(a.due) - new Date(b.due));
+  debts.forEach(d => {
+    const li = document.createElement("li");
+    li.textContent = `${new Date(d.due).toLocaleDateString()}: ${d.name}`;
+    calendarList.appendChild(li);
+  });
+}
+
+function exportToCSV() {
+  const rows = [["Name", "Balance", "Rate", "Payment", "DueDate"]];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const cells = row.querySelectorAll("input");
+    rows.push([cells[0].value, cells[1].value, cells[2].value, cells[3].value, cells[4].value]);
+  });
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "debts.csv";
+  a.click();
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    const lines = reader.result.split("\n").slice(1);
+    tableBody.innerHTML = "";
+    lines.forEach(line => {
+      const [name, balance, rate, payment, due] = line.split(",");
+      if (name) addDebt(name.trim(), balance, rate, payment, due);
+    });
+    saveDebts();
+  };
+  reader.readAsText(file);
+}
+
+function showToast(message = "✅ Changes Saved") {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = "toast show";
+  setTimeout(() => {
+    toast.className = "toast";
+  }, 2500);
+}
+
+window.onload = function () {
+  auth.onAuthStateChanged(async user => {
+    if (!user) return window.location.href = "login.html";
+    const doc = await db.collection("debts").doc(user.uid).get();
+    if (doc.exists) {
+      const debts = doc.data().debts || [];
+      debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+    } else if (localStorage.getItem("debtData")) {
+      const localDebts = JSON.parse(localStorage.getItem("debtData"));
+      localDebts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+    }
+    update();
+  });
+};
+</script>
 
 </body>
 </html>
