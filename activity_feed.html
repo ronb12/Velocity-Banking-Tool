@@ -1,66 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📜 Master Activity Feed</title>
+
+  <script src="sync.js" defer></script>
+  <script src="global.js" defer></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: var(--bg, #f4f6f8);
-      color: var(--text, #222);
+      background: #f4f6f8;
       margin: 0;
       padding: 20px;
-      transition: all 0.3s ease;
     }
     .container {
-      max-width: 1000px;
+      max-width: 900px;
       margin: auto;
-      background: var(--card, #fff);
+      background: white;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    .back-link {
-      display: inline-block;
-      margin-bottom: 20px;
-      text-decoration: none;
-      background: var(--accent, #007bff);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
     h1 {
       text-align: center;
-      margin-bottom: 10px;
+      color: #007bff;
     }
-    #activityFeed {
+    .entry-group {
       margin-top: 20px;
-      list-style: none;
-      padding: 0;
     }
-    .activity-item {
+    .entry-date {
+      font-weight: bold;
+      margin: 15px 0 5px;
+      font-size: 18px;
+      color: #333;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .entry {
       background: #f9f9f9;
-      margin-bottom: 10px;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      transition: background 0.3s;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .activity-item:hover {
-      background: #e6f0ff;
+    .entry .left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .timestamp {
-      font-size: 0.8em;
+    .entry-icon {
+      font-size: 20px;
+    }
+    .entry-text {
+      font-size: 15px;
+      color: #333;
+    }
+    .entry-time {
+      font-size: 13px;
       color: #777;
-      margin-top: 5px;
     }
     button {
-      margin-top: 15px;
-      background: var(--accent, #007bff);
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #007bff;
       color: white;
-      padding: 10px 15px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
@@ -68,75 +75,99 @@
     button:hover {
       background: #0056b3;
     }
-    .empty-feed {
-      text-align: center;
-      color: #777;
-      margin-top: 30px;
-      font-style: italic;
+    a.back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      background: #007bff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      color: white;
+      text-decoration: none;
     }
   </style>
 </head>
-<body data-theme="light">
-  <div class="container">
-    <a href="index.html" class="back-link">🔙 Back to Dashboard</a>
-    <h1>📜 Master Activity Feed</h1>
 
-    <ul id="activityFeed"></ul>
+<body>
+<div class="container">
+  <a class="back-link" href="index.html">🔙 Back to Dashboard</a>
+  <h1>📜 Master Activity Feed</h1>
 
-    <div class="empty-feed" id="emptyFeed" style="display:none;">
-      No activity yet. Your achievements will appear here! ✨
-    </div>
+  <div id="activityFeed"></div>
 
-    <button onclick="exportFeed()">📤 Export Activity as CSV</button>
-  </div>
+  <button onclick="exportActivity()">📤 Export to CSV</button>
+</div>
 
-  <script>
-    const feedKey = 'activityFeedLogs';
+<script>
+function formatDate(date) {
+  const options = { month: 'long', day: 'numeric' };
+  return date.toLocaleDateString(undefined, options);
+}
 
-    function loadActivityFeed() {
-      const feed = JSON.parse(localStorage.getItem(feedKey) || '[]');
-      const feedContainer = document.getElementById('activityFeed');
-      const emptyMessage = document.getElementById('emptyFeed');
+function formatTime(date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
 
-      feedContainer.innerHTML = '';
+function renderFeed() {
+  const feed = JSON.parse(localStorage.getItem('masterActivityFeed') || '[]').reverse();
+  const grouped = {};
 
-      if (feed.length === 0) {
-        emptyMessage.style.display = 'block';
-        return;
-      } else {
-        emptyMessage.style.display = 'none';
-      }
+  feed.forEach(entry => {
+    const date = new Date(entry.timestamp);
+    const dateLabel = formatDate(date);
+    if (!grouped[dateLabel]) grouped[dateLabel] = [];
+    grouped[dateLabel].push({ ...entry, time: formatTime(date) });
+  });
 
-      feed.slice().reverse().forEach(entry => {
-        const li = document.createElement('li');
-        li.className = 'activity-item';
-        li.innerHTML = `
-          ${entry.message}
-          <div class="timestamp">${new Date(entry.timestamp).toLocaleString()}</div>
-        `;
-        feedContainer.appendChild(li);
-      });
-    }
+  const container = document.getElementById('activityFeed');
+  container.innerHTML = '';
 
-    function exportFeed() {
-      const feed = JSON.parse(localStorage.getItem(feedKey) || '[]');
-      if (feed.length === 0) {
-        alert('No activity to export.');
-        return;
-      }
-      let csv = 'Activity,Timestamp\n';
-      feed.forEach(entry => {
-        csv += `"${entry.message.replace(/"/g, '""')}","${new Date(entry.timestamp).toLocaleString()}"\n`;
-      });
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'activity_feed.csv';
-      a.click();
-    }
+  for (const date in grouped) {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'entry-group';
+    groupDiv.innerHTML = `<div class="entry-date">🗓️ ${date}</div>`;
 
-    window.onload = loadActivityFeed;
-  </script>
+    grouped[date].forEach(entry => {
+      const div = document.createElement('div');
+      div.className = 'entry';
+      div.innerHTML = `
+        <div class="left">
+          <div class="entry-icon">${entry.icon}</div>
+          <div>
+            <div class="entry-text">${entry.text}</div>
+            <div class="entry-time">${entry.time}</div>
+          </div>
+        </div>
+      `;
+      groupDiv.appendChild(div);
+    });
+
+    container.appendChild(groupDiv);
+  }
+}
+
+function exportActivity() {
+  const feed = JSON.parse(localStorage.getItem('masterActivityFeed') || '[]');
+  if (!feed.length) return alert('No activities to export.');
+
+  let csv = 'Date,Time,Type,Action\n';
+  feed.forEach(entry => {
+    const date = new Date(entry.timestamp);
+    const dateStr = formatDate(date);
+    const timeStr = formatTime(date);
+    csv += `"${dateStr}","${timeStr}","${entry.type}","${entry.text}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'activity_feed.csv';
+  a.click();
+}
+
+window.onload = () => {
+  renderFeed();
+};
+</script>
+
 </body>
 </html>
