@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="theme.js" defer></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Credit Score Estimator</title>
+
+  <!-- Theme -->
+  <link rel="stylesheet" href="theme.css" />
+  <script src="theme.js" defer></script>
+
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -21,10 +25,7 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    h1 {
-      font-size: 2em;
-      margin-bottom: 20px;
-    }
+    h1 { font-size: 2em; margin-bottom: 20px; }
     .form-group {
       text-align: left;
       margin-bottom: 20px;
@@ -46,9 +47,7 @@
       align-items: center;
       gap: 10px;
     }
-    .range-group input[type=range] {
-      flex: 1;
-    }
+    .range-group input[type=range] { flex: 1; }
     .value-badge {
       min-width: 50px;
       text-align: right;
@@ -81,8 +80,19 @@
       font-size: 14px;
       color: #777;
     }
+
+    /* 🌙 Dark Mode */
+    body.dark { background: #121212; color: #eee; }
+    body.dark .container { background: #1e1e1e; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
+    body.dark input, body.dark select { background: #333; color: #eee; border: 1px solid #555; }
+    body.dark .value-badge { color: #ccc; }
+    body.dark .poor { background-color: #660000; color: #ffb3b3; }
+    body.dark .fair { background-color: #665500; color: #fff0b3; }
+    body.dark .good { background-color: #005500; color: #ccffcc; }
+    body.dark .excellent { background-color: #004d4d; color: #d4f1f4; }
   </style>
 </head>
+
 <body>
 
   <nav>
@@ -114,7 +124,7 @@
     </div>
 
     <div class="form-group">
-      <label for="inquiries">Recent Credit Inquiries (last 12 mo)</label>
+      <label for="inquiries">Recent Credit Inquiries (last 12 months)</label>
       <input type="number" id="inquiries" min="0" max="30" value="2" />
     </div>
 
@@ -130,9 +140,8 @@
     <div id="scoreAdvice" class="scoreColor good">Your credit is looking good! Stay consistent.</div>
     
     <p style="margin-top: 15px; font-size: 14px; color: #777;">
-  <strong>Note:</strong> This score is only an estimate. Always check your actual credit report for the most accurate information.
-</p>
-
+      <strong>Note:</strong> This score is only an estimate. Always check your actual credit report for the most accurate information.
+    </p>
   </div>
 
   <footer>Created by Ronell Bradley</footer>
@@ -162,31 +171,38 @@
 
       let score = 850;
 
+      // Payment History
       if (ph >= 99) score -= 0;
       else if (ph >= 95) score -= 20;
       else if (ph >= 90) score -= 50;
       else score -= 100;
 
+      // Utilization
       if (util <= 10) score -= 0;
       else if (util <= 30) score -= 30;
       else if (util <= 50) score -= 70;
       else score -= 150;
 
+      // History Length
       if (history >= 8) score -= 0;
       else if (history >= 4) score -= 20;
       else if (history >= 2) score -= 50;
       else score -= 80;
 
+      // Inquiries
       if (inquiries <= 2) score -= 0;
       else if (inquiries <= 5) score -= 20;
       else if (inquiries <= 10) score -= 50;
       else score -= 80;
 
+      // Credit Mix
       if (!mix) score -= 20;
 
+      // Clamp Score
       score = Math.max(300, Math.min(850, Math.round(score)));
       elements.scoreOutput.textContent = `Estimated Score: ${score}`;
 
+      // Advice
       if (score < 580) {
         elements.scoreAdvice.textContent = "Very Poor – Start by lowering utilization and building payment history.";
         elements.scoreAdvice.className = "scoreColor poor";
