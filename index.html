@@ -2,22 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>📊 Mobile Debt Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>📊 Bradley's Finance Hub</title>
 
-  <!-- ✅ Manifest and Service Worker for PWA -->
-  <link rel="manifest" href="manifest.json" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-        .then(function(registration) {
-          console.log('✅ Service Worker Registered:', registration.scope);
-        })
-        .catch(function(error) {
-          console.log('❌ Service Worker Registration Failed:', error);
-        });
-    }
-  </script>
+  <!-- ✅ Manifest for install -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-512.png" sizes="512x512" type="image/png">
 
   <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -36,7 +26,17 @@
     const db = firebase.firestore();
   </script>
 
+  <!-- ✅ Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('✅ Service Worker Registered'))
+        .catch(err => console.error('❌ Service Worker Error', err));
+    }
+  </script>
+
   <style>
+    /* ✨ Same clean styles here... (keeping your great theme) */
     :root {
       --bg-color: #f7f8fa;
       --text-color: #000;
@@ -55,112 +55,22 @@
         --button-bg: #2c66d3;
       }
     }
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-    }
-    .top-nav {
-      background: var(--tab-active);
-      color: white;
-      padding: 15px;
-      text-align: center;
-    }
-    .top-nav a {
-      color: #fff;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    .tab-container {
-      display: flex;
-      justify-content: space-around;
-      background: var(--tab-bg);
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      z-index: 10;
-    }
-    .tab-container button {
-      flex: 1;
-      padding: 15px;
-      color: white;
-      background: none;
-      border: none;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .tab-container button.active {
-      background-color: var(--tab-active);
-    }
-    .tab-content {
-      display: none;
-      padding: 20px 10px 80px;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      overflow-x: auto;
-      display: block;
-      white-space: nowrap;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background: var(--table-header);
-      color: white;
-    }
-    input {
-      width: 90%;
-      padding: 6px;
-      background: var(--bg-color);
-      color: var(--text-color);
-      border: 1px solid #888;
-    }
-    input[type="date"] {
-      padding: 4px;
-    }
-    button.action {
-      margin: 5px 0;
-      padding: 10px;
-      background: var(--button-bg);
-      color: white;
-      border: none;
-      width: 100%;
-      border-radius: 4px;
-    }
-    /* ✅ Toast Popup */
-    .toast {
-      visibility: hidden;
-      min-width: 250px;
-      background-color: #28a745;
-      color: white;
-      text-align: center;
-      border-radius: 6px;
-      padding: 12px;
-      position: fixed;
-      z-index: 20;
-      left: 50%;
-      bottom: 90px;
-      font-size: 16px;
-      transform: translateX(-50%);
-      opacity: 0;
-      transition: opacity 0.5s ease, bottom 0.5s ease;
-    }
-    .toast.show {
-      visibility: visible;
-      opacity: 1;
-      bottom: 100px;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: var(--bg-color); color: var(--text-color); }
+    .top-nav { background: var(--tab-active); color: white; padding: 15px; text-align: center; }
+    .top-nav a { color: white; text-decoration: none; font-weight: bold; }
+    .tab-container { display: flex; justify-content: space-around; background: var(--tab-bg); position: fixed; bottom: 0; width: 100%; }
+    .tab-container button { flex: 1; padding: 15px; color: white; background: none; border: none; font-weight: bold; }
+    .tab-container button.active { background: var(--tab-active); }
+    .tab-content { display: none; padding: 20px 10px 80px; }
+    .tab-content.active { display: block; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; overflow-x: auto; white-space: nowrap; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: var(--table-header); color: white; }
+    input { width: 90%; padding: 6px; background: var(--bg-color); color: var(--text-color); border: 1px solid #888; }
+    input[type="date"] { padding: 4px; }
+    button.action { margin: 5px 0; padding: 10px; background: var(--button-bg); color: white; border: none; width: 100%; border-radius: 4px; }
+    .toast { visibility: hidden; min-width: 250px; background-color: #28a745; color: white; text-align: center; padding: 12px; position: fixed; z-index: 20; left: 50%; bottom: 90px; font-size: 16px; opacity: 0; transform: translateX(-50%); transition: opacity 0.5s, bottom 0.5s; border-radius: 8px; }
+    .toast.show { visibility: visible; opacity: 1; bottom: 110px; }
   </style>
 </head>
 
@@ -168,9 +78,10 @@
 
 <div class="top-nav">
   <a href="index.html">⬅️ Back to Dashboard</a>
-  <h1>📊 Mobile Debt Tracker</h1>
+  <h1>💵 Bradley's Finance Hub</h1>
 </div>
 
+<!-- Debt Tab -->
 <div id="debts" class="tab-content active">
   <h2>Debts</h2>
   <table id="debtTable">
@@ -184,6 +95,7 @@
   <button class="action" onclick="addDebt()">+ Add Debt</button>
 </div>
 
+<!-- Summary Tab -->
 <div id="summary" class="tab-content">
   <h2>Summary</h2>
   <p id="summaryText">Loading...</p>
@@ -193,6 +105,7 @@
   <input type="file" accept=".csv" onchange="importCSV(event)" />
 </div>
 
+<!-- Calendar Tab -->
 <div id="calendar" class="tab-content">
   <h2>📅 Calendar View</h2>
   <ul id="calendarList"></ul>
@@ -204,9 +117,10 @@
   <button onclick="switchTab('calendar', this)">Calendar</button>
 </div>
 
-<!-- ✅ Toast -->
+<!-- ✅ Toast Notification -->
 <div id="toast" class="toast">✅ Changes Saved</div>
 
+<!-- ✅ Scripts -->
 <script>
 const tableBody = document.querySelector("#debtTable tbody");
 
@@ -257,9 +171,8 @@ function saveDebts() {
 function update() {
   let totalBalance = 0, totalPayment = 0, totalInterest = 0;
   let maxMonths = 0;
-
   tableBody.querySelectorAll("tr").forEach(row => {
-    const [name, balance, rate, payment] = Array.from(row.querySelectorAll("input")).map(i => i.value);
+    const [_, balance, rate, payment] = Array.from(row.querySelectorAll("input")).map(i => i.value);
     const bal = parseFloat(balance) || 0;
     const r = (parseFloat(rate) || 0) / 100 / 12;
     const pmt = parseFloat(payment) || 0;
@@ -287,15 +200,13 @@ function update() {
 function renderCalendar() {
   const calendarList = document.getElementById("calendarList");
   calendarList.innerHTML = "";
-  let debts = [];
-
+  const debts = [];
   tableBody.querySelectorAll("tr").forEach(row => {
     const cells = row.querySelectorAll("input");
-    const name = cells[0].value;
-    const due = cells[4].value;
-    if (name && due) debts.push({ name, due });
+    if (cells[0].value && cells[4].value) {
+      debts.push({ name: cells[0].value, due: cells[4].value });
+    }
   });
-
   debts.sort((a, b) => new Date(a.due) - new Date(b.due));
   debts.forEach(d => {
     const li = document.createElement("li");
@@ -333,12 +244,13 @@ function importCSV(event) {
   reader.readAsText(file);
 }
 
-function showToast() {
+function showToast(message = "✅ Changes Saved") {
   const toast = document.getElementById("toast");
   if (!toast) return;
-  toast.classList.add("show");
+  toast.textContent = message;
+  toast.className = "toast show";
   setTimeout(() => {
-    toast.classList.remove("show");
+    toast.className = "toast";
   }, 2500);
 }
 
