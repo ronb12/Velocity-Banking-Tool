@@ -1,6 +1,5 @@
 // ✅ NO Firebase.initializeApp here
 // ✅ Only reference the already-initialized firebase
-const auth = firebase.auth();
 const db = firebase.firestore();
 
 // ✅ Global logout
