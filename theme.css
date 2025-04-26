@@ -1,33 +1,17 @@
-/* 🌙 True Dark Mode */
-@media (prefers-color-scheme: dark) {
-  body {
-    background: #000; /* true black */
-    color: #eee; /* light text for good visibility */
-  }
-  nav a {
-    color: #66b2ff; /* bright blue links */
-  }
-  table {
-    background: #121212; /* dark but not pure black for table */
-    color: #ddd;
-  }
-  th {
-    background-color: #1e1e1e; /* slightly lighter than black for table headers */
-    color: #fff;
-  }
-  button {
-    background: #1a73e8; /* vivid blue buttons */
-    color: white;
-  }
-  button:hover {
-    background: #1669c1; /* slightly darker blue on hover */
-  }
-  .dashboard-tile {
-    background: #121212; /* slightly lighter than body for contrast */
-    color: #eee;
-    border-left-color: #66b2ff;
-  }
-  #saveStatus {
-    color: #00e676; /* neon green "Saved" text for great visibility */
+function toggleTheme() {
+  const currentTheme = localStorage.getItem('theme') || 'light';
+  if (currentTheme === 'light') {
+    document.body.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.body.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
   }
 }
+
+// Load saved theme
+window.onload = function() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+  }
+};
