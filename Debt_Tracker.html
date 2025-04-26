@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- ✅ Initialize Firebase FIRST -->
+  <!-- ✅ Firebase Initialization (Fixed) -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
@@ -23,7 +23,7 @@
     const db = firebase.firestore();
   </script>
 
-  <!-- ✅ Global project scripts (AFTER Firebase initialized) -->
+  <!-- ✅ Global Scripts -->
   <script src="global.js" defer></script>
   <script src="sync.js" defer></script>
   <script src="theme.js" defer></script>
@@ -50,6 +50,7 @@
   <nav>
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
+
   <h1>Debt Tracker – Full Featured</h1>
 
   <table id="debtTable">
@@ -83,6 +84,7 @@
   </div>
 
 <script>
+// ✅ Debt Tracker Full Logic
 const tableBody = document.querySelector("#debtTable tbody");
 let creditUtilization = 0;
 
@@ -165,14 +167,13 @@ function saveDebts() {
 
   const user = auth.currentUser;
   if (user) {
-    const debtRef = db.collection('debts').doc(user.uid);
-    debtRef.set({ debts: data, creditUtilization: creditUtilization.toFixed(2) });
+    db.collection('debts').doc(user.uid).set({ debts: data, creditUtilization: creditUtilization.toFixed(2) });
   }
 }
 
 function calcRealMonths(balance, rate, payment) {
   const r = rate / 100 / 12;
-  if (balance <= 0 || rate <= 0 || payment <= 0) return 0;
+  if (balance <= 0 || r <= 0 || payment <= 0) return 0;
   return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
 }
 
@@ -206,18 +207,18 @@ function loadDebts() {
   data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
   calculateSummary();
 
-  const user = auth.currentUser;
-  if (user) {
-    const debtRef = db.collection('debts').doc(user.uid);
-    debtRef.get().then(doc => {
-      if (doc.exists) {
-        const debts = doc.data().debts || [];
-        tableBody.innerHTML = "";
-        debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-        calculateSummary();
-      }
-    });
-  }
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      db.collection('debts').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const debts = doc.data().debts || [];
+          tableBody.innerHTML = "";
+          debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+          calculateSummary();
+        }
+      });
+    }
+  });
 }
 
 window.onload = function() {
