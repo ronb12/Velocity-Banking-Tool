@@ -180,7 +180,6 @@
         .map(d => d.name).join(", ");
       document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
       const rawUtil = debts.data().creditUtilization;
-     const rawUtil = debts.data().creditUtilization;
 const utilization = rawUtil !== undefined ? parseFloat(rawUtil).toFixed(2) : "0.00";
 const utilTile = document.getElementById("creditUtilizationTile");
 let badge = ""; // Add this
