@@ -72,7 +72,6 @@ auth.onAuthStateChanged(async user => {
     listenForNetWorthUpdates();
     setupNetWorthAutoSave();
   }
-  // 🚀 Expand here for more pages (savings, taxes, goals)
 });
 
 // ✅ Functions per page (safe auto-detection)
@@ -97,11 +96,11 @@ function setupDebtAutoSave() {
   const table = document.querySelector("#debtTable");
   if (table) {
     table.addEventListener("input", function() {
-      showSaving(); // 🟠 Immediately show "Saving..."
+      showSaving();
       clearTimeout(window.autoSaveTimer);
       window.autoSaveTimer = setTimeout(() => {
         saveDebts();
-        showSaved(); // 🟢 After save, show "Saved"
+        showSaved();
       }, 1000);
     });
   }
@@ -165,3 +164,23 @@ function setupNetWorthAutoSave() {
     });
   }
 }
+
+// ✅ Toggle Theme Function (🚀 Should NOT be inside setup functions)
+function toggleTheme() {
+  const currentTheme = localStorage.getItem('theme') || 'light';
+  if (currentTheme === 'light') {
+    document.body.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    document.body.classList.remove('dark');
+    localStorage.setItem('theme', 'light');
+  }
+}
+
+// ✅ Load saved theme on page load
+window.addEventListener('load', () => {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+  }
+});
+
