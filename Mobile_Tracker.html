@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>📊 Mobile Debt Tracker</title>
 
   <!-- ✅ Firebase SDKs -->
@@ -205,26 +205,21 @@ function saveDebts() {
     });
   });
   localStorage.setItem("debtData", JSON.stringify(data));
-
   const user = auth.currentUser;
   if (user) {
     db.collection("debts").doc(user.uid).set({ debts: data });
   }
-
   update();
 }
 
 function update() {
-  let totalBalance = 0, totalPayment = 0, totalInterest = 0;
-  let maxMonths = 0;
-
+  let totalBalance = 0, totalPayment = 0, totalInterest = 0, maxMonths = 0;
   tableBody.querySelectorAll("tr").forEach(row => {
     const [name, balance, rate, payment] = Array.from(row.querySelectorAll("input")).map(i => i.value);
     const bal = parseFloat(balance) || 0;
     const r = (parseFloat(rate) || 0) / 100 / 12;
     const pmt = parseFloat(payment) || 0;
     let remaining = bal, months = 0;
-
     while (remaining > 0 && months < 1200) {
       let interest = remaining * r;
       let principal = pmt - interest;
@@ -233,12 +228,10 @@ function update() {
       totalInterest += interest;
       months++;
     }
-
     if (months > maxMonths) maxMonths = months;
     totalBalance += bal;
     totalPayment += pmt;
   });
-
   document.getElementById("summaryText").innerText = `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payment: $${totalPayment.toFixed(2)}`;
   document.getElementById("interestText").innerText = `Est. Total Interest: $${totalInterest.toFixed(2)}`;
   document.getElementById("payoffEstimate").innerText = maxMonths ? `Estimated Debt-Free Date: ${new Date(new Date().setMonth(new Date().getMonth() + maxMonths)).toLocaleDateString()}` : '';
@@ -248,14 +241,12 @@ function renderCalendar() {
   const calendarList = document.getElementById("calendarList");
   calendarList.innerHTML = "";
   let debts = [];
-
   tableBody.querySelectorAll("tr").forEach(row => {
     const cells = row.querySelectorAll("input");
     const name = cells[0].value;
     const due = cells[4].value;
     if (name && due) debts.push({ name, due });
   });
-
   debts.sort((a, b) => new Date(a.due) - new Date(b.due));
   debts.forEach(d => {
     const li = document.createElement("li");
@@ -293,7 +284,7 @@ function importCSV(event) {
   reader.readAsText(file);
 }
 
-window.onload = function () {
+window.onload = () => {
   auth.onAuthStateChanged(async user => {
     if (!user) return window.location.href = "login.html";
     const doc = await db.collection("debts").doc(user.uid).get();
