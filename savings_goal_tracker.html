@@ -1,203 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>💰 Savings Goal Tracker – Pro</title>
+  <title>💰 Savings Goal Tracker – Upgraded</title>
   <link rel="stylesheet" href="theme.css" />
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 960px;
-      margin: auto;
-      background: #fff;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
+    body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+    .container { max-width: 960px; margin: auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     h1 { text-align: center; color: #2c3e50; }
-    #goalStats, #totalSavedSummary, #monthlyStatus { font-weight: bold; margin-top: 10px; color: #007bff; }
-    .filter-group { margin-top: 20px; }
-    select, input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
     table { width: 100%; margin-top: 20px; border-collapse: collapse; }
     th, td { padding: 10px; text-align: center; border-bottom: 1px solid #ddd; }
     th { background: #007bff; color: white; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
+    button { margin: 10px 10px 0 0; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .back { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 6px; }
+    #goalStats, #totalSavedSummary { margin-top: 10px; font-weight: bold; color: #007bff; }
     .progress-bar { height: 20px; background: #e0e0e0; border-radius: 6px; overflow: hidden; margin-top: 5px; }
     .progress { height: 100%; background: #28a745; width: 0%; transition: width 0.3s ease; }
-    .progress-label { font-size: 0.85em; margin-top: 5px; color: #333; }
-    button { margin: 10px 5px 0 0; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    .back { display: inline-block; margin-bottom: 20px; background: #007bff; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; }
-    @media print { button, .back, #goalStats, #totalSavedSummary, #monthlyStatus, .filter-group { display: none; } input { border: none; } }
+    .progress-label { margin-top: 5px; font-size: 0.9em; }
+    .progress-history { display: flex; margin-top: 5px; }
+    .progress-history div { width: 12px; margin: 0 2px; background: #007bff; border-radius: 2px; }
+    @media print { button, .back, #goalStats, #totalSavedSummary { display: none; } input, select { border: none; } }
   </style>
 </head>
+
 <body>
+  <div class="container">
+    <a class="back" href="index.html">🔙 Back to Dashboard</a>
+    <h1>💰 Savings Goal Tracker</h1>
 
-<div class="container">
-  <a class="back" href="index.html">🔙 Back to Dashboard</a>
-  <h1>💰 Savings Goal Tracker – Pro</h1>
-  <div id="goalStats"></div>
-  <div id="monthlyStatus"></div>
-  <div id="totalSavedSummary"></div>
+    <div id="goalStats"></div>
+    <div id="totalSavedSummary"></div>
 
-  <div class="filter-group">
-    <label>Filter by Category:</label>
-    <select id="categoryFilter" onchange="filterGoals()">
-      <option value="all">Show All</option>
+    <label>Goal Group</label>
+    <select id="goalGroup">
+      <option value="General">General</option>
       <option value="Vacation">Vacation</option>
       <option value="Emergency Fund">Emergency Fund</option>
-      <option value="Car">Car</option>
-      <option value="House">House</option>
-      <option value="Other">Other</option>
+      <option value="Car Fund">Car Fund</option>
+      <option value="House Downpayment">House Downpayment</option>
     </select>
+
+    <table id="goalsTable">
+      <thead>
+        <tr>
+          <th>Goal Name</th><th>Target ($)</th><th>Saved ($)</th><th>Progress</th><th>❌</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="addGoal()">➕ Add Savings Goal</button>
+    <button onclick="exportGoals()">📤 Export Goals</button>
+    <button onclick="printGoals()">🖨️ Print Goals</button>
   </div>
 
-  <table id="goalsTable">
-    <thead>
-      <tr>
-        <th>Goal Name</th>
-        <th>Category</th>
-        <th>Target ($)</th>
-        <th>Saved ($)</th>
-        <th>Monthly Target ($)</th>
-        <th>Progress</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <script>
+    const STORAGE_KEY = 'savings_goals';
+    const GROUP_STORAGE_KEY = 'selected_goal_group';
 
-  <button onclick="addGoal()">➕ Add Goal</button>
-  <button onclick="exportGoals()">📤 Export CSV</button>
-  <button onclick="window.print()">🖨️ Print</button>
-</div>
+    function addGoal(name = '', target = 0, saved = 0, history = []) {
+      const table = document.getElementById('goalsTable').querySelector('tbody');
+      const row = table.insertRow();
+      const nameCell = row.insertCell(0);
+      const targetCell = row.insertCell(1);
+      const savedCell = row.insertCell(2);
+      const progressCell = row.insertCell(3);
+      const deleteCell = row.insertCell(4);
 
-<script>
-const STORAGE_KEY = 'savings_goals_v2';
+      nameCell.innerHTML = `<input type="text" value="${name}" oninput="saveGoals()" />`;
+      targetCell.innerHTML = `<input type="number" min="0" value="${target}" onchange="updateProgress(this)" />`;
+      savedCell.innerHTML = `<input type="number" min="0" value="${saved}" onchange="updateProgress(this)" />`;
+      progressCell.innerHTML = `
+        <div class="progress-bar"><div class="progress"></div></div>
+        <div class="progress-label"></div>
+        <div class="progress-history"></div>
+      `;
+      deleteCell.innerHTML = `<button onclick="deleteRow(this)">❌</button>`;
 
-function addGoal(name = '', category = 'Other', target = 0, saved = 0, monthlyTarget = 0) {
-  const table = document.getElementById('goalsTable').getElementsByTagName('tbody')[0];
-  const newRow = table.insertRow();
+      row.dataset.history = JSON.stringify(history || []);
+      updateProgress(row);
+    }
 
-  newRow.innerHTML = `
-    <td><input type="text" value="${name}" oninput="saveGoals()" /></td>
-    <td>
-      <select onchange="saveGoals()">
-        <option ${category === 'Vacation' ? 'selected' : ''}>Vacation</option>
-        <option ${category === 'Emergency Fund' ? 'selected' : ''}>Emergency Fund</option>
-        <option ${category === 'Car' ? 'selected' : ''}>Car</option>
-        <option ${category === 'House' ? 'selected' : ''}>House</option>
-        <option ${category === 'Other' ? 'selected' : ''}>Other</option>
-      </select>
-    </td>
-    <td><input type="number" value="${target}" onchange="updateProgress(this)" /></td>
-    <td><input type="number" value="${saved}" onchange="updateProgress(this)" /></td>
-    <td><input type="number" value="${monthlyTarget}" onchange="updateProgress(this)" /></td>
-    <td>
-      <div class="progress-bar"><div class="progress"></div></div>
-      <div class="progress-label"></div>
-    </td>
-    <td><button onclick="deleteRow(this)">❌</button></td>
-  `;
+    function updateProgress(input) {
+      const row = input.closest('tr') || input;
+      const target = parseFloat(row.cells[1].querySelector('input').value) || 0;
+      const saved = parseFloat(row.cells[2].querySelector('input').value) || 0;
+      const progress = row.cells[3].querySelector('.progress');
+      const label = row.cells[3].querySelector('.progress-label');
 
-  updateProgress(newRow);
-}
+      let percent = target ? Math.min((saved / target) * 100, 100) : 0;
+      progress.style.width = percent + '%';
+      label.innerHTML = `$${saved.toFixed(2)} of $${target.toFixed(2)} saved`;
 
-function updateProgress(input) {
-  const row = input.closest('tr') || input;
-  const target = parseFloat(row.cells[2].querySelector('input').value) || 0;
-  const saved = parseFloat(row.cells[3].querySelector('input').value) || 0;
-  const progress = row.cells[5].querySelector('.progress');
-  const label = row.cells[5].querySelector('.progress-label');
+      // History Snapshot
+      const today = new Date();
+      const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+      let history = JSON.parse(row.dataset.history || '[]');
+      const existing = history.find(h => h.month === monthKey);
+      if (existing) existing.saved = saved;
+      else history.push({ month: monthKey, saved });
+      history = history.slice(-6);
+      row.dataset.history = JSON.stringify(history);
 
-  let percent = 0;
-  if (target > 0) {
-    percent = Math.min((saved / target) * 100, 100);
-  }
-  progress.style.width = percent + '%';
-  label.textContent = `$${saved.toFixed(2)} of $${target.toFixed(2)}`;
+      renderMiniChart(row, history);
+      saveGoals();
+    }
 
-  saveGoals();
-}
+    function renderMiniChart(row, history) {
+      const container = row.cells[3].querySelector('.progress-history');
+      container.innerHTML = history.map(h => {
+        const height = Math.min((h.saved || 0) / 10, 100);
+        return `<div style="height:${height}px;" title="${h.month}: $${h.saved}"></div>`;
+      }).join('');
+    }
 
-function deleteRow(btn) {
-  btn.closest('tr').remove();
-  saveGoals();
-}
+    function deleteRow(button) {
+      button.closest('tr').remove();
+      saveGoals();
+    }
 
-function saveGoals() {
-  const rows = document.querySelectorAll('#goalsTable tbody tr');
-  const data = [];
-  let completed = 0;
-  let totalSaved = 0;
-  let onTrack = 0;
+    function saveGoals() {
+      const rows = document.querySelectorAll('#goalsTable tbody tr');
+      const data = [];
+      let completed = 0, totalSaved = 0;
 
-  rows.forEach(row => {
-    const name = row.cells[0].querySelector('input').value;
-    const category = row.cells[1].querySelector('select').value;
-    const target = parseFloat(row.cells[2].querySelector('input').value) || 0;
-    const saved = parseFloat(row.cells[3].querySelector('input').value) || 0;
-    const monthlyTarget = parseFloat(row.cells[4].querySelector('input').value) || 0;
+      rows.forEach(row => {
+        const name = row.cells[0].querySelector('input').value;
+        const target = parseFloat(row.cells[1].querySelector('input').value) || 0;
+        const saved = parseFloat(row.cells[2].querySelector('input').value) || 0;
+        const history = JSON.parse(row.dataset.history || '[]');
+        if (saved >= target && target > 0) completed++;
+        totalSaved += saved;
+        data.push({ name, target, saved, history, group: document.getElementById('goalGroup').value });
+      });
 
-    if (saved >= target && target > 0) completed++;
-    if (monthlyTarget > 0 && saved >= monthlyTarget) onTrack++;
-    totalSaved += saved;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      document.getElementById('goalStats').textContent = `🎯 ${completed} of ${data.length} goals completed!`;
+      document.getElementById('totalSavedSummary').textContent = `💵 Total Saved: $${totalSaved.toFixed(2)}`;
+    }
 
-    data.push({ name, category, target, saved, monthlyTarget });
-  });
+    function loadGoals() {
+      const savedGroup = localStorage.getItem(GROUP_STORAGE_KEY) || 'General';
+      document.getElementById('goalGroup').value = savedGroup;
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const table = document.getElementById('goalsTable').querySelector('tbody');
+      table.innerHTML = "";
+      saved.forEach(goal => {
+        if (goal.group === savedGroup) {
+          addGoal(goal.name, goal.target, goal.saved, goal.history || []);
+        }
+      });
+    }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    function exportGoals() {
+      const rows = document.querySelectorAll('#goalsTable tbody tr');
+      let csv = 'Goal Name,Target,Current Saved\n';
+      rows.forEach(row => {
+        const name = row.cells[0].querySelector('input').value;
+        const target = row.cells[1].querySelector('input').value;
+        const saved = row.cells[2].querySelector('input').value;
+        csv += `"${name}","${target}","${saved}"\n`;
+      });
 
-  document.getElementById('goalStats').textContent = `🎯 ${completed} of ${data.length} goals completed!`;
-  document.getElementById('monthlyStatus').textContent = `📅 ${onTrack} of ${data.length} goals on track for this month!`;
-  document.getElementById('totalSavedSummary').textContent = `💵 Total Saved: $${totalSaved.toFixed(2)}`;
-}
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'savings_goals.csv';
+      a.click();
+    }
 
-function loadGoals() {
-  const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  savedData.forEach(goal => {
-    addGoal(goal.name, goal.category, goal.target, goal.saved, goal.monthlyTarget);
-  });
-}
+    function printGoals() {
+      window.print();
+    }
 
-function filterGoals() {
-  const filter = document.getElementById('categoryFilter').value;
-  const rows = document.querySelectorAll('#goalsTable tbody tr');
-  rows.forEach(row => {
-    const category = row.cells[1].querySelector('select').value;
-    row.style.display = (filter === 'all' || category === filter) ? '' : 'none';
-  });
-}
+    document.getElementById('goalGroup').addEventListener('change', function() {
+      localStorage.setItem(GROUP_STORAGE_KEY, this.value);
+      loadGoals();
+    });
 
-function exportGoals() {
-  const rows = document.querySelectorAll('#goalsTable tbody tr');
-  let csv = 'Goal Name,Category,Target,Current Saved,Monthly Target\n';
-  rows.forEach(row => {
-    const name = row.cells[0].querySelector('input').value;
-    const category = row.cells[1].querySelector('select').value;
-    const target = row.cells[2].querySelector('input').value;
-    const saved = row.cells[3].querySelector('input').value;
-    const monthlyTarget = row.cells[4].querySelector('input').value;
-    csv += `"${name}","${category}","${target}","${saved}","${monthlyTarget}"\n`;
-  });
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'savings_goals.csv';
-  a.click();
-}
-
-window.onload = () => {
-  loadGoals();
-};
-</script>
-
+    window.onload = () => {
+      loadGoals();
+    };
+  </script>
 </body>
 </html>
