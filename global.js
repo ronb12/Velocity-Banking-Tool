@@ -19,11 +19,29 @@ function toggleProfile() {
   if (box) box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
+// ✅ Global Save Status (💾 Saving... / ✅ Auto-Saved)
+function showSaving() {
+  const saveStatus = document.getElementById("saveStatus");
+  if (!saveStatus) return;
+  saveStatus.innerText = "💾 Saving...";
+  saveStatus.style.color = "orange";
+}
+
+function showSaved() {
+  const now = new Date();
+  const saveStatus = document.getElementById("saveStatus");
+  if (!saveStatus) return;
+  saveStatus.innerText = `✅ Auto-Saved at ${now.toLocaleTimeString()}`;
+  saveStatus.style.color = "green";
+  setTimeout(() => {
+    saveStatus.innerText = "";
+  }, 3000);
+}
+
 // ✅ Global onAuthStateChanged
 auth.onAuthStateChanged(async user => {
   if (!user) return window.location.href = "login.html"; // 🔒 Redirect to login
 
-  // Load profile if exists
   const userRef = db.collection("users").doc(user.uid);
   const doc = await userRef.get();
   if (!doc.exists) {
@@ -54,10 +72,10 @@ auth.onAuthStateChanged(async user => {
     listenForNetWorthUpdates();
     setupNetWorthAutoSave();
   }
-  // 🚀 Expand for more sections (savings, 1099 tracker, etc.)
+  // 🚀 Expand here for more pages (savings, taxes, goals)
 });
 
-// ✅ Functions per page (safe if wrong page — will not crash)
+// ✅ Functions per page (safe auto-detection)
 
 // Debt Tracker
 function listenForDebtUpdates() {
@@ -79,9 +97,11 @@ function setupDebtAutoSave() {
   const table = document.querySelector("#debtTable");
   if (table) {
     table.addEventListener("input", function() {
+      showSaving(); // 🟠 Immediately show "Saving..."
       clearTimeout(window.autoSaveTimer);
       window.autoSaveTimer = setTimeout(() => {
         saveDebts();
+        showSaved(); // 🟢 After save, show "Saved"
       }, 1000);
     });
   }
@@ -105,9 +125,11 @@ function setupBudgetAutoSave() {
   const table = document.querySelector("#budgetTable");
   if (table) {
     table.addEventListener("input", function() {
+      showSaving();
       clearTimeout(window.autoSaveTimer);
       window.autoSaveTimer = setTimeout(() => {
         saveBudget();
+        showSaved();
       }, 1000);
     });
   }
@@ -134,9 +156,11 @@ function setupNetWorthAutoSave() {
   const table = document.querySelector("#netWorthTable");
   if (table) {
     table.addEventListener("input", function() {
+      showSaving();
       clearTimeout(window.autoSaveTimer);
       window.autoSaveTimer = setTimeout(() => {
         saveNetWorth();
+        showSaved();
       }, 1000);
     });
   }
