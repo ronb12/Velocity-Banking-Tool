@@ -1,4 +1,4 @@
-// ✅ NO Firebase.initializeApp here
+// ✅ NO firebase.initializeApp here
 // ✅ Only reference the already-initialized firebase
 const db = firebase.firestore();
 
@@ -94,6 +94,7 @@ function setupDebtAutoSave() {
       window.autoSaveTimer = setTimeout(() => {
         saveDebts();
         showSaved();
+        logActivity('save', 'Debt Tracker Auto-Saved');
       }, 1000);
     });
   }
@@ -121,6 +122,7 @@ function setupBudgetAutoSave() {
       window.autoSaveTimer = setTimeout(() => {
         saveBudget();
         showSaved();
+        logActivity('save', 'Budget Auto-Saved');
       }, 1000);
     });
   }
@@ -151,19 +153,32 @@ function setupNetWorthAutoSave() {
       window.autoSaveTimer = setTimeout(() => {
         saveNetWorth();
         showSaved();
+        logActivity('save', 'Net Worth Tracker Auto-Saved');
       }, 1000);
     });
   }
 }
+
 // ✅ Master Activity Logger
-function logActivity(message) {
-  const feedKey = 'activityFeedLogs';
-  const feed = JSON.parse(localStorage.getItem(feedKey) || '[]');
+function logActivity(type, text) {
+  const feed = JSON.parse(localStorage.getItem('masterActivityFeed') || '[]');
+  const icons = {
+    save: '💾',
+    expense: '💸',
+    income: '💰',
+    note: '📝',
+    default: '📌'
+  };
+  const icon = icons[type] || icons.default;
+
   feed.push({
-    message,
-    timestamp: Date.now()
+    type,
+    icon,
+    text,
+    timestamp: new Date().toISOString()
   });
-  localStorage.setItem(feedKey, JSON.stringify(feed));
+
+  localStorage.setItem('masterActivityFeed', JSON.stringify(feed));
 }
 
 // ✅ Theme Toggle
