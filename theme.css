@@ -1,0 +1,31 @@
+/* ✅ Normal Styles will still apply first, but if user is in dark mode, this will override */
+
+/* 🌙 Dark Mode */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #121212;
+    color: #eee;
+  }
+  nav a {
+    color: #66b2ff;
+  }
+  table {
+    background: #1e1e1e;
+    color: #ddd;
+  }
+  th {
+    background-color: #333;
+    color: #fff;
+  }
+  button {
+    background: #1a73e8;
+  }
+  button:hover {
+    background: #1669c1;
+  }
+  .dashboard-tile {
+    background: #1e1e1e;
+    color: #eee;
+    border-left-color: #66b2ff;
+  }
+}
