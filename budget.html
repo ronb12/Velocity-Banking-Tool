@@ -220,19 +220,39 @@ function saveBudget() {
 }
 
 async function loadBudget() {
-  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-  const firestoreDoc = await db.collection("budgets").doc(userId + "_" + month).get();
-  const localDataRaw = localStorage.getItem("budgetData_" + month);
-  const localData = localDataRaw ? JSON.parse(localDataRaw) : null;
+  const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
 
   let selectedData = null;
 
-  if (firestoreDoc.exists && firestoreDoc.data().incomes && firestoreDoc.data().incomes.length > 0) {
-    selectedData = firestoreDoc.data();
-  } else if (localData && localData.incomes && localData.incomes.length > 0) {
-    selectedData = localData;
+  // 1. Try LocalStorage first
+  const localDataRaw = localStorage.getItem("budgetData_" + currentMonth);
+  if (localDataRaw) {
+    try {
+      const localData = JSON.parse(localDataRaw);
+      if (localData && localData.incomes && localData.expenses) {
+        selectedData = localData;
+      }
+    } catch (e) {
+      console.error("Failed to parse localStorage budget:", e);
+    }
   }
 
+  // 2. If no valid LocalStorage, try Firestore
+  if (!selectedData) {
+    try {
+      const firestoreDoc = await db.collection("budgets").doc(userId + "_" + currentMonth).get();
+      if (firestoreDoc.exists) {
+        const firestoreData = firestoreDoc.data();
+        if (firestoreData && firestoreData.incomes && firestoreData.expenses) {
+          selectedData = firestoreData;
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch Firestore budget:", e);
+    }
+  }
+
+  // 3. Now Populate the Screen
   document.querySelector("#incomeTable tbody").innerHTML = "";
   document.querySelector("#expenseTable tbody").innerHTML = "";
   document.getElementById("monthlyNotes").value = "";
@@ -241,10 +261,12 @@ async function loadBudget() {
     selectedData.incomes.forEach(i => addIncome(i.source, i.amount));
     selectedData.expenses.forEach(e => addExpense(e));
     document.getElementById("monthlyNotes").value = selectedData.notes || "";
+  } else {
+    console.log("No budget data found for this month.");
   }
+
   calculateBudget();
 }
-
 async function loadPreviousMonth() {
   const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0,7);
   const [year, monthNum] = currentMonth.split("-");
