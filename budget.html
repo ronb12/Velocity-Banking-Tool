@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>💰 Bradley's Zero-Based Budget Tracker</title>
+  <title>💰 Bradley's Velocity Budget Tracker</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -17,27 +17,38 @@
     input, select, textarea { width: 100%; padding: 6px; box-sizing: border-box; }
     .controls button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
     .controls button:hover { background: #0056b3; }
-    .dashboard-tile { display: inline-block; margin: 10px; padding: 10px 20px; background: #fff; box-shadow: 0 1px 5px rgba(0,0,0,0.1); border-left: 5px solid; border-radius: 8px; min-width: 180px; }
+    .dashboard-tile {
+      display: inline-block;
+      margin: 10px;
+      padding: 10px 20px;
+      background: #fff;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+      border-left: 5px solid;
+      border-radius: 8px;
+      min-width: 180px;
+      font-weight: bold;
+    }
     .dashboard-total-income { border-color: #28a745; }
     .dashboard-total-budgeted { border-color: #ffc107; }
     .dashboard-total-spent { border-color: #dc3545; }
     .dashboard-total-remaining { border-color: #007bff; }
     .dashboard-total-paid { border-color: #6f42c1; }
     .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
-    .last-saved { font-size: 13px; color: #333; margin-top: 10px; }
+    .saved-popup { display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.2);}
     .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
   </style>
 </head>
-
 <body>
+
 <div class="container">
   <h1>💸 Bradley's Budget Tracker</h1>
+
   <label for="month">Select Month:</label>
-  <input type="month" id="month" onchange="onMonthChange()" />
+  <input type="month" id="month" onchange="onMonthChange()"/>
 
   <h3>Income Sources</h3>
   <table id="incomeTable">
-    <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining</th><th>Remove</th></tr></thead>
+    <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining to Allocate</th><th>Remove</th></tr></thead>
     <tbody></tbody>
   </table>
   <button onclick="addIncome()">+ Add Income</button>
@@ -46,7 +57,7 @@
   <table id="expenseTable">
     <thead>
       <tr>
-        <th><input type="checkbox" id="checkAll" onchange="toggleAllPaid(this)"> Paid</th>
+        <th><input type="checkbox" onclick="checkAll(this)"/></th>
         <th>Category</th><th>Budgeted</th><th>Spent</th><th>Remaining</th><th>Due Date</th><th>Paid From</th><th>Remove</th>
       </tr>
     </thead>
@@ -60,25 +71,27 @@
   <div class="controls">
     <button onclick="calculateBudget()">🧮 Recalculate</button>
     <button onclick="saveBudget()">💾 Save</button>
-    <button onclick="loadBudget()">📂 Load</button>
-    <button onclick="createVelocityBudget()">🚀 Create Velocity Budget</button>
     <button onclick="window.print()">🖨️ Print</button>
+    <button onclick="loadPreviousMonth()">📥 Load Previous Month</button>
+    <button onclick="prefillSpent()">⚡ Prefill Spent</button>
+    <button onclick="undoPrefill()">↩️ Undo Prefill</button>
+    <button onclick="createVelocityBudget()">⚡ Velocity Budget</button>
   </div>
 
-  <div id="lastSaved" class="last-saved"></div>
+  <div class="summary">
+    <div class="dashboard-tile dashboard-total-income" id="tileIncome">Total Income: $0</div>
+    <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">Budgeted: $0</div>
+    <div class="dashboard-tile dashboard-total-spent" id="tileSpent">Spent: $0</div>
+    <div class="dashboard-tile dashboard-total-remaining" id="tileRemaining">Remaining: $0</div>
+    <div class="dashboard-tile dashboard-total-paid" id="tilePaid">Paid: $0</div>
+  </div>
 
-  <div class="dashboard-tile dashboard-total-income" id="tileIncome">Total Income: $0</div>
-  <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">Budgeted: $0</div>
-  <div class="dashboard-tile dashboard-total-spent" id="tileSpent">Spent: $0</div>
-  <div class="dashboard-tile dashboard-total-remaining" id="tileRemaining">Remaining: $0</div>
-  <div class="dashboard-tile dashboard-total-paid" id="tilePaid">Paid: $0</div>
-
-  <div class="success-msg" id="zeroBasedMessage">🎉 Congratulations! Zero-Based Budget Achieved!</div>
+  <div class="saved-popup" id="savedPopup">💾 Budget Saved!</div>
   <a class="back" href="index.html">← Back to Dashboard</a>
 </div>
 
 <script>
-// Firebase Setup
+// firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -88,77 +101,100 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let userId = "";
+let autoSaveInterval;
 let prefillBackup = [];
+
+const expenseCategories = ["Housing", "Utilities", "Transportation", "Food", "Insurance", "Health", "Debt", "Savings", "Entertainment", "Other"];
 
 auth.onAuthStateChanged(user => {
   if (!user) return window.location.href = "login.html";
   userId = user.uid;
   loadBudget();
+  autoSaveInterval = setInterval(saveBudget, 30000); // auto-save every 30 sec
 });
 
-// Functions
+function onMonthChange() {
+  document.querySelector("#incomeTable tbody").innerHTML = "";
+  document.querySelector("#expenseTable tbody").innerHTML = "";
+  document.getElementById("monthlyNotes").value = "";
+  loadBudget();
+}
+
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
-  row.innerHTML = `<td><input type="text" value="${source}"></td>
-                   <td><input type="number" value="${amount}"></td>
-                   <td class="remaining-cell">$0.00</td>
-                   <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
+  row.innerHTML = `<td><input type="text" value="${source}"></td><td><input type="number" value="${amount}"></td><td class="remaining-cell">$0.00</td><td><button onclick="this.closest('tr').remove(); calculateBudget()">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
 }
 
 function addExpense(exp = {}) {
   const row = document.createElement("tr");
-  row.innerHTML = `<td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
-                   <td><input type="text" value="${exp.category || ""}"></td>
-                   <td><input type="number" value="${exp.budgeted || 0}"></td>
-                   <td><input type="number" value="${exp.spent || 0}"></td>
-                   <td>0</td>
-                   <td><input type="date" value="${exp.due || ""}"></td>
-                   <td><select><option>${exp.source || ""}</option></select></td>
-                   <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
+  row.innerHTML = `
+    <td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
+    <td><select>${expenseCategories.map(c => `<option${c === exp.category ? " selected" : ""}>${c}</option>`).join("")}</select></td>
+    <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateBudget()"></td>
+    <td><input type="number" value="${exp.spent || 0}" onchange="calculateBudget()"></td>
+    <td>0</td>
+    <td><input type="date" value="${exp.due || ""}"></td>
+    <td><input type="text" value="${exp.source || ""}"></td>
+    <td><button onclick="this.closest('tr').remove(); calculateBudget()">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
 }
 
-function toggleAllPaid(master) {
-  document.querySelectorAll("#expenseTable tbody tr input[type='checkbox']").forEach(checkbox => {
-    checkbox.checked = master.checked;
-  });
-  calculateBudget();
+function checkAll(box) {
+  const checks = document.querySelectorAll("#expenseTable tbody input[type='checkbox']");
+  checks.forEach(c => c.checked = box.checked);
 }
 
 function calculateBudget() {
-  let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
+  let income = 0, budgeted = 0, spent = 0, paid = 0;
   const incomeMap = {};
 
   document.querySelectorAll("#incomeTable tbody tr").forEach((row, i) => {
     const name = row.cells[0].querySelector("input").value.trim();
     const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
-    incomeTotal += amount;
+    income += amount;
     if (name) incomeMap[name] = { amount, spent: 0, rowIndex: i };
   });
 
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-    const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
-    const paid = row.cells[0].querySelector("input").checked;
-    const paidFrom = row.cells[6].querySelector("select").value;
-    const remaining = budgeted - spent;
-
-    budgetedTotal += budgeted;
-    spentTotal += spent;
-    if (paid) paidTotal += spent;
-    row.cells[4].innerHTML = `$${remaining.toFixed(2)}`;
-
-    if (paid && incomeMap[paidFrom]) incomeMap[paidFrom].spent += spent;
+    const budgetedAmt = parseFloat(row.cells[2].querySelector("input").value) || 0;
+    const spentAmt = parseFloat(row.cells[3].querySelector("input").value) || 0;
+    const paidFrom = row.cells[6].querySelector("input").value;
+    const isPaid = row.cells[0].querySelector("input").checked;
+    budgeted += budgetedAmt;
+    spent += spentAmt;
+    if (isPaid) paid += spentAmt;
+    if (incomeMap[paidFrom]) incomeMap[paidFrom].spent += spentAmt;
+    row.cells[4].innerText = "$" + (budgetedAmt - spentAmt).toFixed(2);
   });
 
-  document.getElementById("tileIncome").innerText = `Total Income: $${incomeTotal.toFixed(2)}`;
-  document.getElementById("tileBudgeted").innerText = `Budgeted: $${budgetedTotal.toFixed(2)}`;
-  document.getElementById("tileSpent").innerText = `Spent: $${spentTotal.toFixed(2)}`;
-  document.getElementById("tileRemaining").innerText = `Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)}`;
-  document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
+  document.getElementById("tileIncome").innerText = `Total Income: $${income.toFixed(2)}`;
+  document.getElementById("tileBudgeted").innerText = `Budgeted: $${budgeted.toFixed(2)}`;
+  document.getElementById("tileSpent").innerText = `Spent: $${spent.toFixed(2)}`;
+  document.getElementById("tileRemaining").innerText = `Remaining: $${(income - budgeted).toFixed(2)}`;
+  document.getElementById("tilePaid").innerText = `Paid: $${paid.toFixed(2)}`;
 
-  document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+  const remainingTile = document.getElementById("tileRemaining");
+  const remaining = income - budgeted;
+  remainingTile.style.borderLeft = remaining >= 0 ? "5px solid #28a745" : "5px solid #dc3545";
+
+  document.getElementById("zeroBasedMessage").style.display = (income > 0 && income === budgeted) ? "block" : "none";
+}
+
+function prefillSpent() {
+  prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row => row.cells[3].querySelector("input").value);
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    row.cells[3].querySelector("input").value = parseFloat(row.cells[2].querySelector("input").value) || 0;
+  });
+  calculateBudget();
+}
+
+function undoPrefill() {
+  if (!prefillBackup.length) return alert("No prefill to undo!");
+  document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
+    row.cells[3].querySelector("input").value = prefillBackup[i] || 0;
+  });
+  calculateBudget();
 }
 
 function saveBudget() {
@@ -175,55 +211,54 @@ function saveBudget() {
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     data.expenses.push({
       paid: row.cells[0].querySelector("input").checked,
-      category: row.cells[1].querySelector("input").value,
+      category: row.cells[1].querySelector("select").value,
       budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
       spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
       due: row.cells[5].querySelector("input").value,
-      source: row.cells[6].querySelector("select").value
+      source: row.cells[6].querySelector("input").value
     });
   });
 
   db.collection("budgets").doc(userId + "_" + month).set(data);
-  localStorage.setItem("budgetData_" + month, JSON.stringify(data));
-
-  document.getElementById("lastSaved").innerText = `💾 Last Saved: ${new Date().toLocaleString()}`;
+  showSavedPopup();
 }
 
 async function loadBudget() {
-  const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-  const doc = await db.collection("budgets").doc(userId + "_" + currentMonth).get();
+  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
+  const doc = await db.collection("budgets").doc(userId + "_" + month).get();
   document.querySelector("#incomeTable tbody").innerHTML = "";
   document.querySelector("#expenseTable tbody").innerHTML = "";
-
-  let data = null;
+  document.getElementById("monthlyNotes").value = "";
 
   if (doc.exists) {
-    data = doc.data();
-  } else {
-    const localData = localStorage.getItem("budgetData_" + currentMonth);
-    if (localData) {
-      data = JSON.parse(localData);
-    }
-  }
-
-  if (data) {
+    const data = doc.data();
     data.incomes.forEach(i => addIncome(i.source, i.amount));
     data.expenses.forEach(e => addExpense(e));
     document.getElementById("monthlyNotes").value = data.notes || "";
     calculateBudget();
-  } else {
-    alert("❌ No budget found for this month.");
   }
 }
 
+function showSavedPopup() {
+  const popup = document.getElementById("savedPopup");
+  popup.style.display = "block";
+  setTimeout(() => { popup.style.display = "none"; }, 2500);
+}
+
 function createVelocityBudget() {
-  alert("🚀 Creating Velocity Banking style budget!");
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    row.cells[0].querySelector("input").checked = true;
-    row.cells[3].querySelector("input").value = row.cells[2].querySelector("input").value;
-  });
   calculateBudget();
+  const remaining = parseFloat(document.getElementById("tileRemaining").innerText.replace(/[^\d.-]/g, "")) || 0;
+  if (remaining > 0) {
+    const target = prompt("Enter your target debt name for extra payments:");
+    if (target) {
+      localStorage.setItem("velocityTargetDebt", target);
+      alert(`✅ Velocity Strategy Set! \nExtra funds will recommend toward: ${target}`);
+    }
+  } else {
+    alert("❌ No Remaining Budget to Apply!");
+  }
 }
 </script>
+
 </body>
 </html>
