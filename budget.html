@@ -1,218 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>💸 Bradley's Budget Tracker</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Debt Tracker – Full Featured</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
 
-  <!-- Firebase SDKs -->
+  <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- ✅ Correct Theme Load -->
-  <link rel="stylesheet" href="theme.css">
+  <!-- ✅ Firebase Initialization (Fixed) -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
+
+  <!-- ✅ Global Scripts -->
+  <script src="global.js" defer></script>
+  <script src="sync.js" defer></script>
+  <script src="theme.js" defer></script>
 
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; margin: 0; text-align: center; }
-    h1 { color: #007bff; }
-    .container { max-width: 1000px; margin: auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
-    th { background: #007bff; color: white; }
-    input, select, textarea { width: 100%; padding: 6px; box-sizing: border-box; }
-    .controls button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .controls button:hover { background: #0056b3; }
-    .dashboard-tile {
-      display: inline-block;
-      margin: 10px;
-      padding: 10px 20px;
-      background: #fff;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-      border-left: 5px solid;
-      border-radius: 8px;
-      min-width: 180px;
-    }
-    .dashboard-total-income { border-color: #28a745; }
-    .dashboard-total-budgeted { border-color: #ffc107; }
-    .dashboard-total-spent { border-color: #dc3545; }
-    .dashboard-total-remaining { border-color: #007bff; }
-    .dashboard-total-paid { border-color: #6f42c1; }
-    .warning { color: #dc3545; font-weight: bold; }
-    .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
-    .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
+    body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
+    nav { text-align: center; margin-bottom: 20px; }
+    nav a { font-weight: bold; color: #007BFF; font-size: 16px; text-decoration: none; }
+    h1 { text-align: center; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #222; color: #fff; }
+    .priority-urgent { background-color: #ffe5e5; }
+    .priority-medium { background-color: #fff3cd; }
+    .priority-low { background-color: #e6f4ea; }
+    button { margin: 5px; padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .summary { margin-top: 20px; font-size: 18px; }
+    #saveStatus { font-size: 14px; color: green; text-align: right; margin-top: 5px; }
   </style>
 </head>
 
 <body>
-<div class="container">
-  <h1>💸 Bradley's Budget Tracker</h1>
-  <label for="month">Select Month:</label>
-  <input type="month" id="month" onchange="onMonthChange()" />
+  <nav>
+    <a href="index.html">⬅️ Back to Dashboard</a>
+  </nav>
 
-  <h3>Income Sources</h3>
-  <table id="incomeTable">
-    <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining to Allocate</th><th>Remove</th></tr></thead>
-    <tbody></tbody>
-  </table>
-  <button onclick="addIncome()">+ Add Income</button>
+  <h1>Debt Tracker – Full Featured</h1>
 
-  <h3>Expenses</h3>
-  <table id="expenseTable">
+  <table id="debtTable">
     <thead>
-      <tr><th>Paid</th><th>Category</th><th>Budgeted</th><th>Spent</th><th>Remaining</th><th>Due Date</th><th>Paid From</th><th>Remove</th></tr>
+      <tr>
+        <th>Debt Name</th>
+        <th>Limit ($)</th>
+        <th>Balance ($)</th>
+        <th>Interest Rate (%)</th>
+        <th>Min Payment ($)</th>
+        <th>Months Left</th>
+        <th>CFI</th>
+        <th>Total Interest</th>
+        <th>Priority</th>
+        <th>Amortize</th>
+        <th>Delete</th>
+      </tr>
     </thead>
     <tbody></tbody>
   </table>
-  <button onclick="addExpense()">+ Add Expense</button>
 
-  <h3>Monthly Notes</h3>
-  <textarea id="monthlyNotes" rows="4" placeholder="Write financial goals or notes..."></textarea>
+  <button onclick="addDebt()">+ Add Debt</button>
+  <button onclick="saveDebts()">💾 Save</button>
+  <button onclick="loadDebts()">📂 Load</button>
+  <button onclick="exportToExcel()">📥 Export to Excel</button>
+  <button onclick="window.print()">🖨️ Print Page</button>
 
-  <div class="controls">
-    <button onclick="calculateBudget()">🧮 Recalculate</button>
-    <button onclick="saveBudget()">💾 Save</button>
-    <button onclick="window.print()">🖨️ Print / Save PDF</button>
-    <button onclick="loadPreviousMonth()">📥 Load Previous Month</button>
-    <button onclick="prefillSpent()">⚡ Prefill Spent</button>
-    <button onclick="undoPrefill()">↩️ Undo Prefill</button>
+  <div id="saveStatus"></div>
+  <div class="summary" id="summaryText">
+    Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
   </div>
-
-  <div class="summary">
-    <div class="dashboard-tile dashboard-total-income" id="tileIncome">Total Income: $0</div>
-    <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">Budgeted: $0</div>
-    <div class="dashboard-tile dashboard-total-spent" id="tileSpent">Spent: $0</div>
-    <div class="dashboard-tile dashboard-total-remaining" id="tileRemaining">Remaining: $0</div>
-    <div class="dashboard-tile dashboard-total-paid" id="tilePaid">Paid: $0</div>
-  </div>
-
-  <div id="incomeBreakdown"></div>
-  <div class="success-msg" id="zeroBasedMessage">🎉 Congratulations! You've created a Zero-Based Budget!</div>
-  <a class="back" href="index.html">← Back to Dashboard</a>
-</div>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-    authDomain: "mobile-debt-tracker.firebaseapp.com",
-    projectId: "mobile-debt-tracker"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-  let userId = "";
-  let prefillBackup = [];
+// ✅ Debt Tracker Full Logic
+const tableBody = document.querySelector("#debtTable tbody");
+let creditUtilization = 0;
 
-  auth.onAuthStateChanged(user => {
-    if (!user) return window.location.href = "login.html";
-    userId = user.uid;
-    loadBudget();
+function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input value="${name}" oninput="calculateSummary()" /></td>
+    <td><input type="number" value="${limit}" oninput="calculateSummary()" /></td>
+    <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
+    <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
+    <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
+    <td class="monthsLeft">-</td>
+    <td class="cfi">-</td>
+    <td class="interest">-</td>
+    <td class="priority">-</td>
+    <td><button onclick="amortizeRow(this)">📄</button></td>
+    <td><button onclick="removeRow(this)" style="background:#dc3545;">❌</button></td>
+  `;
+  tableBody.appendChild(row);
+  calculateSummary();
+}
+
+function calculateSummary() {
+  let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
+  let creditBalance = 0, creditLimit = 0;
+
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const limit = parseFloat(inputs[1].value) || 0;
+    const balance = parseFloat(inputs[2].value) || 0;
+    const rate = parseFloat(inputs[3].value) || 0;
+    const payment = parseFloat(inputs[4].value) || 0;
+
+    totalBalance += balance;
+    totalPayment += payment;
+    totalLimit += limit;
+
+    if (limit > 0) {
+      creditBalance += balance;
+      creditLimit += limit;
+    }
+
+    if (balance > 0 && rate > 0 && payment > 0) {
+      const months = calcRealMonths(balance, rate, payment);
+      const cfi = (balance / payment).toFixed(2);
+      const interest = calcTotalInterest(balance, rate, payment);
+      const { tag, class: priorityClass } = getPriorityTag(cfi);
+
+      row.querySelector(".monthsLeft").innerText = months;
+      row.querySelector(".cfi").innerText = cfi;
+      row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
+      row.querySelector(".priority").innerText = tag;
+      row.className = priorityClass;
+
+      totalInterest += interest;
+    }
   });
 
-  function onMonthChange() {
-    document.querySelector("#incomeTable tbody").innerHTML = "";
-    document.querySelector("#expenseTable tbody").innerHTML = "";
-    document.getElementById("monthlyNotes").value = "";
-    loadBudget();
-  }
+  creditUtilization = creditLimit > 0 ? (creditBalance / creditLimit) * 100 : 0;
 
-  function addIncome(source = "", amount = 0) {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><input type="text" value="${source}"></td>
-      <td><input type="number" value="${amount}"></td>
-      <td class="remaining-cell">$0.00</td>
-      <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
-    document.querySelector("#incomeTable tbody").appendChild(row);
-    updatePaidFromDropdowns();
-    logActivity({ icon: "💵", type: "Budget", text: "Added new income source" });
-  }
+  document.getElementById("summaryText").innerText =
+    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
+}
 
-  function addExpense(exp = {}) {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><input type="checkbox" ${exp.paid ? "checked" : ""} onchange="calculateBudget()"></td>
-      <td><input type="text" value="${exp.category || ""}"></td>
-      <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateBudget()"></td>
-      <td><input type="number" value="${exp.spent || 0}" onchange="calculateBudget()"></td>
-      <td>0</td>
-      <td><input type="date" value="${exp.due || ""}"></td>
-      <td><select></select></td>
-      <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
-    document.querySelector("#expenseTable tbody").appendChild(row);
-    updatePaidFromDropdowns();
-    logActivity({ icon: "🧾", type: "Budget", text: "Added new expense" });
-  }
-
-  function updatePaidFromDropdowns() {
-    const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
-      row => row.cells[0].querySelector("input").value.trim()).filter(Boolean);
-    document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-      const select = row.cells[6].querySelector("select");
-      const currentValue = select.value;
-      select.innerHTML = sources.map(s => `<option${s === currentValue ? " selected" : ""}>${s}</option>`).join("");
+function saveDebts() {
+  calculateSummary();
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    data.push({
+      name: inputs[0].value,
+      balance: inputs[2].value,
+      rate: inputs[3].value,
+      payment: inputs[4].value,
+      limit: inputs[1].value
     });
+  });
+
+  localStorage.setItem("debtData", JSON.stringify(data));
+
+  const user = auth.currentUser;
+  if (user) {
+    db.collection('debts').doc(user.uid).set({ debts: data, creditUtilization: creditUtilization.toFixed(2) });
   }
+}
 
-  function calculateBudget() {
-    // same as before
+function calcRealMonths(balance, rate, payment) {
+  const r = rate / 100 / 12;
+  if (balance <= 0 || r <= 0 || payment <= 0) return 0;
+  return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
+}
+
+function calcTotalInterest(balance, rate, payment) {
+  let r = rate / 100 / 12, total = 0, month = 0;
+  while (balance > 0 && month < 1000) {
+    const interest = balance * r;
+    const principal = payment - interest;
+    if (principal <= 0) break;
+    balance -= principal;
+    total += interest;
+    month++;
   }
+  return total;
+}
 
-  function prefillSpent() {
-    prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
-      row.cells[3].querySelector("input").value);
-    document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-      const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-      row.cells[3].querySelector("input").value = budgeted;
-    });
-    calculateBudget();
-    logActivity({ icon: "⚡", type: "Budget", text: "Prefilled spent amounts" });
-  }
+function getPriorityTag(cfi) {
+  if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
+  if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
+  return { tag: "✅ Low", class: "priority-low" };
+}
 
-  function undoPrefill() {
-    if (!prefillBackup.length) return alert("No prefill to undo.");
-    document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
-      row.cells[3].querySelector("input").value = prefillBackup[i] || 0;
-    });
-    prefillBackup = [];
-    calculateBudget();
-    logActivity({ icon: "↩️", type: "Budget", text: "Undid prefill of spent" });
-  }
+function removeRow(btn) {
+  btn.parentElement.parentElement.remove();
+  calculateSummary();
+}
 
-  function saveBudget() {
-    const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
+function loadDebts() {
+  const data = JSON.parse(localStorage.getItem("debtData")) || [];
+  tableBody.innerHTML = "";
+  data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+  calculateSummary();
 
-    document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
-      data.incomes.push({
-        source: row.cells[0].querySelector("input").value,
-        amount: parseFloat(row.cells[1].querySelector("input").value) || 0
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      db.collection('debts').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const debts = doc.data().debts || [];
+          tableBody.innerHTML = "";
+          debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+          calculateSummary();
+        }
       });
+    }
+  });
+}
+
+window.onload = function() {
+  loadDebts();
+  const table = document.querySelector("#debtTable");
+  if (table) {
+    table.addEventListener("input", function() {
+      clearTimeout(window.autoSaveTimer);
+      window.autoSaveTimer = setTimeout(() => {
+        saveDebts();
+      }, 1000);
     });
-
-    document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-      data.expenses.push({
-        paid: row.cells[0].querySelector("input").checked,
-        category: row.cells[1].querySelector("input").value,
-        budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
-        spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
-        due: row.cells[5].querySelector("input").value,
-        source: row.cells[6].querySelector("select").value
-      });
-    });
-
-    db.collection("budgets").doc(userId + "_" + month).set(data);
-    logActivity({ icon: "💾", type: "Budget", text: "Saved budget" });
   }
-
-  async function loadBudget() {
-    // same as before
-  }
-
-  async function loadPreviousMonth() {
-    // same as before
-    logActivity({ icon: "📥", type: "Budget", text: "Loaded previous month" });
-  }
+};
 </script>
 
 </body>
