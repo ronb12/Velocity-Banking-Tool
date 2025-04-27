@@ -101,7 +101,7 @@
 </div>
 
 <script>
-// Initialize Firebase
+// Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -113,27 +113,29 @@ const db = firebase.firestore();
 let userId = "";
 let prefillBackup = [];
 
+// Auth and Load
 auth.onAuthStateChanged(user => {
   if (!user) return window.location.href = "login.html";
   userId = user.uid;
   loadBudget();
-  setInterval(saveBudget, 30000); // Auto-save every 30 seconds
+  setInterval(saveBudget, 30000);
 });
 
+// Table Functions
 function onMonthChange() {
+  clearTables();
+  loadBudget();
+}
+
+function clearTables() {
   document.querySelector("#incomeTable tbody").innerHTML = "";
   document.querySelector("#expenseTable tbody").innerHTML = "";
   document.getElementById("monthlyNotes").value = "";
-  loadBudget();
 }
 
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
-  row.innerHTML = `
-    <td><input type="text" value="${source}" placeholder="Income Source"></td>
-    <td><input type="number" value="${amount}"></td>
-    <td class="remaining-cell">$0.00</td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
+  row.innerHTML = `<td><input type="text" value="${source}"></td><td><input type="number" value="${amount}"></td><td class="remaining-cell">$0.00</td><td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
@@ -142,32 +144,33 @@ function addExpense(exp = {}) {
   const row = document.createElement("tr");
   row.innerHTML = `
     <td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
-    <td><input type="text" value="${exp.category || ""}" style="min-width:120px;"></td>
+    <td><input type="text" value="${exp.category || ""}"></td>
     <td><input type="number" value="${exp.budgeted || 0}"></td>
     <td><input type="number" value="${exp.spent || 0}"></td>
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
     <td><select></select></td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
 
 function updatePaidFromDropdowns() {
-  const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
-    row => row.cells[0].querySelector("input").value.trim()).filter(Boolean);
+  const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(row => row.cells[0].querySelector("input").value.trim()).filter(Boolean);
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const select = row.cells[6].querySelector("select");
-    const currentSelection = select.value;
-    select.innerHTML = sources.map(src => `<option${src === currentSelection ? " selected" : ""}>${src}</option>`).join("");
+    const currentValue = select.value;
+    select.innerHTML = sources.map(s => `<option${s === currentValue ? " selected" : ""}>${s}</option>`).join("");
   });
 }
 
+// Budget Calculation
 function calculateBudget() {
   let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
   const incomeMap = {};
 
-  document.querySelectorAll("#incomeTable tbody tr").forEach((row, i) => {
+  const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
+  incomeRows.forEach((row, i) => {
     const name = row.cells[0].querySelector("input").value.trim();
     const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
     incomeTotal += amount;
@@ -185,12 +188,12 @@ function calculateBudget() {
     spentTotal += spent;
     if (paid) paidTotal += spent;
 
-    row.style.backgroundColor = paid ? "#e6f7e6" : "white";
-    row.cells[4].innerText = `$${remaining.toFixed(2)}`;
-
     if (paidFrom && incomeMap[paidFrom]) {
       incomeMap[paidFrom].spent += budgeted;
     }
+
+    row.style.backgroundColor = paid ? "#e6f7e6" : "white";
+    row.cells[4].innerText = `$${remaining.toFixed(2)}`;
   });
 
   const remaining = incomeTotal - budgetedTotal;
@@ -203,17 +206,21 @@ function calculateBudget() {
   const remainingTile = document.getElementById("tileRemaining");
   remainingTile.style.borderLeft = remaining >= 0 ? "5px solid #28a745" : "5px solid #dc3545";
 
+  Object.entries(incomeMap).forEach(([name, data]) => {
+    const leftover = data.amount - data.spent;
+    const incomeRow = incomeRows[data.rowIndex];
+    incomeRow.cells[2].innerHTML = `$${leftover.toFixed(2)}${leftover < 0 ? ' <span class="warning">Over</span>' : ''}`;
+  });
+
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
 }
 
+// Save, Load, Prefill, Undo
 function saveBudget() {
   const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
   const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
   document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
-    data.incomes.push({
-      source: row.cells[0].querySelector("input").value,
-      amount: parseFloat(row.cells[1].querySelector("input").value) || 0
-    });
+    data.incomes.push({ source: row.cells[0].querySelector("input").value, amount: parseFloat(row.cells[1].querySelector("input").value) || 0 });
   });
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     data.expenses.push({
@@ -235,8 +242,7 @@ async function loadBudget() {
   const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
   const doc = await db.collection("budgets").doc(userId + "_" + month).get();
   if (!doc.exists) return;
-  document.querySelector("#incomeTable tbody").innerHTML = "";
-  document.querySelector("#expenseTable tbody").innerHTML = "";
+  clearTables();
   const data = doc.data();
   data.incomes.forEach(i => addIncome(i.source, i.amount));
   data.expenses.forEach(e => addExpense(e));
