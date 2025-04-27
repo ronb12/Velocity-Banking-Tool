@@ -222,29 +222,31 @@
     localStorage.setItem("budgetData_" + month, JSON.stringify(data));
   }
 
-  async function loadBudget() {
-    const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
-    const doc = await db.collection("budgets").doc(userId + "_" + currentMonth).get();
+ async function loadBudget() {
+  const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
+  const firestoreDoc = await db.collection("budgets").doc(userId + "_" + currentMonth).get();
+  const localDataRaw = localStorage.getItem("budgetData_" + currentMonth);
+  const localData = localDataRaw ? JSON.parse(localDataRaw) : null;
 
-    document.querySelector("#incomeTable tbody").innerHTML = "";
-    document.querySelector("#expenseTable tbody").innerHTML = "";
-    document.getElementById("monthlyNotes").value = "";
+  let selectedData = null;
 
-    if (doc.exists) {
-      const data = doc.data();
-      data.incomes.forEach(i => addIncome(i.source, i.amount));
-      data.expenses.forEach(e => addExpense(e));
-      document.getElementById("monthlyNotes").value = data.notes || "";
-    } else {
-      const localData = JSON.parse(localStorage.getItem("budgetData_" + currentMonth) || "{}");
-      if (localData.incomes) {
-        localData.incomes.forEach(i => addIncome(i.source, i.amount));
-        localData.expenses.forEach(e => addExpense(e));
-        document.getElementById("monthlyNotes").value = localData.notes || "";
-      }
-    }
-    calculateBudget();
+  if (firestoreDoc.exists && firestoreDoc.data().incomes && firestoreDoc.data().incomes.length > 0) {
+    selectedData = firestoreDoc.data();
+  } else if (localData && localData.incomes && localData.incomes.length > 0) {
+    selectedData = localData;
   }
+
+  document.querySelector("#incomeTable tbody").innerHTML = "";
+  document.querySelector("#expenseTable tbody").innerHTML = "";
+  document.getElementById("monthlyNotes").value = "";
+
+  if (selectedData) {
+    selectedData.incomes.forEach(i => addIncome(i.source, i.amount));
+    selectedData.expenses.forEach(e => addExpense(e));
+    document.getElementById("monthlyNotes").value = selectedData.notes || "";
+  }
+  calculateBudget();
+}
 
   async function loadPreviousMonth() {
     const currentMonth = document.getElementById("month").value || new Date().toISOString().slice(0, 7);
