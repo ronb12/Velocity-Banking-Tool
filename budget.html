@@ -85,6 +85,7 @@
     <button onclick="prefillSpent()">⚡ Prefill Spent</button>
     <button onclick="undoPrefill()">↩️ Undo Prefill</button>
     <button onclick="velocityBudget()">🚀 Velocity Budget</button>
+    <button onclick="checkZeroBased()">🔎 Check Zero Budget</button>
   </div>
 
   <div class="summary">
@@ -205,10 +206,12 @@ function calculateBudget() {
   const remainingTile = document.getElementById("tileRemaining");
   remainingTile.style.borderLeft = remaining >= 0 ? "5px solid #28a745" : "5px solid #dc3545";
 
-  Object.entries(incomeMap).forEach(([name, data]) => {
-    const leftover = data.amount - data.spent;
-    const incomeRow = incomeRows[data.rowIndex];
-    incomeRow.cells[2].innerHTML = `$${leftover.toFixed(2)}${leftover < 0 ? ' <span class="warning">Over</span>' : ''}`;
+  incomeRows.forEach((row, i) => {
+    const sourceName = row.cells[0].querySelector("input").value.trim();
+    if (incomeMap[sourceName]) {
+      const leftover = incomeMap[sourceName].amount - incomeMap[sourceName].spent;
+      row.cells[2].innerHTML = `$${leftover.toFixed(2)}${leftover < 0 ? ' <span class="warning">Over</span>' : ''}`;
+    }
   });
 
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
@@ -285,8 +288,22 @@ function velocityBudget() {
   });
   alert("✅ Budget adjusted for Velocity Banking Strategy!");
 }
+
+function checkZeroBased() {
+  const income = parseFloat(document.getElementById("tileIncome").innerText.replace(/[^\d.-]/g, "")) || 0;
+  const budgeted = parseFloat(document.getElementById("tileBudgeted").innerText.replace(/[^\d.-]/g, "")) || 0;
+  const remaining = income - budgeted;
+
+  if (Math.abs(remaining) > 0.01) {
+    const message = remaining > 0
+      ? `⚠️ You have $${remaining.toFixed(2)} left to assign!`
+      : `⚠️ You are overbudget by $${Math.abs(remaining).toFixed(2)}!`;
+    alert(message);
+  } else {
+    alert("✅ Perfect Zero-Based Budget! Every dollar has a job!");
+  }
+}
 </script>
 
 </body>
 </html>
-
