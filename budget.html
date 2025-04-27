@@ -28,17 +28,14 @@
     .dashboard-total-spent { border-color: #dc3545; }
     .dashboard-total-remaining { border-color: #007bff; }
     .dashboard-total-paid { border-color: #6f42c1; }
+    #savePopup { position: fixed; top: 10px; right: 10px; background: #28a745; color: white; padding: 10px; border-radius: 6px; display: none; }
     .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
-    #savePopup {
-      position: fixed; top: 10px; right: 10px;
-      background: #28a745; color: white; padding: 10px; border-radius: 6px; display: none;
-    }
     .warning { color: #dc3545; font-weight: bold; }
     .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
   </style>
 </head>
-
 <body>
+
 <div class="container">
   <h1>💸 Bradley's Budget Tracker</h1>
   <label for="month">Select Month:</label>
@@ -95,6 +92,7 @@
 </div>
 
 <script>
+// Initialize Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -140,20 +138,19 @@ function addExpense(exp = {}) {
     <td><input type="number" value="${exp.spent || 0}"></td>
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
-    <td><select><option>${exp.source || ""}</option></select></td>
+    <td><select></select></td>
     <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
 
 function updatePaidFromDropdowns() {
-  const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
-    row => row.cells[0].querySelector("input").value.trim()).filter(Boolean);
+  const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(row =>
+    row.cells[0].querySelector("input").value.trim()).filter(Boolean);
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const select = row.cells[6].querySelector("select");
-    const currentSelected = select.value || select.querySelector("option")?.innerText || "";
-    select.innerHTML = sources.map(source => 
-      `<option value="${source}" ${source === currentSelected ? "selected" : ""}>${source}</option>`).join("");
+    const previous = select.value;
+    select.innerHTML = sources.map(s => `<option value="${s}" ${s === previous ? "selected" : ""}>${s}</option>`).join("");
   });
 }
 
@@ -161,8 +158,7 @@ function calculateBudget() {
   let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
   const incomeMap = {};
 
-  const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
-  incomeRows.forEach((row, i) => {
+  document.querySelectorAll("#incomeTable tbody tr").forEach((row, i) => {
     const name = row.cells[0].querySelector("input").value.trim();
     const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
     incomeTotal += amount;
@@ -172,8 +168,8 @@ function calculateBudget() {
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
     const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
-    const paid = row.cells[0].querySelector("input").checked;
     const paidFrom = row.cells[6].querySelector("select").value;
+    const paid = row.cells[0].querySelector("input").checked;
     const remaining = budgeted - spent;
 
     budgetedTotal += budgeted;
@@ -181,40 +177,54 @@ function calculateBudget() {
     if (paid) paidTotal += spent;
 
     if (paidFrom && incomeMap[paidFrom]) {
-      incomeMap[paidFrom].spent += budgeted;
+      incomeMap[paidFrom].spent += spent;
     }
 
-    row.style.backgroundColor = paid ? "#e6f7e6" : "white";
     row.cells[4].innerText = `$${remaining.toFixed(2)}`;
   });
 
-  const remaining = incomeTotal - budgetedTotal;
   document.getElementById("tileIncome").innerText = `Total Income: $${incomeTotal.toFixed(2)}`;
   document.getElementById("tileBudgeted").innerText = `Budgeted: $${budgetedTotal.toFixed(2)}`;
   document.getElementById("tileSpent").innerText = `Spent: $${spentTotal.toFixed(2)}`;
-  document.getElementById("tileRemaining").innerText = `Remaining: $${remaining.toFixed(2)}`;
+  document.getElementById("tileRemaining").innerText = `Remaining: $${(incomeTotal - budgetedTotal).toFixed(2)}`;
   document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
 
   const remainingTile = document.getElementById("tileRemaining");
-  remainingTile.style.borderLeft = remaining >= 0 ? "5px solid #28a745" : "5px solid #dc3545";
+  remainingTile.style.borderLeft = (incomeTotal - budgetedTotal) >= 0 ? "5px solid #28a745" : "5px solid #dc3545";
 
   Object.entries(incomeMap).forEach(([name, data]) => {
-    const leftover = data.amount - data.spent;
-    const incomeRow = incomeRows[data.rowIndex];
-    incomeRow.cells[2].innerHTML = `$${leftover.toFixed(2)}${leftover < 0 ? ' <span class="warning">Over</span>' : ''}`;
+    const left = data.amount - data.spent;
+    const row = document.querySelector("#incomeTable tbody").children[data.rowIndex];
+    row.cells[2].innerHTML = `$${left.toFixed(2)}${left < 0 ? ' <span class="warning">Over' : ''}`;
   });
 
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+}
+
+function prefillSpent() {
+  prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
+    row.cells[3].querySelector("input").value);
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+    row.cells[3].querySelector("input").value = budgeted;
+  });
+  calculateBudget();
+}
+
+function undoPrefill() {
+  if (!prefillBackup.length) return alert("No prefill to undo.");
+  document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
+    row.cells[3].querySelector("input").value = prefillBackup[i] || 0;
+  });
+  prefillBackup = [];
+  calculateBudget();
 }
 
 function saveBudget() {
   const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
   const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
   document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
-    data.incomes.push({
-      source: row.cells[0].querySelector("input").value,
-      amount: parseFloat(row.cells[1].querySelector("input").value) || 0
-    });
+    data.incomes.push({ source: row.cells[0].querySelector("input").value, amount: parseFloat(row.cells[1].querySelector("input").value) || 0 });
   });
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     data.expenses.push({
@@ -245,29 +255,11 @@ async function loadBudget() {
   calculateBudget();
 }
 
-function prefillSpent() {
-  prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
-    row.cells[3].querySelector("input").value);
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-    row.cells[3].querySelector("input").value = budgeted;
-  });
-  calculateBudget();
-}
-
-function undoPrefill() {
-  if (!prefillBackup.length) return alert("No prefill to undo.");
-  document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
-    row.cells[3].querySelector("input").value = prefillBackup[i] || 0;
-  });
-  prefillBackup = [];
-  calculateBudget();
-}
-
 function checkAll(box) {
   const checked = box.checked;
   document.querySelectorAll("#expenseTable tbody tr input[type='checkbox']").forEach(cb => cb.checked = checked);
 }
 </script>
+
 </body>
 </html>
