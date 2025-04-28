@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- ✅ Firebase Initialization (Fixed) -->
+  <!-- ✅ Firebase Initialization -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
@@ -22,9 +22,6 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
   </script>
-
-  <!-- ✅ Global Scripts -->
-  <script src="sync.js" defer></script>
 
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
@@ -82,7 +79,6 @@
   </div>
 
 <script>
-// ✅ Debt Tracker Full Logic
 const tableBody = document.querySelector("#debtTable tbody");
 let creditUtilization = 0;
 
@@ -231,8 +227,42 @@ window.onload = function() {
     });
   }
 };
+
+// ✅ NEW: Amortization Table Popup Function
+function amortizeRow(button) {
+  const row = button.closest('tr');
+  const inputs = row.querySelectorAll('input');
+  const balance = parseFloat(inputs[2].value) || 0;
+  const rate = parseFloat(inputs[3].value) || 0;
+  const payment = parseFloat(inputs[4].value) || 0;
+
+  if (!balance || !rate || !payment) {
+    alert("Please enter balance, interest rate, and minimum payment first.");
+    return;
+  }
+
+  const r = rate / 100 / 12;
+  let currentBalance = balance;
+  let schedule = "Month | Payment | Interest | Principal | Balance\n";
+  let month = 1;
+
+  while (currentBalance > 0 && month <= 1000) {
+    const interest = currentBalance * r;
+    const principal = payment - interest;
+    if (principal <= 0) {
+      alert("❌ Payment too small to pay off this debt.");
+      return;
+    }
+    currentBalance -= principal;
+    if (currentBalance < 0) currentBalance = 0;
+    schedule += `${month} | $${payment.toFixed(2)} | $${interest.toFixed(2)} | $${principal.toFixed(2)} | $${currentBalance.toFixed(2)}\n`;
+    month++;
+  }
+
+  const amortizationWindow = window.open("", "Amortization Schedule", "width=800,height=600");
+  amortizationWindow.document.write(`<pre style="font-family: monospace;">${schedule}</pre>`);
+}
 </script>
 
 </body>
 </html>
-
