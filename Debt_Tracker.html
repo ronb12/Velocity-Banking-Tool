@@ -4,9 +4,8 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Debt Tracker – Full Featured</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
 
-  <!-- ✅ Firebase SDKs -->
+  <link rel="icon" type="image/png" href="favicon.png" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -37,79 +36,80 @@
     button:hover { background: #0056b3; }
     .summary { margin-top: 20px; font-size: 18px; }
     #saveStatus { font-size: 14px; color: green; text-align: right; margin-top: 5px; }
+
+    /* Modal for Amortization */
     #amortizationModal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000;
     }
     #amortizationModalContent {
-      background: white; width: 90%; max-width: 800px; margin: 50px auto; padding: 20px; border-radius: 8px;
-      position: relative; overflow-y: auto; max-height: 90%;
+      background:white; width:90%; max-width:800px; margin:50px auto; padding:20px; border-radius:8px;
+      position:relative; overflow-y:auto; max-height:90%;
     }
-    #amortizationModalContent table { margin-top: 10px; }
-    #amortizationModalContent th, #amortizationModalContent td { padding: 8px; border: 1px solid #ddd; }
-    #amortizationModalContent th { background: #007bff; color: white; }
+    #amortizationModalContent table { margin-top:10px; width:100%; }
+    #amortizationModalContent th, #amortizationModalContent td { padding:8px; border:1px solid #ddd; }
+    #amortizationModalContent th { background:#007bff; color:white; }
+    .amortization-summary { margin-top:20px; padding:15px; background:#e9f7ef; border:1px solid #d4edda; border-radius:8px; font-size:16px; }
   </style>
 </head>
 
 <body>
-<nav>
-  <a href="index.html">⬅️ Back to Dashboard</a>
-</nav>
+  <nav>
+    <a href="index.html">⬅️ Back to Dashboard</a>
+  </nav>
 
-<h1>Debt Tracker – Full Featured</h1>
+  <h1>Debt Tracker – Full Featured</h1>
 
-<table id="debtTable">
-  <thead>
-    <tr>
-      <th>Debt Name</th>
-      <th>Limit ($)</th>
-      <th>Balance ($)</th>
-      <th>Interest Rate (%)</th>
-      <th>Min Payment ($)</th>
-      <th>Months Left</th>
-      <th>CFI</th>
-      <th>Total Interest</th>
-      <th>Priority</th>
-      <th>Amortize</th>
-      <th>Delete</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <table id="debtTable">
+    <thead>
+      <tr>
+        <th>Debt Name</th>
+        <th>Limit ($)</th>
+        <th>Balance ($)</th>
+        <th>Interest Rate (%)</th>
+        <th>Min Payment ($)</th>
+        <th>Months Left</th>
+        <th>CFI</th>
+        <th>Total Interest</th>
+        <th>Priority</th>
+        <th>Amortize</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-<button onclick="addDebt()">+ Add Debt</button>
-<button onclick="saveDebts()">💾 Save</button>
-<button onclick="loadDebts()">📂 Load</button>
-<button onclick="exportToExcel()">📥 Export to Excel</button>
-<button onclick="window.print()">🖨️ Print Page</button>
+  <button onclick="addDebt()">+ Add Debt</button>
+  <button onclick="saveDebts()">💾 Save</button>
+  <button onclick="loadDebts()">📂 Load</button>
+  <button onclick="exportToExcel()">📥 Export to Excel</button>
+  <button onclick="window.print()">🖨️ Print Page</button>
 
-<div id="saveStatus"></div>
-<div class="summary" id="summaryText">
-  Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
-</div>
-
-<!-- 🚀 Amortization Modal -->
-<div id="amortizationModal">
-  <div id="amortizationModalContent">
-    <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
-    <h2>📄 Amortization Schedule</h2>
-    <div id="amortizationContent"></div>
-    <button onclick="downloadAmortizationCSV()" style="margin-top:15px;">⬇️ Export to CSV</button>
+  <div id="saveStatus"></div>
+  <div class="summary" id="summaryText">
+    Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
   </div>
-</div>
+
+  <!-- 🚀 AMORTIZATION MODAL -->
+  <div id="amortizationModal">
+    <div id="amortizationModalContent">
+      <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
+      <h2>📄 Amortization Schedule</h2>
+      <div id="amortizationContent"></div>
+    </div>
+  </div>
 
 <script>
 const tableBody = document.querySelector("#debtTable tbody");
 let creditUtilization = 0;
-let currentAmortizationCSV = "";
 
 function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input value="${name}" oninput="calculateSummary()" /></td>
-    <td><input type="number" value="${limit}" oninput="calculateSummary()" /></td>
-    <td><input type="number" value="${balance}" oninput="calculateSummary()" /></td>
-    <td><input type="number" value="${rate}" oninput="calculateSummary()" /></td>
-    <td><input type="number" value="${payment}" oninput="calculateSummary()" /></td>
+    <td><input value="${name}" /></td>
+    <td><input type="number" value="${limit}" /></td>
+    <td><input type="number" value="${balance}" /></td>
+    <td><input type="number" value="${rate}" /></td>
+    <td><input type="number" value="${payment}" /></td>
     <td class="monthsLeft">-</td>
     <td class="cfi">-</td>
     <td class="interest">-</td>
@@ -168,18 +168,64 @@ function saveDebts() {
     const inputs = row.querySelectorAll("input");
     data.push({
       name: inputs[0].value,
+      limit: inputs[1].value,
       balance: inputs[2].value,
       rate: inputs[3].value,
-      payment: inputs[4].value,
-      limit: inputs[1].value
+      payment: inputs[4].value
     });
   });
   localStorage.setItem("debtData", JSON.stringify(data));
-
   const user = auth.currentUser;
   if (user) {
     db.collection('debts').doc(user.uid).set({ debts: data, creditUtilization: creditUtilization.toFixed(2) });
   }
+}
+
+function loadDebts() {
+  const data = JSON.parse(localStorage.getItem("debtData")) || [];
+  tableBody.innerHTML = "";
+  data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+  calculateSummary();
+}
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    db.collection('debts').doc(user.uid).get().then(doc => {
+      if (doc.exists) {
+        const debts = doc.data().debts || [];
+        tableBody.innerHTML = "";
+        debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+        calculateSummary();
+      }
+    });
+  } else {
+    loadDebts();
+  }
+});
+
+function exportToExcel() {
+  let csv = "Debt Name,Limit,Balance,Interest Rate,Min Payment,Months Left,CFI,Total Interest,Priority\n";
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const others = row.querySelectorAll("td");
+    csv += [
+      inputs[0].value, inputs[1].value, inputs[2].value, inputs[3].value, inputs[4].value,
+      others[5].innerText, others[6].innerText, others[7].innerText, others[8].innerText
+    ].join(",") + "\n";
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = "Debt_Tracker.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function removeRow(btn) {
+  btn.parentElement.parentElement.remove();
+  calculateSummary();
 }
 
 function calcRealMonths(balance, rate, payment) {
@@ -207,43 +253,72 @@ function getPriorityTag(cfi) {
   return { tag: "✅ Low", class: "priority-low" };
 }
 
-function removeRow(btn) {
-  btn.parentElement.parentElement.remove();
-  calculateSummary();
-}
+// ✅ Full Amortization Popout
+function amortizeRow(button) {
+  const row = button.closest("tr");
+  const balance = parseFloat(row.querySelectorAll("input")[2].value) || 0;
+  const rate = parseFloat(row.querySelectorAll("input")[3].value) || 0;
+  const payment = parseFloat(row.querySelectorAll("input")[4].value) || 0;
 
-function loadDebts() {
-  auth.onAuthStateChanged(user => {
-    tableBody.innerHTML = "";
-    if (user) {
-      db.collection('debts').doc(user.uid).get().then(doc => {
-        if (doc.exists) {
-          const debts = doc.data().debts || [];
-          debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-          calculateSummary();
-        } else {
-          loadDebtsFromLocal();
-        }
-      }).catch(() => loadDebtsFromLocal());
-    } else {
-      loadDebtsFromLocal();
-    }
-  });
-}
+  const content = document.getElementById("amortizationContent");
+  content.innerHTML = "";
 
-function loadDebtsFromLocal() {
-  const local = JSON.parse(localStorage.getItem("debtData") || "[]");
-  if (local.length > 0) {
-    local.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-    calculateSummary();
+  if (balance <= 0 || rate <= 0 || payment <= 0) {
+    content.innerHTML = "<p style='color:red;'>❌ Invalid debt information. Please check Balance, Rate, and Payment.</p>";
+    document.getElementById("amortizationModal").style.display = "block";
+    return;
   }
+
+  let month = 1;
+  let currentBalance = balance;
+  const monthlyRate = rate / 100 / 12;
+  let totalInterest = 0;
+  let totalPaid = 0;
+
+  let tableHTML = `<table><thead>
+    <tr><th>Month</th><th>Payment ($)</th><th>Principal ($)</th><th>Interest ($)</th><th>Balance Remaining ($)</th></tr>
+  </thead><tbody>`;
+
+  while (currentBalance > 0 && month <= 1000) {
+    const interestPayment = currentBalance * monthlyRate;
+    let principalPayment = payment - interestPayment;
+
+    if (principalPayment > currentBalance) principalPayment = currentBalance;
+
+    const actualPayment = principalPayment + interestPayment;
+    currentBalance -= principalPayment;
+    if (currentBalance < 0) currentBalance = 0;
+
+    totalInterest += interestPayment;
+    totalPaid += actualPayment;
+
+    tableHTML += `
+      <tr>
+        <td>${month}</td>
+        <td>${actualPayment.toFixed(2)}</td>
+        <td>${principalPayment.toFixed(2)}</td>
+        <td>${interestPayment.toFixed(2)}</td>
+        <td>${currentBalance.toFixed(2)}</td>
+      </tr>
+    `;
+    month++;
+  }
+
+  tableHTML += `</tbody></table>`;
+
+  content.innerHTML = tableHTML + `
+    <div class="amortization-summary">
+      📊 <strong>Total Paid:</strong> $${totalPaid.toFixed(2)}<br>
+      💸 <strong>Total Interest Paid:</strong> $${totalInterest.toFixed(2)}
+    </div>
+  `;
+
+  document.getElementById("amortizationModal").style.display = "block";
 }
 
-// Amortization functions (already in your version, you said it's working so no need to repeat here)
-
-window.onload = function() {
-  loadDebts();
-};
+function closeAmortization() {
+  document.getElementById("amortizationModal").style.display = "none";
+}
 </script>
 
 </body>
