@@ -234,57 +234,116 @@ function loadDebts() {
   });
 }
 
-// Amortization Popup Logic
-function amortizeRow(btn) {
-  const row = btn.closest("tr");
-  const balance = parseFloat(row.querySelectorAll("input")[2].value) || 0;
-  const rate = parseFloat(row.querySelectorAll("input")[3].value) || 0;
-  const payment = parseFloat(row.querySelectorAll("input")[4].value) || 0;
-  
-  if (balance > 0 && rate > 0 && payment > 0) {
-    let html = `<table style='width:100%; border-collapse:collapse;'>`;
-    html += `<thead><tr><th>Month</th><th>Payment ($)</th><th>Interest ($)</th><th>Principal ($)</th><th>Balance ($)</th></tr></thead><tbody>`;
-    let csv = "Month,Payment,Interest,Principal,Balance\n";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Amortization Table</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #007BFF;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background: #007BFF;
+      color: white;
+    }
+    .summary {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e9f7ef;
+      border: 1px solid #d4edda;
+      border-radius: 8px;
+      font-size: 18px;
+    }
+  </style>
+</head>
 
-    let r = rate / 100 / 12;
+<body>
+<h1>📄 Amortization Schedule</h1>
+
+<table id="amortizationTable">
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th>Payment ($)</th>
+      <th>Principal ($)</th>
+      <th>Interest ($)</th>
+      <th>Balance Remaining ($)</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="summary" id="amortizationSummary">
+  <!-- Total Paid + Interest will appear here -->
+</div>
+
+<script>
+  // Receive these when the popout opens
+  const balance = parseFloat(localStorage.getItem('amortize_balance') || 0);
+  const rate = parseFloat(localStorage.getItem('amortize_rate') || 0);
+  const payment = parseFloat(localStorage.getItem('amortize_payment') || 0);
+
+  function generateAmortization(balance, rate, payment) {
+    const table = document.getElementById("amortizationTable").querySelector("tbody");
+    table.innerHTML = "";
+
     let month = 1;
-    let currentBalance = balance;
+    let totalInterest = 0;
+    let totalPaid = 0;
+    const monthlyRate = rate / 100 / 12;
 
-    while (currentBalance > 0 && month <= 1000) {
-      const interest = currentBalance * r;
-      const principal = payment - interest;
-      if (principal <= 0) break;
-      currentBalance -= principal;
+    while (balance > 0 && month <= 1000) {
+      const interestPayment = balance * monthlyRate;
+      let principalPayment = payment - interestPayment;
 
-      html += `<tr><td>${month}</td><td>${payment.toFixed(2)}</td><td>${interest.toFixed(2)}</td><td>${principal.toFixed(2)}</td><td>${Math.max(currentBalance,0).toFixed(2)}</td></tr>`;
-      csv += `${month},${payment.toFixed(2)},${interest.toFixed(2)},${principal.toFixed(2)},${Math.max(currentBalance,0).toFixed(2)}\n`;
+      if (principalPayment > balance) {
+        principalPayment = balance;
+      }
 
+      const actualPayment = principalPayment + interestPayment;
+      balance -= principalPayment;
+      totalInterest += interestPayment;
+      totalPaid += actualPayment;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${month}</td>
+        <td>${actualPayment.toFixed(2)}</td>
+        <td>${principalPayment.toFixed(2)}</td>
+        <td>${interestPayment.toFixed(2)}</td>
+        <td>${balance.toFixed(2)}</td>
+      `;
+      table.appendChild(row);
       month++;
     }
-    html += "</tbody></table>";
 
-    document.getElementById("amortizationContent").innerHTML = html;
-    document.getElementById("amortizationModal").style.display = "block";
-    currentAmortizationCSV = csv;
-  } else {
-    alert("Please complete Balance, Rate, Payment fields first!");
+    document.getElementById("amortizationSummary").innerHTML = `
+      <strong>📊 Total Paid:</strong> $${totalPaid.toFixed(2)}<br>
+      <strong>💸 Total Interest Paid:</strong> $${totalInterest.toFixed(2)}
+    `;
   }
-}
 
-function closeAmortization() {
-  document.getElementById("amortizationModal").style.display = "none";
-}
-
-function downloadAmortizationCSV() {
-  const blob = new Blob([currentAmortizationCSV], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "amortization_schedule.csv";
-  a.click();
-}
-
-window.onload = loadDebts;
+  window.onload = generateAmortization;
 </script>
 </body>
 </html>
+
