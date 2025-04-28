@@ -3,22 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <title>Debt Tracker – Full Featured</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="favicon.png" />
+
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-  </script>
 
   <style>
     body { font-family: Arial, sans-serif; padding: 30px; background: #f7f8fa; }
@@ -35,72 +26,79 @@
     button:hover { background: #0056b3; }
     .summary { margin-top: 20px; font-size: 18px; }
     #saveStatus { font-size: 14px; color: green; text-align: right; margin-top: 5px; }
-    /* Modal Styling */
-    #amortizationModal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
-    }
+    /* Amortization Modal */
+    #amortizationModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); }
     #amortizationModalContent {
-      background: white; width: 90%; max-width: 800px; margin: 50px auto; padding: 20px; border-radius: 8px;
-      position: relative; overflow-y: auto; max-height: 90%;
+      background:white; width:90%; max-width:800px; margin:50px auto; padding:20px; border-radius:8px;
+      position:relative; overflow-y:auto; max-height:90%;
     }
-    #amortizationModalContent table { margin-top: 10px; width: 100%; border-collapse: collapse; }
-    #amortizationModalContent th, #amortizationModalContent td { padding: 8px; border: 1px solid #ddd; }
-    #amortizationModalContent th { background: #007bff; color: white; }
-    .amortization-summary { margin-top: 15px; font-size: 16px; text-align: center; }
+    #amortizationModalContent table { margin-top:10px; width:100%; border-collapse: collapse; }
+    #amortizationModalContent th, #amortizationModalContent td { padding:8px; border:1px solid #ddd; }
+    #amortizationModalContent th { background:#007bff; color:white; }
   </style>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+      authDomain: "mobile-debt-tracker.firebaseapp.com",
+      projectId: "mobile-debt-tracker"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
 </head>
 
 <body>
-  <nav><a href="index.html">⬅️ Back to Dashboard</a></nav>
-  <h1>Debt Tracker – Full Featured</h1>
 
-  <table id="debtTable">
-    <thead>
-      <tr>
-        <th>Debt Name</th>
-        <th>Limit ($)</th>
-        <th>Balance ($)</th>
-        <th>Interest Rate (%)</th>
-        <th>Min Payment ($)</th>
-        <th>Months Left</th>
-        <th>CFI</th>
-        <th>Total Interest</th>
-        <th>Priority</th>
-        <th>Amortize</th>
-        <th>Delete</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<nav>
+  <a href="index.html">⬅️ Back to Dashboard</a>
+</nav>
 
-  <button onclick="addDebt()">+ Add Debt</button>
-  <button onclick="saveDebts()">💾 Save</button>
-  <button onclick="loadDebts()">📂 Load</button>
-  <button onclick="exportToExcel()">📥 Export to Excel</button>
-  <button onclick="window.print()">🖨️ Print Page</button>
+<h1>Debt Tracker – Full Featured</h1>
 
-  <div id="saveStatus"></div>
-  <div class="summary" id="summaryText">
-    Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
+<table id="debtTable">
+  <thead>
+    <tr>
+      <th>Debt Name</th>
+      <th>Limit ($)</th>
+      <th>Balance ($)</th>
+      <th>Interest Rate (%)</th>
+      <th>Min Payment ($)</th>
+      <th>Months Left</th>
+      <th>CFI</th>
+      <th>Total Interest</th>
+      <th>Priority</th>
+      <th>Amortize</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<button onclick="addDebt()">+ Add Debt</button>
+<button onclick="saveDebts()">💾 Save</button>
+<button onclick="loadDebts()">📂 Load</button>
+<button onclick="exportToExcel()">📥 Export to Excel</button>
+<button onclick="window.print()">🖨️ Print Page</button>
+
+<div id="saveStatus"></div>
+<div class="summary" id="summaryText">
+  Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
+</div>
+
+<!-- Amortization Modal -->
+<div id="amortizationModal">
+  <div id="amortizationModalContent">
+    <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
+    <h2>📄 Amortization Schedule</h2>
+    <div id="amortizationContent"></div>
   </div>
-
-  <!-- 🚀 Modal Amortization Popout -->
-  <div id="amortizationModal">
-    <div id="amortizationModalContent">
-      <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
-      <h2>📄 Amortization Schedule</h2>
-      <div id="amortizationContent"></div>
-      <div class="amortization-summary" id="amortizationSummary"></div>
-      <div style="text-align:center; margin-top:15px;">
-        <button onclick="downloadAmortizationCSV()">⬇️ Export CSV</button>
-      </div>
-    </div>
-  </div>
+</div>
 
 <script>
 const tableBody = document.querySelector("#debtTable tbody");
 let creditUtilization = 0;
-let currentAmortizationCSV = "";
 
 function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
   const row = document.createElement("tr");
@@ -162,60 +160,53 @@ function calculateSummary() {
     `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
 }
 
-function amortizeRow(btn) {
-  const row = btn.closest("tr");
-  const balance = parseFloat(row.querySelectorAll("input")[2].value) || 0;
-  const rate = parseFloat(row.querySelectorAll("input")[3].value) || 0;
-  const payment = parseFloat(row.querySelectorAll("input")[4].value) || 0;
-  showAmortization(balance, rate, payment);
-}
+function saveDebts() {
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    data.push({
+      name: inputs[0].value,
+      balance: inputs[2].value,
+      rate: inputs[3].value,
+      payment: inputs[4].value,
+      limit: inputs[1].value
+    });
+  });
+  localStorage.setItem("debtData", JSON.stringify(data));
 
-function showAmortization(balance, rate, payment) {
-  const container = document.getElementById("amortizationContent");
-  container.innerHTML = `<table><thead><tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead><tbody></tbody></table>`;
-  const tbody = container.querySelector("tbody");
-  
-  let month = 1;
-  let totalInterest = 0;
-  let totalPaid = 0;
-  const monthlyRate = rate / 100 / 12;
-  currentAmortizationCSV = "Month,Payment,Principal,Interest,Balance\n";
-
-  while (balance > 0 && month <= 1000) {
-    const interest = balance * monthlyRate;
-    let principal = payment - interest;
-    if (principal > balance) principal = balance;
-
-    const actualPayment = principal + interest;
-    balance -= principal;
-    totalInterest += interest;
-    totalPaid += actualPayment;
-
-    tbody.innerHTML += `<tr><td>${month}</td><td>${actualPayment.toFixed(2)}</td><td>${principal.toFixed(2)}</td><td>${interest.toFixed(2)}</td><td>${balance.toFixed(2)}</td></tr>`;
-    currentAmortizationCSV += `${month},${actualPayment.toFixed(2)},${principal.toFixed(2)},${interest.toFixed(2)},${balance.toFixed(2)}\n`;
-    month++;
+  const user = auth.currentUser;
+  if (user) {
+    db.collection('debts').doc(user.uid).set({ debts: data, creditUtilization: creditUtilization.toFixed(2) });
   }
-
-  document.getElementById("amortizationSummary").innerHTML = `
-    <strong>📊 Total Paid:</strong> $${totalPaid.toFixed(2)}<br>
-    <strong>💸 Total Interest Paid:</strong> $${totalInterest.toFixed(2)}
-  `;
-
-  document.getElementById("amortizationModal").style.display = "block";
 }
 
-function closeAmortization() {
-  document.getElementById("amortizationModal").style.display = "none";
-}
+function loadDebts() {
+  tableBody.innerHTML = "";
 
-function downloadAmortizationCSV() {
-  const blob = new Blob([currentAmortizationCSV], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = "Amortization_Schedule.csv";
-  a.click();
-  URL.revokeObjectURL(url);
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      db.collection('debts').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const debts = doc.data().debts || [];
+          debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+          calculateSummary();
+        } else {
+          // fallback to local storage
+          const local = JSON.parse(localStorage.getItem("debtData") || "[]");
+          if (local.length) {
+            local.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+            calculateSummary();
+          }
+        }
+      }).catch(error => {
+        const local = JSON.parse(localStorage.getItem("debtData") || "[]");
+        if (local.length) {
+          local.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
+          calculateSummary();
+        }
+      });
+    }
+  });
 }
 
 function calcRealMonths(balance, rate, payment) {
@@ -248,36 +239,50 @@ function removeRow(btn) {
   calculateSummary();
 }
 
-function exportToExcel() {
-  alert("Coming Soon - Export full table as Excel!");
+function amortizeRow(btn) {
+  const row = btn.closest('tr');
+  const balance = parseFloat(row.querySelectorAll("input")[2].value) || 0;
+  const rate = parseFloat(row.querySelectorAll("input")[3].value) || 0;
+  const payment = parseFloat(row.querySelectorAll("input")[4].value) || 0;
+  showAmortization(balance, rate, payment);
 }
 
-function saveDebts() {
-  const data = [];
-  tableBody.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    data.push({
-      name: inputs[0].value,
-      limit: inputs[1].value,
-      balance: inputs[2].value,
-      rate: inputs[3].value,
-      payment: inputs[4].value
-    });
-  });
-  localStorage.setItem("debtData", JSON.stringify(data));
+function showAmortization(balance, rate, payment) {
+  const container = document.getElementById("amortizationContent");
+  container.innerHTML = `<table>
+    <thead><tr><th>Month</th><th>Payment ($)</th><th>Principal ($)</th><th>Interest ($)</th><th>Remaining ($)</th></tr></thead><tbody></tbody>
+  </table>`;
 
-  const user = auth.currentUser;
-  if (user) {
-    db.collection('debts').doc(user.uid).set({ debts: data });
+  let tbody = container.querySelector("tbody");
+  let totalInterest = 0;
+  let totalPaid = 0;
+  let monthlyRate = rate / 100 / 12;
+  let month = 1;
+
+  while (balance > 0 && month <= 1000) {
+    let interestPayment = balance * monthlyRate;
+    let principalPayment = payment - interestPayment;
+    if (principalPayment > balance) principalPayment = balance;
+    const actualPayment = principalPayment + interestPayment;
+    balance -= principalPayment;
+    totalInterest += interestPayment;
+    totalPaid += actualPayment;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${month}</td><td>${actualPayment.toFixed(2)}</td><td>${principalPayment.toFixed(2)}</td><td>${interestPayment.toFixed(2)}</td><td>${balance.toFixed(2)}</td>`;
+    tbody.appendChild(row);
+    month++;
   }
+
+  container.innerHTML += `<div class="summary">
+    📊 Total Paid: $${totalPaid.toFixed(2)}<br>💸 Total Interest Paid: $${totalInterest.toFixed(2)}
+  </div>`;
+
+  document.getElementById("amortizationModal").style.display = "block";
 }
 
-function loadDebts() {
-  const local = JSON.parse(localStorage.getItem("debtData") || "[]");
-  if (local.length) {
-    tableBody.innerHTML = "";
-    local.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-  }
+function closeAmortization() {
+  document.getElementById("amortizationModal").style.display = "none";
 }
 </script>
 
