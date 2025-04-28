@@ -18,14 +18,21 @@
     .controls, .summary { margin-top: 20px; }
     .controls button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
     .controls button:hover { background: #0056b3; }
-    .dashboard-tile { display: inline-block; margin: 10px; padding: 10px 20px; background: #fff; border-left: 5px solid; border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,0.1); min-width: 180px; }
+    .dashboard-tile {
+      display: inline-block; margin: 10px; padding: 10px 20px;
+      background: #fff; border-left: 5px solid; border-radius: 8px;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1); min-width: 180px;
+    }
     .dashboard-total-income { border-color: #28a745; }
     .dashboard-total-budgeted { border-color: #ffc107; }
     .dashboard-total-spent { border-color: #dc3545; }
     .dashboard-total-remaining { border-color: #007bff; }
     .dashboard-total-paid { border-color: #6f42c1; }
     .success-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; display: none; margin-top: 15px; }
-    #savePopup { position: fixed; top: 10px; right: 10px; background: #28a745; color: white; padding: 10px; border-radius: 6px; display: none; }
+    #savePopup {
+      position: fixed; top: 10px; right: 10px;
+      background: #28a745; color: white; padding: 10px; border-radius: 6px; display: none;
+    }
     .warning { color: #dc3545; font-weight: bold; }
     .back { display: inline-block; margin-top: 20px; text-decoration: none; font-weight: bold; color: #007bff; }
   </style>
@@ -63,7 +70,7 @@
   <button onclick="addExpense()">+ Add Expense</button>
 
   <h3>Monthly Notes</h3>
-  <textarea id="monthlyNotes" rows="4" placeholder="Write monthly financial goals, notes, reminders..."></textarea>
+  <textarea id="monthlyNotes" rows="4" placeholder="Write financial goals, notes, reminders..."></textarea>
 
   <div class="controls">
     <button onclick="calculateBudget()">🧮 Recalculate</button>
@@ -71,7 +78,7 @@
     <button onclick="loadBudget()">📥 Load</button>
     <button onclick="prefillSpent()">⚡ Prefill Spent</button>
     <button onclick="undoPrefill()">↩️ Undo Prefill</button>
-    <button onclick="checkZeroBased()">✅ Check Zero Budget</button>
+    <button onclick="zeroBasedBudget()">✅ Zero-Based Check</button>
   </div>
 
   <div class="summary">
@@ -117,8 +124,8 @@ function onMonthChange() {
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input type="text" value="${source}" onkeyup="updatePaidFromDropdowns()"></td>
-    <td><input type="number" value="${amount}" oninput="updatePaidFromDropdowns()"></td>
+    <td><input type="text" value="${source}"></td>
+    <td><input type="number" value="${amount}"></td>
     <td class="remaining-cell">$0.00</td>
     <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
@@ -135,18 +142,20 @@ function addExpense(exp = {}) {
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
     <td><select><option>${exp.source || ""}</option></select></td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
 
 function updatePaidFromDropdowns() {
   const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
-    row => row.cells[0].querySelector("input").value.trim()).filter(Boolean);
+    row => row.cells[0].querySelector("input").value.trim()
+  ).filter(Boolean);
+
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const select = row.cells[6].querySelector("select");
     const currentSelected = select.value || select.querySelector("option")?.innerText || "";
-    select.innerHTML = sources.map(source => 
+    select.innerHTML = sources.map(source =>
       `<option value="${source}" ${source === currentSelected ? "selected" : ""}>${source}</option>`).join("");
   });
 }
@@ -189,15 +198,6 @@ function calculateBudget() {
   document.getElementById("tileRemaining").innerText = `Remaining: $${remaining.toFixed(2)}`;
   document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
 
-  const remainingTile = document.getElementById("tileRemaining");
-  remainingTile.style.borderLeft = remaining >= 0 ? "5px solid #28a745" : "5px solid #dc3545";
-
-  Object.entries(incomeMap).forEach(([name, data]) => {
-    const leftover = data.amount - data.spent;
-    const incomeRow = incomeRows[data.rowIndex];
-    incomeRow.cells[2].innerHTML = `$${leftover.toFixed(2)}${leftover < 0 ? ' <span class="warning">Over</span>' : ''}`;
-  });
-
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
 }
 
@@ -221,9 +221,8 @@ function saveBudget() {
     });
   });
   db.collection("budgets").doc(userId + "_" + month).set(data);
-  const popup = document.getElementById("savePopup");
-  popup.style.display = "block";
-  setTimeout(() => popup.style.display = "none", 1500);
+  document.getElementById("savePopup").style.display = "block";
+  setTimeout(() => document.getElementById("savePopup").style.display = "none", 1500);
 }
 
 async function loadBudget() {
@@ -241,7 +240,8 @@ async function loadBudget() {
 
 function prefillSpent() {
   prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
-    row.cells[3].querySelector("input").value);
+    row.cells[3].querySelector("input").value
+  );
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
     row.cells[3].querySelector("input").value = budgeted;
@@ -250,9 +250,12 @@ function prefillSpent() {
 }
 
 function undoPrefill() {
-  if (!prefillBackup.length) return alert("No prefill to undo.");
+  if (!prefillBackup.length) return alert("⚠️ No prefill action to undo!");
   document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
-    row.cells[3].querySelector("input").value = prefillBackup[i] || 0;
+    const spentInput = row.cells[3].querySelector("input");
+    if (spentInput) {
+      spentInput.value = prefillBackup[i] || 0;
+    }
   });
   prefillBackup = [];
   calculateBudget();
@@ -263,15 +266,9 @@ function checkAll(box) {
   document.querySelectorAll("#expenseTable tbody tr input[type='checkbox']").forEach(cb => cb.checked = checked);
 }
 
-function checkZeroBased() {
+function zeroBasedBudget() {
   calculateBudget();
-  const income = parseFloat(document.getElementById("tileIncome").innerText.replace(/[^\d.-]/g, ""));
-  const budgeted = parseFloat(document.getElementById("tileBudgeted").innerText.replace(/[^\d.-]/g, ""));
-  if (income === budgeted) {
-    alert("✅ Success: Your income exactly matches your budget. Zero-Based Budget achieved!");
-  } else {
-    alert("❌ Not Zero-Based: Adjust your budget or income allocations.");
-  }
+  alert("✅ Recalculated for Zero-Based Budgeting!");
 }
 </script>
 
