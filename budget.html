@@ -101,6 +101,7 @@
 </div>
 
 <script>
+// Firebase config initialization
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -119,24 +120,15 @@ auth.onAuthStateChanged(user => {
   setInterval(saveBudget, 30000);  // Save the budget every 30 seconds
 });
 
-async function loadBudget() {
-  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7); // Get selected month or default to current month
-  const doc = await db.collection("budgets").doc(userId + "_" + month).get(); // Fetch the budget for the current user and month
-  if (!doc.exists) {
-    console.log("No budget found for this month.");
-    return;
-  }
-  // Reset the tables before loading new data
+// Handle month change
+async function onMonthChange() {
   document.querySelector("#incomeTable tbody").innerHTML = "";
   document.querySelector("#expenseTable tbody").innerHTML = "";
-  const data = doc.data(); // Get the data from Firestore document
-  // Add income and expense data to the respective tables
-  data.incomes.forEach(i => addIncome(i.source, i.amount));
-  data.expenses.forEach(e => addExpense(e));
-  document.getElementById("monthlyNotes").value = data.notes || ""; // Set monthly notes
-  calculateBudget(); // Recalculate totals based on loaded data
+  document.getElementById("monthlyNotes").value = "";
+  loadBudget();
 }
 
+// Add new income source row
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
   row.innerHTML = `
@@ -146,8 +138,10 @@ function addIncome(source = "", amount = 0) {
     <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
+  calculateRemainingToAllocate();
 }
 
+// Add new expense row
 function addExpense(exp = {}) {
   const row = document.createElement("tr");
   row.innerHTML = `
@@ -161,8 +155,10 @@ function addExpense(exp = {}) {
     <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
+  calculateRemainingToAllocate();
 }
 
+// Update Paid From dropdown in expense row
 function updatePaidFromDropdowns() {
   const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
     row => row.cells[0].querySelector("input").value.trim()
@@ -176,6 +172,7 @@ function updatePaidFromDropdowns() {
   });
 }
 
+// Recalculate totals, remaining to allocate, etc.
 function calculateBudget() {
   let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
   const incomeMap = {};
@@ -185,7 +182,7 @@ function calculateBudget() {
     const name = row.cells[0].querySelector("input").value.trim();
     const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
     incomeTotal += amount;
-    if (name) incomeMap[name] = { amount, spent: 0, rowIndex: i };
+    incomeMap[name] = { amount, spent: 0, rowIndex: i };
   });
 
   // Process expenses and update the remaining to allocate for each income source
@@ -201,7 +198,7 @@ function calculateBudget() {
     if (paid) paidTotal += spent;
 
     if (paidFrom && incomeMap[paidFrom]) {
-      incomeMap[paidFrom].spent += budgeted;
+      incomeMap[paidFrom].spent += spent;
     }
 
     row.style.backgroundColor = paid ? "#e6f7e6" : "white";
@@ -226,8 +223,35 @@ function calculateBudget() {
     document.getElementById("zeroBasedMessage").innerText = message;
     document.getElementById("zeroBasedMessage").style.display = "block";
   }
+
+  // Update remaining to allocate for each income source
+  calculateRemainingToAllocate();
 }
 
+// Calculate remaining to allocate for each income source
+function calculateRemainingToAllocate() {
+  const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
+  
+  incomeRows.forEach(row => {
+    const incomeSource = row.cells[0].querySelector("input").value.trim();
+    let incomeAmount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+    let totalSpentFromSource = 0;
+
+    document.querySelectorAll("#expenseTable tbody tr").forEach(expenseRow => {
+      const paidFrom = expenseRow.cells[6].querySelector("select").value;
+      const spentAmount = parseFloat(expenseRow.cells[3].querySelector("input").value) || 0;
+      
+      if (paidFrom === incomeSource) {
+        totalSpentFromSource += spentAmount;
+      }
+    });
+
+    const remainingToAllocate = incomeAmount - totalSpentFromSource;
+    row.cells[2].innerText = `$${remainingToAllocate.toFixed(2)}`;
+  });
+}
+
+// Save budget to Firebase
 function saveBudget() {
   const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
   const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
@@ -285,5 +309,6 @@ function zeroBasedBudget() {
   alert("✅ Recalculated for Zero-Based Budgeting!");
 }
 </script>
+
 </body>
 </html>
