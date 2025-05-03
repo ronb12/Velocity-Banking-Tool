@@ -134,7 +134,7 @@ function addIncome(source = "", amount = 0) {
 
 function addExpense(exp = {}) {
   const row = document.createElement("tr");
-  row.innerHTML = 
+  row.innerHTML = `
     <td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
     <td><input type="text" value="${exp.category || ""}"></td>
     <td><input type="number" value="${exp.budgeted || 0}"></td>
@@ -142,7 +142,8 @@ function addExpense(exp = {}) {
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
     <td><select><option>${exp.source || ""}</option></select></td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>
+  `;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
