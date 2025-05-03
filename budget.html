@@ -163,16 +163,16 @@ function addExpense(exp = {}) {
     <td><input type="text" value="${exp.category || ""}" onchange="calculateBudget()"></td>
     <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateBudget()"></td>
     <td><input type="number" value="${exp.spent || 0}" onchange="calculateBudget()"></td>
-    <td class="remaining-cell">$0.00</td>
+    <td>0</td>
     <td><input type="date" value="${exp.due || ""}" onchange="calculateBudget()"></td>
-    <td><select onchange="calculateBudget()"><option>${exp.source || ""}</option></select></td>
+    <td><select><option>${exp.source || ""}</option></select></td>
     <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
   calculateRemainingToAllocate();
 }
 
-// Update Paid From dropdown in expense row
+// Update paid from dropdowns
 function updatePaidFromDropdowns() {
   const sources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
     row => row.cells[0].querySelector("input").value.trim()
@@ -186,7 +186,7 @@ function updatePaidFromDropdowns() {
   });
 }
 
-// Recalculate totals, remaining to allocate, etc.
+// Calculate total budget
 function calculateBudget() {
   let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
   const incomeMap = {};
@@ -196,10 +196,9 @@ function calculateBudget() {
     const name = row.cells[0].querySelector("input").value.trim();
     const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
     incomeTotal += amount;
-    incomeMap[name] = { amount, spent: 0, rowIndex: i };
+    if (name) incomeMap[name] = { amount, spent: 0, rowIndex: i };
   });
 
-  // Process expenses and update the remaining to allocate for each income source
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
     const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
@@ -227,7 +226,89 @@ function calculateBudget() {
   document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
 
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+  calculateRemainingToAllocate(); // Ensure the remaining to allocate is recalculated
 }
+
+// Calculate remaining to allocate
+function calculateRemainingToAllocate() {
+  let incomeTotal = 0;
+  document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+    const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+    incomeTotal += amount;
+  });
+
+  let budgetedTotal = 0;
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+    budgetedTotal += budgeted;
+  });
+
+  const remainingToAllocate = incomeTotal - budgetedTotal;
+  document.getElementById("tileRemainingToAllocate").innerText = `Remaining to Allocate: $${remainingToAllocate.toFixed(2)}`;
+}
+
+// Save budget to Firestore
+function saveBudget() {
+  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
+  const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
+  document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+    data.incomes.push({
+      source: row.cells[0].querySelector("input").value,
+      amount: parseFloat(row.cells[1].querySelector("input").value) || 0
+    });
+  });
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    data.expenses.push({
+      paid: row.cells[0].querySelector("input").checked,
+      category: row.cells[1].querySelector("input").value,
+      budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
+      spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
+      due: row.cells[5].querySelector("input").value,
+      source: row.cells[6].querySelector("select").value
+    });
+  });
+  db.collection("budgets").doc(userId + "_" + month).set(data);
+  document.getElementById("savePopup").style.display = "block";
+  setTimeout(() => document.getElementById("savePopup").style.display = "none", 1500);
+}
+
+// Prefill spent amounts
+function prefillSpent() {
+  prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
+    row.cells[3].querySelector("input").value
+  );
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+    row.cells[3].querySelector("input").value = budgeted;
+  });
+  calculateBudget();
+}
+
+// Undo prefill action
+function undoPrefill() {
+  if (!prefillBackup.length) return alert("⚠️ No prefill action to undo!");
+  document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
+    const spentInput = row.cells[3].querySelector("input");
+    if (spentInput) {
+      spentInput.value = prefillBackup[i] || 0;
+    }
+  });
+  prefillBackup = [];
+  calculateBudget();
+}
+
+// Check all expenses
+function checkAll(box) {
+  const checked = box.checked;
+  document.querySelectorAll("#expenseTable tbody tr input[type='checkbox']").forEach(cb => cb.checked = checked);
+}
+
+// Zero-based budget check
+function zeroBasedBudget() {
+  calculateBudget();
+  alert("✅ Recalculated for Zero-Based Budgeting!");
+}
+
 </script>
 
 </body>
