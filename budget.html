@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Bradley Budget">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -101,7 +101,6 @@
 </div>
 
 <script>
-// Firebase Initialization
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -117,23 +116,34 @@ auth.onAuthStateChanged(user => {
   if (!user) return window.location.href = "login.html";
   userId = user.uid;
   loadBudget();
-  setInterval(saveBudget, 30000);
+  setInterval(saveBudget, 30000);  // Save the budget every 30 seconds
 });
 
-function onMonthChange() {
+async function loadBudget() {
+  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7); // Get selected month or default to current month
+  const doc = await db.collection("budgets").doc(userId + "_" + month).get(); // Fetch the budget for the current user and month
+  if (!doc.exists) {
+    console.log("No budget found for this month.");
+    return;
+  }
+  // Reset the tables before loading new data
   document.querySelector("#incomeTable tbody").innerHTML = "";
   document.querySelector("#expenseTable tbody").innerHTML = "";
-  document.getElementById("monthlyNotes").value = "";
-  loadBudget();
+  const data = doc.data(); // Get the data from Firestore document
+  // Add income and expense data to the respective tables
+  data.incomes.forEach(i => addIncome(i.source, i.amount));
+  data.expenses.forEach(e => addExpense(e));
+  document.getElementById("monthlyNotes").value = data.notes || ""; // Set monthly notes
+  calculateBudget(); // Recalculate totals based on loaded data
 }
 
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
   row.innerHTML = `
     <td><input type="text" value="${source}"></td>
-    <td><input type="number" value="${amount}" onchange="calculateRemainingToAllocate()"></td>
+    <td><input type="number" value="${amount}"></td>
     <td class="remaining-cell">$0.00</td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); calculateRemainingToAllocate();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
@@ -143,12 +153,12 @@ function addExpense(exp = {}) {
   row.innerHTML = `
     <td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
     <td><input type="text" value="${exp.category || ""}"></td>
-    <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateRemainingToAllocate()"></td>
+    <td><input type="number" value="${exp.budgeted || 0}"></td>
     <td><input type="number" value="${exp.spent || 0}"></td>
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
     <td><select><option>${exp.source || ""}</option></select></td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); calculateRemainingToAllocate();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
@@ -166,28 +176,79 @@ function updatePaidFromDropdowns() {
   });
 }
 
-function calculateRemainingToAllocate() {
-  let totalIncome = 0;
-  document.querySelectorAll("#incomeTable tbody tr").forEach((row) => {
+function calculateBudget() {
+  let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
+  const incomeMap = {};
+
+  const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
+  incomeRows.forEach((row, i) => {
+    const name = row.cells[0].querySelector("input").value.trim();
     const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
-    totalIncome += amount;
+    incomeTotal += amount;
+    if (name) incomeMap[name] = { amount, spent: 0, rowIndex: i };
   });
 
-  let allocatedTotal = 0;
-  document.querySelectorAll("#expenseTable tbody tr").forEach((row) => {
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-    allocatedTotal += budgeted;
-  });
+    const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
+    const paid = row.cells[0].querySelector("input").checked;
+    const paidFrom = row.cells[6].querySelector("select").value;
+    const remaining = budgeted - spent;
 
-  const remainingToAllocate = totalIncome - allocatedTotal;
+    budgetedTotal += budgeted;
+    spentTotal += spent;
+    if (paid) paidTotal += spent;
 
-  document.querySelectorAll("#incomeTable tbody tr").forEach((row) => {
-    const incomeAmount = parseFloat(row.cells[1].querySelector("input").value) || 0;
-    const remainingCell = row.cells[2];
-    if (incomeAmount) {
-      remainingCell.innerHTML = `$${(remainingToAllocate).toFixed(2)}`;
+    if (paidFrom && incomeMap[paidFrom]) {
+      incomeMap[paidFrom].spent += budgeted;
     }
+
+    row.style.backgroundColor = paid ? "#e6f7e6" : "white";
+    row.cells[4].innerText = `$${remaining.toFixed(2)}`;
   });
+
+  const remaining = incomeTotal - budgetedTotal;
+  document.getElementById("tileIncome").innerText = `Total Income: $${incomeTotal.toFixed(2)}`;
+  document.getElementById("tileBudgeted").innerText = `Budgeted: $${budgetedTotal.toFixed(2)}`;
+  document.getElementById("tileSpent").innerText = `Spent: $${spentTotal.toFixed(2)}`;
+  document.getElementById("tileRemaining").innerText = `Remaining: $${remaining.toFixed(2)}`;
+  document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
+
+  // Zero-Based Budgeting Check
+  if (incomeTotal === budgetedTotal) {
+    document.getElementById("zeroBasedMessage").style.display = "block";
+  } else {
+    const difference = incomeTotal - budgetedTotal;
+    const message = difference > 0 ? 
+                    `You have $${difference.toFixed(2)} left to allocate.` :
+                    `You need to cover a deficit of $${Math.abs(difference).toFixed(2)}.`;
+    document.getElementById("zeroBasedMessage").innerText = message;
+    document.getElementById("zeroBasedMessage").style.display = "block";
+  }
+}
+
+function saveBudget() {
+  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
+  const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
+  document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+    data.incomes.push({
+      source: row.cells[0].querySelector("input").value,
+      amount: parseFloat(row.cells[1].querySelector("input").value) || 0
+    });
+  });
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    data.expenses.push({
+      paid: row.cells[0].querySelector("input").checked,
+      category: row.cells[1].querySelector("input").value,
+      budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
+      spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
+      due: row.cells[5].querySelector("input").value,
+      source: row.cells[6].querySelector("select").value
+    });
+  });
+  db.collection("budgets").doc(userId + "_" + month).set(data);
+  document.getElementById("savePopup").style.display = "block";
+  setTimeout(() => document.getElementById("savePopup").style.display = "none", 1500);
 }
 
 function prefillSpent() {
