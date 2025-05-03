@@ -120,6 +120,20 @@ auth.onAuthStateChanged(user => {
   setInterval(saveBudget, 30000);  // Save the budget every 30 seconds
 });
 
+// Define loadBudget function
+async function loadBudget() {
+  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
+  const doc = await db.collection("budgets").doc(userId + "_" + month).get();
+  if (!doc.exists) return;
+  document.querySelector("#incomeTable tbody").innerHTML = "";
+  document.querySelector("#expenseTable tbody").innerHTML = "";
+  const data = doc.data();
+  data.incomes.forEach(i => addIncome(i.source, i.amount));
+  data.expenses.forEach(e => addExpense(e));
+  document.getElementById("monthlyNotes").value = data.notes || "";
+  calculateBudget();
+}
+
 // Handle month change
 async function onMonthChange() {
   document.querySelector("#incomeTable tbody").innerHTML = "";
@@ -214,8 +228,6 @@ function calculateBudget() {
 
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
 }
-
-// Add your remaining functions (saveBudget, loadBudget, prefillSpent, undoPrefill, zeroBasedBudget, etc.) as needed
 </script>
 
 </body>
