@@ -47,7 +47,7 @@
 
   <h3>Income Sources</h3>
   <table id="incomeTable">
-    <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining to Allocate</th><th>Remove</th></tr></thead>
+    <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining to Allocate ($)</th><th>Remove</th></tr></thead>
     <tbody></tbody>
   </table>
   <button onclick="addIncome()">+ Add Income</button>
@@ -125,27 +125,29 @@ function onMonthChange() {
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input type="text" value="${source}"></td>
-    <td><input type="number" value="${amount}"></td>
+    <td><input type="text" value="${source}" onchange="calculateRemainingToAllocate()"></td>
+    <td><input type="number" value="${amount}" onchange="calculateRemainingToAllocate()"></td>
     <td class="remaining-cell">$0.00</td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateRemainingToAllocate(); updatePaidFromDropdowns();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
+  calculateRemainingToAllocate();
 }
 
 function addExpense(exp = {}) {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
-    <td><input type="text" value="${exp.category || ""}"></td>
-    <td><input type="number" value="${exp.budgeted || 0}"></td>
-    <td><input type="number" value="${exp.spent || 0}"></td>
+    <td><input type="checkbox" onclick="calculateRemainingToAllocate()"></td>
+    <td><input type="text" value="${exp.category || ""}" onchange="calculateRemainingToAllocate()"></td>
+    <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateRemainingToAllocate()"></td>
+    <td><input type="number" value="${exp.spent || 0}" onchange="calculateRemainingToAllocate()"></td>
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
     <td><select><option>${exp.source || ""}</option></select></td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateRemainingToAllocate();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
+  calculateRemainingToAllocate();
 }
 
 function updatePaidFromDropdowns() {
@@ -159,6 +161,23 @@ function updatePaidFromDropdowns() {
     select.innerHTML = sources.map(source =>
       `<option value="${source}" ${source === currentSelected ? "selected" : ""}>${source}</option>`).join("");
   });
+}
+
+function calculateRemainingToAllocate() {
+  let incomeTotal = 0;
+  document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+    const incomeAmount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+    incomeTotal += incomeAmount;
+  });
+
+  let expenseTotal = 0;
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    const expenseAmount = parseFloat(row.cells[2].querySelector("input").value) || 0;
+    expenseTotal += expenseAmount;
+  });
+
+  const remainingToAllocate = incomeTotal - expenseTotal;
+  document.getElementById("tileRemaining").innerText = `Remaining: $${remainingToAllocate.toFixed(2)}`;
 }
 
 function calculateBudget() {
@@ -271,13 +290,12 @@ function zeroBasedBudget() {
   calculateBudget();
   alert("✅ Recalculated for Zero-Based Budgeting!");
 }
-  <script>
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js')
       .then(() => console.log("🔒 Service Worker Registered"))
       .catch(err => console.error("❌ Service Worker Error", err));
   }
-
 </script>
 
 </body>
