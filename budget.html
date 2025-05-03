@@ -122,11 +122,12 @@ function onMonthChange() {
 
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
-  row.innerHTML = 
+  row.innerHTML = `
     <td><input type="text" value="${source}"></td>
     <td><input type="number" value="${amount}"></td>
     <td class="remaining-cell">$0.00</td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>
+  `;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
