@@ -131,7 +131,6 @@ function addIncome(source = "", amount = 0) {
   `;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
-  calculateRemainingToAllocate(); // Ensure update on income addition
 }
 
 function addExpense(exp = {}) {
@@ -202,7 +201,6 @@ function calculateBudget() {
   document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
 
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
-  calculateRemainingToAllocate();
 }
 
 function saveBudget() {
