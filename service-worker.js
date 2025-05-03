@@ -10,25 +10,27 @@ const urlsToCache = [
   "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"
 ];
 
-// Install event
+// Install event – cache files
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log("✅ Cache Opened");
-        return cache.addAll(urlsToCache).catch(error => {
-          console.error("❌ Error caching files:", error);
-        });
+        return cache.addAll(urlsToCache);
+      })
+      .catch(error => {
+        console.error("❌ Error caching files:", error);
       })
   );
 });
 
-// Fetch event
+// Fetch event – serve cached if available
 self.addEventListener("fetch", event => {
   event.respondWith(
     caches.match(event.request)
-      .then(response => {
-        return response || fetch(event.request);
+      .then(response => response || fetch(event.request))
+      .catch(error => {
+        console.error("❌ Fetch failed; fallback may be needed:", error);
       })
   );
 });
