@@ -180,6 +180,7 @@ function calculateBudget() {
   let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
   const incomeMap = {};
 
+  // Calculate total income
   const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
   incomeRows.forEach((row, i) => {
     const name = row.cells[0].querySelector("input").value.trim();
@@ -188,6 +189,7 @@ function calculateBudget() {
     if (name) incomeMap[name] = { amount, spent: 0, rowIndex: i };
   });
 
+  // Calculate expenses and update remaining amounts
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
     const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
@@ -284,6 +286,5 @@ function zeroBasedBudget() {
   alert("✅ Recalculated for Zero-Based Budgeting!");
 }
 </script>
-
 </body>
 </html>
