@@ -128,7 +128,7 @@ function addIncome(source = "", amount = 0) {
     <td><input type="text" value="${source}"></td>
     <td><input type="number" value="${amount}"></td>
     <td class="remaining-cell">$0.00</td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updateRemainingToAllocate();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updateRemainingToAllocate();
 }
@@ -143,7 +143,7 @@ function addExpense(exp = {}) {
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
     <td><select><option>${exp.source || ""}</option></select></td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updateRemainingToAllocate();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
@@ -288,5 +288,6 @@ function zeroBasedBudget() {
   alert("✅ Recalculated for Zero-Based Budgeting!");
 }
 </script>
+
 </body>
 </html>
