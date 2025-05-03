@@ -140,8 +140,8 @@ async function loadBudget() {
 function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input type="text" value="${source}"></td>
-    <td><input type="number" value="${amount}"></td>
+    <td><input type="text" value="${source}" onchange="calculateBudget()"></td>
+    <td><input type="number" value="${amount}" onchange="calculateBudget()"></td>
     <td class="remaining-cell">$0.00</td>
     <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
@@ -151,13 +151,13 @@ function addIncome(source = "", amount = 0) {
 function addExpense(exp = {}) {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
-    <td><input type="text" value="${exp.category || ""}"></td>
-    <td><input type="number" value="${exp.budgeted || 0}"></td>
-    <td><input type="number" value="${exp.spent || 0}"></td>
-    <td>0</td>
-    <td><input type="date" value="${exp.due || ""}"></td>
-    <td><select><option>${exp.source || ""}</option></select></td>
+    <td><input type="checkbox" ${exp.paid ? "checked" : ""} onclick="calculateBudget()"></td>
+    <td><input type="text" value="${exp.category || ""}" onchange="calculateBudget()"></td>
+    <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateBudget()"></td>
+    <td><input type="number" value="${exp.spent || 0}" onchange="calculateBudget()"></td>
+    <td class="remaining-cell">$0.00</td>
+    <td><input type="date" value="${exp.due || ""}" onchange="calculateBudget()"></td>
+    <td><select onchange="calculateBudget()"><option>${exp.source || ""}</option></select></td>
     <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
@@ -180,7 +180,6 @@ function calculateBudget() {
   let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
   const incomeMap = {};
 
-  // Calculate total income
   const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
   incomeRows.forEach((row, i) => {
     const name = row.cells[0].querySelector("input").value.trim();
@@ -189,7 +188,7 @@ function calculateBudget() {
     if (name) incomeMap[name] = { amount, spent: 0, rowIndex: i };
   });
 
-  // Calculate expenses and update remaining amounts
+  // Process expenses and update the remaining to allocate for each income source
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
     const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
