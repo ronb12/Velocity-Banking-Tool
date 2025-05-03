@@ -47,7 +47,7 @@
 
   <h3>Income Sources</h3>
   <table id="incomeTable">
-    <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining to Allocate</th><th>Remove</th></tr></thead>
+    <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining to Allocate ($)</th><th>Remove</th></tr></thead>
     <tbody></tbody>
   </table>
   <button onclick="addIncome()">+ Add Income</button>
@@ -130,7 +130,7 @@ function addIncome(source = "", amount = 0) {
     <td class="remaining-cell">$0.00</td>
     <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
-  updatePaidFromDropdowns();
+  updateRemainingToAllocate();
 }
 
 function addExpense(exp = {}) {
@@ -228,15 +228,31 @@ function saveBudget() {
 
 async function loadBudget() {
   const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-  const doc = await db.collection("budgets").doc(userId + "_" + month).get();
-  if (!doc.exists) return;
-  document.querySelector("#incomeTable tbody").innerHTML = "";
-  document.querySelector("#expenseTable tbody").innerHTML = "";
-  const data = doc.data();
-  data.incomes.forEach(i => addIncome(i.source, i.amount));
-  data.expenses.forEach(e => addExpense(e));
-  document.getElementById("monthlyNotes").value = data.notes || "";
-  calculateBudget();
+  const docRef = db.collection("budgets").doc(userId + "_" + month);
+
+  try {
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      console.log("No budget found for this month");
+      return;
+    }
+    const data = doc.data();
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+
+    data.incomes.forEach(i => {
+      addIncome(i.source, i.amount);
+    });
+
+    data.expenses.forEach(e => {
+      addExpense(e);
+    });
+
+    document.getElementById("monthlyNotes").value = data.notes || "";
+    calculateBudget();
+  } catch (error) {
+    console.error("Error loading budget:", error);
+  }
 }
 
 function prefillSpent() {
@@ -271,14 +287,6 @@ function zeroBasedBudget() {
   calculateBudget();
   alert("✅ Recalculated for Zero-Based Budgeting!");
 }
-  <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log("🔒 Service Worker Registered"))
-      .catch(err => console.error("❌ Service Worker Error", err));
-  }
-
 </script>
-
 </body>
 </html>
