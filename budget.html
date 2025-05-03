@@ -12,7 +12,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; margin: 0; text-align: center; }
     h1 { color: #007bff; }
@@ -85,8 +84,6 @@
     <button onclick="prefillSpent()">⚡ Prefill Spent</button>
     <button onclick="undoPrefill()">↩️ Undo Prefill</button>
     <button onclick="zeroBasedBudget()">✅ Zero-Based Check</button>
-    <!-- Export to PDF Button -->
-    <button onclick="exportToPDF()">📄 Export to PDF</button>
   </div>
 
   <div class="summary">
@@ -104,6 +101,7 @@
 </div>
 
 <script>
+// Firebase Initialization
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -133,9 +131,9 @@ function addIncome(source = "", amount = 0) {
   const row = document.createElement("tr");
   row.innerHTML = `
     <td><input type="text" value="${source}"></td>
-    <td><input type="number" value="${amount}"></td>
+    <td><input type="number" value="${amount}" onchange="calculateRemainingToAllocate()"></td>
     <td class="remaining-cell">$0.00</td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget(); updatePaidFromDropdowns();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget(); calculateRemainingToAllocate();">🗑️</button></td>`;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
@@ -145,12 +143,12 @@ function addExpense(exp = {}) {
   row.innerHTML = `
     <td><input type="checkbox" ${exp.paid ? "checked" : ""}></td>
     <td><input type="text" value="${exp.category || ""}"></td>
-    <td><input type="number" value="${exp.budgeted || 0}"></td>
+    <td><input type="number" value="${exp.budgeted || 0}" onchange="calculateRemainingToAllocate()"></td>
     <td><input type="number" value="${exp.spent || 0}"></td>
     <td>0</td>
     <td><input type="date" value="${exp.due || ""}"></td>
     <td><select><option>${exp.source || ""}</option></select></td>
-    <td><button onclick="this.closest('tr').remove(); calculateBudget();">🗑️</button></td>`;
+    <td><button onclick="this.closest('tr').remove(); calculateBudget(); calculateRemainingToAllocate();">🗑️</button></td>`;
   document.querySelector("#expenseTable tbody").appendChild(row);
   updatePaidFromDropdowns();
 }
@@ -168,125 +166,26 @@ function updatePaidFromDropdowns() {
   });
 }
 
-function calculateBudget() {
-  let incomeTotal = 0, budgetedTotal = 0, spentTotal = 0, paidTotal = 0;
-  const incomeMap = {};
-
-  const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
-  incomeRows.forEach((row, i) => {
-    const name = row.cells[0].querySelector("input").value.trim();
+function calculateRemainingToAllocate() {
+  let totalIncome = 0;
+  document.querySelectorAll("#incomeTable tbody tr").forEach((row) => {
     const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
-    incomeTotal += amount;
-    if (name) incomeMap[name] = { amount, spent: 0, rowIndex: i };
+    totalIncome += amount;
   });
 
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+  let allocatedTotal = 0;
+  document.querySelectorAll("#expenseTable tbody tr").forEach((row) => {
     const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-    const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
-    const paid = row.cells[0].querySelector("input").checked;
-    const paidFrom = row.cells[6].querySelector("select").value;
-    const remaining = budgeted - spent;
-
-    budgetedTotal += budgeted;
-    spentTotal += spent;
-    if (paid) paidTotal += spent;
-
-    if (paidFrom && incomeMap[paidFrom]) {
-      incomeMap[paidFrom].spent += budgeted;
-    }
-
-    row.style.backgroundColor = paid ? "#e6f7e6" : "white";
-    row.cells[4].innerText = `$${remaining.toFixed(2)}`;
+    allocatedTotal += budgeted;
   });
 
-  const remaining = incomeTotal - budgetedTotal;
-  document.getElementById("tileIncome").innerText = `Total Income: $${incomeTotal.toFixed(2)}`;
-  document.getElementById("tileBudgeted").innerText = `Budgeted: $${budgetedTotal.toFixed(2)}`;
-  document.getElementById("tileSpent").innerText = `Spent: $${spentTotal.toFixed(2)}`;
-  document.getElementById("tileRemaining").innerText = `Remaining: $${remaining.toFixed(2)}`;
-  document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
+  const remainingToAllocate = totalIncome - allocatedTotal;
 
-  document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
-}
-
-function saveBudget() {
-  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-  const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
-  document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
-    data.incomes.push({
-      source: row.cells[0].querySelector("input").value,
-      amount: parseFloat(row.cells[1].querySelector("input").value) || 0
-    });
-  });
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    data.expenses.push({
-      paid: row.cells[0].querySelector("input").checked,
-      category: row.cells[1].querySelector("input").value,
-      budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
-      spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
-      due: row.cells[5].querySelector("input").value,
-      source: row.cells[6].querySelector("select").value
-    });
-  });
-  db.collection("budgets").doc(userId + "_" + month).set(data);
-  document.getElementById("savePopup").style.display = "block";
-  setTimeout(() => document.getElementById("savePopup").style.display = "none", 1500);
-}
-
-async function loadBudget() {
-  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-  const doc = await db.collection("budgets").doc(userId + "_" + month).get();
-  if (!doc.exists) return;
-  document.querySelector("#incomeTable tbody").innerHTML = "";
-  document.querySelector("#expenseTable tbody").innerHTML = "";
-  const data = doc.data();
-  data.incomes.forEach(i => addIncome(i.source, i.amount));
-  data.expenses.forEach(e => addExpense(e));
-  document.getElementById("monthlyNotes").value = data.notes || "";
-  calculateBudget();
-}
-
-function prefillSpent() {
-  prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
-    row.cells[3].querySelector("input").value
-  );
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-    row.cells[3].querySelector("input").value = budgeted;
-  });
-  calculateBudget();
-}
-
-function undoPrefill() {
-  if (!prefillBackup.length) return alert("⚠️ No prefill action to undo!");
-  document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
-    const spentInput = row.cells[3].querySelector("input");
-    if (spentInput) {
-      spentInput.value = prefillBackup[i] || 0;
+  document.querySelectorAll("#incomeTable tbody tr").forEach((row) => {
+    const incomeAmount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+    const remainingCell = row.cells[2];
+    if (incomeAmount) {
+      remainingCell.innerHTML = `$${(remainingToAllocate).toFixed(2)}`;
     }
   });
-  prefillBackup = [];
-  calculateBudget();
 }
-
-function checkAll(box) {
-  const checked = box.checked;
-  document.querySelectorAll("#expenseTable tbody tr input[type='checkbox']").forEach(cb => cb.checked = checked);
-}
-
-function zeroBasedBudget() {
-  calculateBudget();
-  alert("✅ Recalculated for Zero-Based Budgeting!");
-}
-</script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(() => console.log("🔒 Service Worker Registered"))
-      .catch(err => console.error("❌ Service Worker Error", err));
-  }
-</script>
-
-</body>
-</html>
