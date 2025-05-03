@@ -189,3 +189,40 @@ function calculateRemainingToAllocate() {
     }
   });
 }
+
+function prefillSpent() {
+  prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
+    row.cells[3].querySelector("input").value
+  );
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+    row.cells[3].querySelector("input").value = budgeted;
+  });
+  calculateBudget();
+}
+
+function undoPrefill() {
+  if (!prefillBackup.length) return alert("⚠️ No prefill action to undo!");
+  document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
+    const spentInput = row.cells[3].querySelector("input");
+    if (spentInput) {
+      spentInput.value = prefillBackup[i] || 0;
+    }
+  });
+  prefillBackup = [];
+  calculateBudget();
+}
+
+function checkAll(box) {
+  const checked = box.checked;
+  document.querySelectorAll("#expenseTable tbody tr input[type='checkbox']").forEach(cb => cb.checked = checked);
+}
+
+function zeroBasedBudget() {
+  calculateBudget();
+  alert("✅ Recalculated for Zero-Based Budgeting!");
+}
+</script>
+
+</body>
+</html>
