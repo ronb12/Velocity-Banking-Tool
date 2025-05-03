@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -130,6 +131,7 @@ function addIncome(source = "", amount = 0) {
   `;
   document.querySelector("#incomeTable tbody").appendChild(row);
   updatePaidFromDropdowns();
+  calculateRemainingToAllocate(); // Ensure update on income addition
 }
 
 function addExpense(exp = {}) {
@@ -157,7 +159,7 @@ function updatePaidFromDropdowns() {
     const select = row.cells[6].querySelector("select");
     const currentSelected = select.value || select.querySelector("option")?.innerText || "";
     select.innerHTML = sources.map(source =>
-      <option value="${source}" ${source === currentSelected ? "selected" : ""}>${source}</option>).join("");
+      `<option value="${source}" ${source === currentSelected ? "selected" : ""}>${source}</option>`).join("");
   });
 }
 
@@ -189,17 +191,18 @@ function calculateBudget() {
     }
 
     row.style.backgroundColor = paid ? "#e6f7e6" : "white";
-    row.cells[4].innerText = $${remaining.toFixed(2)};
+    row.cells[4].innerText = `$${remaining.toFixed(2)}`;
   });
 
   const remaining = incomeTotal - budgetedTotal;
-  document.getElementById("tileIncome").innerText = Total Income: $${incomeTotal.toFixed(2)};
-  document.getElementById("tileBudgeted").innerText = Budgeted: $${budgetedTotal.toFixed(2)};
-  document.getElementById("tileSpent").innerText = Spent: $${spentTotal.toFixed(2)};
-  document.getElementById("tileRemaining").innerText = Remaining: $${remaining.toFixed(2)};
-  document.getElementById("tilePaid").innerText = Paid: $${paidTotal.toFixed(2)};
+  document.getElementById("tileIncome").innerText = `Total Income: $${incomeTotal.toFixed(2)}`;
+  document.getElementById("tileBudgeted").innerText = `Budgeted: $${budgetedTotal.toFixed(2)}`;
+  document.getElementById("tileSpent").innerText = `Spent: $${spentTotal.toFixed(2)}`;
+  document.getElementById("tileRemaining").innerText = `Remaining: $${remaining.toFixed(2)}`;
+  document.getElementById("tilePaid").innerText = `Paid: $${paidTotal.toFixed(2)}`;
 
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
+  calculateRemainingToAllocate();
 }
 
 function saveBudget() {
