@@ -229,15 +229,31 @@ function saveBudget() {
 
 async function loadBudget() {
   const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-  const doc = await db.collection("budgets").doc(userId + "_" + month).get();
-  if (!doc.exists) return;
-  document.querySelector("#incomeTable tbody").innerHTML = "";
-  document.querySelector("#expenseTable tbody").innerHTML = "";
-  const data = doc.data();
-  data.incomes.forEach(i => addIncome(i.source, i.amount));
-  data.expenses.forEach(e => addExpense(e));
-  document.getElementById("monthlyNotes").value = data.notes || "";
-  calculateBudget();
+  const docRef = db.collection("budgets").doc(userId + "_" + month); // Use the correct document ID structure
+
+  try {
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      console.log("No data found for this month.");
+      return;
+    }
+
+    const data = doc.data();
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+    
+    // Loading income data
+    data.incomes.forEach(i => addIncome(i.source, i.amount));
+    
+    // Loading expenses data
+    data.expenses.forEach(e => addExpense(e));
+    
+    // Loading monthly notes
+    document.getElementById("monthlyNotes").value = data.notes || "";
+    calculateBudget();
+  } catch (error) {
+    console.error("Error loading budget:", error);
+  }
 }
 
 function prefillSpent() {
