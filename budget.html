@@ -75,7 +75,7 @@
   <div class="controls">
     <button onclick="calculateBudget()">🧮 Recalculate</button>
     <button onclick="saveBudget()">💾 Save</button>
-    <button onclick="loadBudget()">📥 Load</button>
+    <button onclick="loadBudget()">📥 Load Budget</button>
     <button onclick="prefillSpent()">⚡ Prefill Spent</button>
     <button onclick="undoPrefill()">↩️ Undo Prefill</button>
     <button onclick="zeroBasedBudget()">✅ Zero-Based Check</button>
@@ -118,7 +118,46 @@ function onMonthChange() {
   document.querySelector("#incomeTable tbody").innerHTML = "";
   document.querySelector("#expenseTable tbody").innerHTML = "";
   document.getElementById("monthlyNotes").value = "";
-  loadBudget();
+  loadBudget();  // Reload the budget based on the selected month
+}
+
+function loadBudget() {
+  const month = document.getElementById("month").value || new Date().toISOString().slice(0, 7); // YYYY-MM format
+
+  // Check local storage first
+  const localStorageBudget = localStorage.getItem(`budget_${month}`);
+  if (localStorageBudget) {
+    const budgetData = JSON.parse(localStorageBudget);
+    loadBudgetFromData(budgetData);
+  } else {
+    // If not in local storage, try fetching from Firebase
+    db.collection("budgets").doc(userId + "_" + month).get()
+      .then(doc => {
+        if (doc.exists) {
+          const budgetData = doc.data();
+          loadBudgetFromData(budgetData);
+          // Optionally store in localStorage for future use
+          localStorage.setItem(`budget_${month}`, JSON.stringify(budgetData));
+        } else {
+          console.log("No budget found for this month in Firebase");
+        }
+      })
+      .catch(error => console.error("Error loading budget from Firebase:", error));
+  }
+}
+
+function loadBudgetFromData(budgetData) {
+  document.querySelector("#incomeTable tbody").innerHTML = "";
+  document.querySelector("#expenseTable tbody").innerHTML = "";
+
+  // Load income and expenses data
+  budgetData.incomes.forEach(i => addIncome(i.source, i.amount));
+  budgetData.expenses.forEach(e => addExpense(e));
+
+  // Load notes
+  document.getElementById("monthlyNotes").value = budgetData.notes || "";
+
+  calculateBudget();
 }
 
 function addIncome(source = "", amount = 0) {
@@ -206,12 +245,14 @@ function calculateBudget() {
 function saveBudget() {
   const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
   const data = { incomes: [], expenses: [], notes: document.getElementById("monthlyNotes").value };
+
   document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
     data.incomes.push({
       source: row.cells[0].querySelector("input").value,
       amount: parseFloat(row.cells[1].querySelector("input").value) || 0
     });
   });
+
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
     data.expenses.push({
       paid: row.cells[0].querySelector("input").checked,
@@ -222,72 +263,17 @@ function saveBudget() {
       source: row.cells[6].querySelector("select").value
     });
   });
+
+  // Save to Firebase
   db.collection("budgets").doc(userId + "_" + month).set(data);
+
+  // Save to local storage
+  localStorage.setItem(`budget_${month}`, JSON.stringify(data));
+
   document.getElementById("savePopup").style.display = "block";
   setTimeout(() => document.getElementById("savePopup").style.display = "none", 1500);
 }
 
-async function loadBudget() {
-  const month = document.getElementById("month").value || new Date().toISOString().slice(0,7);
-  const docRef = db.collection("budgets").doc(userId + "_" + month); // Use the correct document ID structure
-
-  try {
-    const doc = await docRef.get();
-    if (!doc.exists) {
-      console.log("No data found for this month.");
-      return;
-    }
-
-    const data = doc.data();
-    document.querySelector("#incomeTable tbody").innerHTML = "";
-    document.querySelector("#expenseTable tbody").innerHTML = "";
-    
-    // Loading income data
-    data.incomes.forEach(i => addIncome(i.source, i.amount));
-    
-    // Loading expenses data
-    data.expenses.forEach(e => addExpense(e));
-    
-    // Loading monthly notes
-    document.getElementById("monthlyNotes").value = data.notes || "";
-    calculateBudget();
-  } catch (error) {
-    console.error("Error loading budget:", error);
-  }
-}
-
-function prefillSpent() {
-  prefillBackup = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row =>
-    row.cells[3].querySelector("input").value
-  );
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-    row.cells[3].querySelector("input").value = budgeted;
-  });
-  calculateBudget();
-}
-
-function undoPrefill() {
-  if (!prefillBackup.length) return alert("⚠️ No prefill action to undo!");
-  document.querySelectorAll("#expenseTable tbody tr").forEach((row, i) => {
-    const spentInput = row.cells[3].querySelector("input");
-    if (spentInput) {
-      spentInput.value = prefillBackup[i] || 0;
-    }
-  });
-  prefillBackup = [];
-  calculateBudget();
-}
-
-function checkAll(box) {
-  const checked = box.checked;
-  document.querySelectorAll("#expenseTable tbody tr input[type='checkbox']").forEach(cb => cb.checked = checked);
-}
-
-function zeroBasedBudget() {
-  calculateBudget();
-  alert("✅ Recalculated for Zero-Based Budgeting!");
-}
 </script>
 
 </body>
