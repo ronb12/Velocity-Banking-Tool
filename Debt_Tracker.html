@@ -94,6 +94,7 @@ function addDebtRow(data = {}) {
 }
 
 function simulateStrategy() {
+  console.log("🚀 simulateStrategy triggered");
   const strategy = document.getElementById("strategySelect").value;
   const debts = [];
 
@@ -109,6 +110,11 @@ function simulateStrategy() {
       debts.push({ name, balance, rate, payment, months });
     }
   });
+
+  if (debts.length === 0) {
+    alertBox.innerHTML = `<div class='alert'>⚠️ No valid debts to simulate.</div>`;
+    return;
+  }
 
   if (strategy === "snowball") {
     debts.sort((a, b) => a.balance - b.balance);
