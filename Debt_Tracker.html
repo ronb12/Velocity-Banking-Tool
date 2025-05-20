@@ -7,7 +7,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
     h1 { text-align: center; }
@@ -33,11 +32,10 @@
 <body>
 <h1>📊 Debt Tracker – Advanced</h1>
 <div class="tools">
-  <select id="strategySelect">
+  <select id="strategySelect" onchange="simulateStrategy()">
     <option value="snowball">Snowball (Lowest Balance First)</option>
     <option value="avalanche">Avalanche (Highest Interest First)</option>
   </select>
-  <button onclick="simulateStrategy()">Simulate Strategy</button>
   <button onclick="whatIfCalculator()">"What If?" Calculator</button>
   <button onclick="recommendPayment()">AI Payment Advisor</button>
   <button onclick="exportPDF()">📄 Export PDF</button>
@@ -93,47 +91,10 @@ function addDebtRow(data = {}) {
   table.appendChild(row);
 }
 
-function simulateStrategy() {
-  console.log("🚀 simulateStrategy triggered");
-  const strategy = document.getElementById("strategySelect").value;
-  const debts = [];
-
-  table.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    const name = inputs[0].value;
-    const balance = parseFloat(inputs[2].value);
-    const rate = parseFloat(inputs[3].value);
-    const payment = parseFloat(inputs[4].value);
-
-    if (balance > 0 && rate > 0 && payment > 0) {
-      const months = calcMonths(balance, rate, payment);
-      debts.push({ name, balance, rate, payment, months });
-    }
-  });
-
-  if (debts.length === 0) {
-    alertBox.innerHTML = `<div class='alert'>⚠️ No valid debts to simulate.</div>`;
-    return;
-  }
-
-  if (strategy === "snowball") {
-    debts.sort((a, b) => a.balance - b.balance);
-  } else {
-    debts.sort((a, b) => b.rate - a.rate);
-  }
-
-  const output = debts.map((d, i) =>
-    `${i + 1}. ${d.name} – Balance: $${d.balance.toFixed(2)}, Rate: ${d.rate}%, Est. Months: ${d.months}`
-  ).join("<br>");
-
-  alertBox.innerHTML = `<div class='alert'><strong>${strategy.charAt(0).toUpperCase() + strategy.slice(1)} Plan:</strong><br>${output}</div>`;
-}
-
 function calculate() {
   let totalBalance = 0, totalLimit = 0, totalPayment = 0, totalInterest = 0, maxMonths = 0;
   let creditBalance = 0, creditLimit = 0;
   alertBox.innerHTML = "";
-
   table.querySelectorAll("tr").forEach(row => {
     const inputs = row.querySelectorAll("input");
     const balance = parseFloat(inputs[2].value) || 0;
@@ -144,36 +105,57 @@ function calculate() {
     const cfiEl = row.querySelector(".cfi");
     const interestEl = row.querySelector(".interest");
     const priorityEl = row.querySelector(".priority");
-
     totalBalance += balance;
     totalPayment += payment;
     totalLimit += limit;
     if (limit > 0) { creditBalance += balance; creditLimit += limit; }
-
     let months = calcMonths(balance, rate, payment);
     let cfi = (balance / payment).toFixed(2);
     let interest = calcInterest(balance, rate, payment);
-
     monthsEl.innerText = months === Infinity ? '∞' : months;
     cfiEl.innerText = cfi;
     interestEl.innerText = "$" + interest.toFixed(2);
-
     const priority = getPriority(cfi);
     row.className = priority.class;
     priorityEl.innerText = priority.tag;
-
     totalInterest += interest;
     if (months !== Infinity && months > maxMonths) maxMonths = months;
-
     if (payment <= balance * (rate / 100 / 12)) {
       alertBox.innerHTML += `<div class='alert'>❌ ${inputs[0].value}: Payment too low to cover interest!</div>`;
     }
   });
-
   let util = creditLimit ? (creditBalance / creditLimit) * 100 : 0;
   if (util > 50) alertBox.innerHTML += `<div class='alert'>⚠️ Credit Utilization above 50% (${util.toFixed(2)}%)</div>`;
-
   summary.innerText = `Total Debt: $${totalBalance.toFixed(2)} | Payments: $${totalPayment.toFixed(2)} | Interest: $${totalInterest.toFixed(2)} | Utilization: ${util.toFixed(2)}% | Est. Payoff: ${maxMonths} months`;
+}
+
+function simulateStrategy() {
+  const strategy = document.getElementById("strategySelect").value;
+  const debts = [];
+  table.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const name = inputs[0].value;
+    const balance = parseFloat(inputs[2].value);
+    const rate = parseFloat(inputs[3].value);
+    const payment = parseFloat(inputs[4].value);
+    if (balance > 0 && rate > 0 && payment > 0) {
+      const months = calcMonths(balance, rate, payment);
+      debts.push({ name, balance, rate, payment, months });
+    }
+  });
+  if (debts.length === 0) {
+    alertBox.innerHTML = `<div class='alert'>⚠️ No valid debts to simulate.</div>`;
+    return;
+  }
+  if (strategy === "snowball") {
+    debts.sort((a, b) => a.balance - b.balance);
+  } else {
+    debts.sort((a, b) => b.rate - a.rate);
+  }
+  const output = debts.map((d, i) =>
+    `${i + 1}. ${d.name} – Balance: $${d.balance.toFixed(2)}, Rate: ${d.rate}%, Est. Months: ${d.months}`
+  ).join("<br>");
+  alertBox.innerHTML = `<div class='alert'><strong>${strategy.charAt(0).toUpperCase() + strategy.slice(1)} Plan:</strong><br>${output}</div>`;
 }
 
 function calcMonths(balance, rate, payment) {
@@ -213,20 +195,16 @@ function showAmortization(btn) {
   const balance = parseFloat(inputs[2].value);
   const rate = parseFloat(inputs[3].value);
   const payment = parseFloat(inputs[4].value);
-
   document.getElementById("amortDebtName").innerText = name;
   const container = document.getElementById("amortizationContent");
   container.innerHTML = "";
-
   if (!balance || !rate || !payment || payment <= 0) {
     container.innerHTML = "<p style='color:red;'>❌ Invalid input values.</p>";
     document.getElementById("amortizationModal").style.display = "block";
     return;
   }
-
   let html = `<table><thead><tr><th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th></tr></thead><tbody>`;
   let r = rate / 100 / 12, m = 0, totalInt = 0, bal = balance;
-
   while (bal > 0 && m < 1200) {
     const int = bal * r;
     let princ = payment - int;
@@ -236,7 +214,6 @@ function showAmortization(btn) {
     html += `<tr><td>${m + 1}</td><td>$${(princ + int).toFixed(2)}</td><td>$${princ.toFixed(2)}</td><td>$${int.toFixed(2)}</td><td>$${bal.toFixed(2)}</td></tr>`;
     m++;
   }
-
   html += `</tbody></table><p><strong>Total Interest:</strong> $${totalInt.toFixed(2)}</p>`;
   container.innerHTML = html;
   document.getElementById("amortizationModal").style.display = "block";
@@ -253,6 +230,18 @@ auth.onAuthStateChanged(user => {
     calculate();
   });
 });
+
+function whatIfCalculator() {
+  alert("🔧 What If Calculator – Coming Soon!");
+}
+
+function recommendPayment() {
+  alert("🤖 AI Payment Advisor – Coming Soon!");
+}
+
+function exportPDF() {
+  alert("📄 PDF Export – Coming Soon!");
+}
 </script>
 </body>
 </html>
