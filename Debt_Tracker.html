@@ -61,7 +61,10 @@
   </div>
 </div>
 <script>
-// [unchanged Firebase + core functions above]
+const table = document.querySelector("#debtTable tbody");
+const summary = document.getElementById("summary");
+const alertBox = document.getElementById("alertBox");
+
 function addDebtRow(data = {}) {
   const row = document.createElement("tr");
   row.innerHTML = `
@@ -79,6 +82,83 @@ function addDebtRow(data = {}) {
     <td><button onclick="this.closest('tr').remove(); calculate()">❌</button></td>
   `;
   table.appendChild(row);
+}
+
+function calculate() {
+  let totalBalance = 0, totalLimit = 0, totalPayment = 0, totalInterest = 0, maxMonths = 0;
+  let creditBalance = 0, creditLimit = 0;
+  alertBox.innerHTML = "";
+
+  table.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const balance = parseFloat(inputs[2].value) || 0;
+    const rate = parseFloat(inputs[3].value) || 0;
+    const payment = parseFloat(inputs[4].value) || 0;
+    const limit = parseFloat(inputs[1].value) || 0;
+    const monthsEl = row.querySelector(".months");
+    const cfiEl = row.querySelector(".cfi");
+    const interestEl = row.querySelector(".interest");
+    const priorityEl = row.querySelector(".priority");
+
+    totalBalance += balance;
+    totalPayment += payment;
+    totalLimit += limit;
+    if (limit > 0) { creditBalance += balance; creditLimit += limit; }
+
+    let months = calcMonths(balance, rate, payment);
+    let cfi = (balance / payment).toFixed(2);
+    let interest = calcInterest(balance, rate, payment);
+
+    monthsEl.innerText = months === Infinity ? '∞' : months;
+    cfiEl.innerText = cfi;
+    interestEl.innerText = "$" + interest.toFixed(2);
+
+    const priority = getPriority(cfi);
+    row.className = priority.class;
+    priorityEl.innerText = priority.tag;
+
+    totalInterest += interest;
+    if (months !== Infinity && months > maxMonths) maxMonths = months;
+
+    if (payment <= balance * (rate / 100 / 12)) {
+      alertBox.innerHTML += `<div class='alert'>❌ ${inputs[0].value}: Payment too low to cover interest!</div>`;
+    }
+  });
+
+  let util = creditLimit ? (creditBalance / creditLimit) * 100 : 0;
+  if (util > 50) alertBox.innerHTML += `<div class='alert'>⚠️ Credit Utilization above 50% (${util.toFixed(2)}%)</div>`;
+
+  summary.innerText = `Total Debt: $${totalBalance.toFixed(2)} | Payments: $${totalPayment.toFixed(2)} | Interest: $${totalInterest.toFixed(2)} | Utilization: ${util.toFixed(2)}% | Est. Payoff: ${maxMonths} months`;
+}
+
+function calcMonths(balance, rate, payment) {
+  let r = rate / 100 / 12, m = 0;
+  while (balance > 0 && m < 1000) {
+    let interest = balance * r;
+    let principal = payment - interest;
+    if (principal <= 0) return Infinity;
+    balance -= principal; m++;
+  }
+  return m;
+}
+
+function calcInterest(balance, rate, payment) {
+  let r = rate / 100 / 12, t = 0, m = 0;
+  while (balance > 0 && m < 1000) {
+    let i = balance * r;
+    let p = payment - i;
+    if (p <= 0) break;
+    balance -= p;
+    t += i;
+    m++;
+  }
+  return t;
+}
+
+function getPriority(cfi) {
+  if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
+  if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
+  return { tag: "✅ Low", class: "priority-low" };
 }
 
 function showAmortization(btn) {
@@ -120,7 +200,6 @@ function showAmortization(btn) {
 function closeAmortization() {
   document.getElementById("amortizationModal").style.display = "none";
 }
-// [rest of original script remains unchanged below this point]
 </script>
 </body>
 </html>
