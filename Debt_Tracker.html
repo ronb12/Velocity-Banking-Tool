@@ -93,6 +93,36 @@ function addDebtRow(data = {}) {
   table.appendChild(row);
 }
 
+function simulateStrategy() {
+  const strategy = document.getElementById("strategySelect").value;
+  const debts = [];
+
+  table.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const name = inputs[0].value;
+    const balance = parseFloat(inputs[2].value);
+    const rate = parseFloat(inputs[3].value);
+    const payment = parseFloat(inputs[4].value);
+
+    if (balance > 0 && rate > 0 && payment > 0) {
+      const months = calcMonths(balance, rate, payment);
+      debts.push({ name, balance, rate, payment, months });
+    }
+  });
+
+  if (strategy === "snowball") {
+    debts.sort((a, b) => a.balance - b.balance);
+  } else {
+    debts.sort((a, b) => b.rate - a.rate);
+  }
+
+  const output = debts.map((d, i) =>
+    `${i + 1}. ${d.name} – Balance: $${d.balance.toFixed(2)}, Rate: ${d.rate}%, Est. Months: ${d.months}`
+  ).join("<br>");
+
+  alertBox.innerHTML = `<div class='alert'><strong>${strategy.charAt(0).toUpperCase() + strategy.slice(1)} Plan:</strong><br>${output}</div>`;
+}
+
 function calculate() {
   let totalBalance = 0, totalLimit = 0, totalPayment = 0, totalInterest = 0, maxMonths = 0;
   let creditBalance = 0, creditLimit = 0;
