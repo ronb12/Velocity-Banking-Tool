@@ -2,206 +2,154 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Bradley Budget">
-  <meta name="mobile-web-app-capable" content="yes">
-  <title>Bradley's Velocity Banking Toolkit</title>
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Velocity Banking Tool</title>
+
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
+
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
       margin: 0;
       padding: 0;
-      background: #f4f4f9;
-      text-align: center;
     }
-    header {
-      background: #007bff;
-      color: white;
-      padding: 1em;
-      position: relative;
-    }
-    button.logout, button.profile-btn {
-      position: absolute;
-      top: 15px;
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: none;
-      color: white;
-      cursor: pointer;
-    }
-    .logout { right: 20px; background: #dc3545; }
-    .profile-btn { left: 20px; background: #28a745; }
-    .tools, .dashboard, .export-buttons {
-      padding: 20px;
-    }
-    .tool-link {
-      display: block;
-      margin: 10px auto;
-      padding: 12px;
-      background: #007bff;
-      color: white;
-      width: 300px;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-    .dashboard-tile {
-      display: inline-block;
-      margin: 10px;
-      padding: 15px;
-      background: white;
-      border-left: 5px solid #007bff;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      min-width: 180px;
-      font-weight: bold;
-    }
-    .alert {
-      background: #ffc107;
-      color: black;
-      margin: 10px auto;
-      padding: 10px;
-      border-radius: 5px;
-      max-width: 500px;
-    }
-    #profileBox {
-      display: none;
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 2rem;
       background: #fff;
-      border: 1px solid #ccc;
-      max-width: 400px;
-      margin: 20px auto;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
     }
   </style>
 </head>
 <body>
-<header>
-  🚀 Bradley's Dashboard
-  <button class="profile-btn" onclick="toggleProfile()">👤 My Profile</button>
-  <button class="logout" onclick="logout()">🔒 Logout</button>
-</header>
 
-<div id="notification" class="alert" style="display: none;">🔔 Notifications will appear here.</div>
+  <!-- ✅ Friendly Success Banner -->
+  <div id="migrationBanner" style="
+    display: none;
+    background-color: #d4edda;
+    color: #155724;
+    padding: 15px 20px;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    margin: 20px auto;
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    position: relative;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    z-index: 999;
+  ">
+    <span style="font-size: 18px; margin-right: 8px;">✅</span>
+    Your financial data has been securely updated to work with the newest features.
+    <span id="closeBannerBtn" style="
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #155724;
+      font-size: 18px;
+    " title="Close">&times;</span>
+  </div>
 
-<div id="profileBox">
-  <h3>👤 Your Profile</h3>
-  <p id="profileEmail">Email: ...</p>
-  <p id="profileJoinDate">Joined: ...</p>
-</div>
+  <div class="container">
+    <h1>Welcome to Velocity Banking</h1>
+    <!-- Your dashboard content here -->
+  </div>
 
-<div class="dashboard" id="dashboardTiles">
-  <div class="dashboard-tile" id="netWorthTile">🧮 Total Net Worth: $0.00</div>
-  <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
-  <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
-  <div class="dashboard-tile" id="topDebtsTile">🔥 Top 3 Debts: Loading...</div>
-  <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: 0%</div>
-</div>
+  <!-- ✅ Firebase Config (Your Project) -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC--9xnMW4s8UPOJUnQbKjMpXgJvoh6ITw",
+      authDomain: "bradley-health.firebaseapp.com",
+      projectId: "bradley-health",
+      storageBucket: "bradley-health.appspot.com",
+      messagingSenderId: "294249919277",
+      appId: "1:294249919277:web:exampleappid"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
-<div class="tools">
-  <p>Welcome to your personal finance hub. Choose a tool:</p>
-  <a class="tool-link" href="budget.html">💰 Budget Tracker</a>
-  <a class="tool-link" href="Velocity_Calculator.html">📊 Velocity Calculator</a>
-  <a class="tool-link" href="Debt_Tracker.html">📋 Debt Tracker</a>
-  <a class="tool-link" href="1099_calculator.html">🧾 1099 Tax Calculator</a>
-  <a class="tool-link" href="Credit_Score_Estimator.html">💳 Credit Score Estimator</a>
-  <a class="tool-link" href="Mobile_Tracker.html">📱 Mobile Debt Tracker</a>
-  <a class="tool-link" href="net_worth_tracker.html">🧮 Net Worth Tracker</a>
-  <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goals</a>
-  <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
-  <a class="tool-link" href="activity_feed.html">🧾 Master Activity Feed</a>
-  <a class="tool-link" href="notifications.html">📥 Notifications Center</a>
-</div>
+  <!-- ✅ Secure Migration + Banner Logic -->
+  <script>
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) return;
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-    authDomain: "mobile-debt-tracker.firebaseapp.com",
-    projectId: "mobile-debt-tracker"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+      const uid = user.uid;
+      const db = firebase.firestore();
+      const userDocRef = db.collection('users').doc(uid);
+      const banner = document.getElementById('migrationBanner');
+      const closeBtn = document.getElementById('closeBannerBtn');
 
-  function logout() {
-    auth.signOut().then(() => window.location.href = "login.html");
-  }
+      try {
+        const userDoc = await userDocRef.get();
+        const userData = userDoc.data();
 
-  function toggleProfile() {
-    const box = document.getElementById("profileBox");
-    box.style.display = box.style.display === "none" ? "block" : "none";
-  }
+        if (userData?.migrated) return;
 
-  auth.onAuthStateChanged(async user => {
-    if (!user) return window.location.href = "login.html";
-    const userRef = db.collection("users").doc(user.uid);
-    const doc = await userRef.get();
-    if (!doc.exists) {
-      await userRef.set({ email: user.email, joined: new Date().toISOString() });
-    }
-    const data = (await userRef.get()).data();
-    document.getElementById("profileEmail").innerText = `Email: ${data.email}`;
-    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(data.joined).toLocaleDateString()}`;
-    document.getElementById("notification").innerText = `🔔 Welcome back, ${data.email}`;
-    document.getElementById("notification").style.display = "block";
+        async function migrateArrayToSubcollection(array, subcollectionName) {
+          if (Array.isArray(array) && array.length > 0) {
+            for (const item of array) {
+              await userDocRef.collection(subcollectionName).add({
+                ...item,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            }
+            console.log(`✅ Migrated ${subcollectionName} for ${uid}`);
+          }
+        }
 
-    // Dashboard Sync
-    const networth = await db.collection("networth").doc(user.uid).get();
-    if (networth.exists) {
-      const assets = networth.data().assets || [];
-      const liabilities = networth.data().liabilities || [];
-      const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
-      const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
-      document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
-    }
+        await migrateArrayToSubcollection(userData?.debts, "debts");
+        await migrateArrayToSubcollection(userData?.income, "income");
+        await migrateArrayToSubcollection(userData?.chunks, "chunks");
 
-    const budget = await db.collection("budgets").doc(user.uid + "_" + new Date().toISOString().slice(0,7)).get();
-    if (budget.exists) {
-      const income = budget.data().incomes.reduce((sum, i) => sum + i.amount, 0);
-      const expenses = budget.data().expenses.reduce((sum, e) => sum + e.budgeted, 0);
-      document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
-      document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
-    }
+        await userDocRef.update({
+          debts: firebase.firestore.FieldValue.delete(),
+          income: firebase.firestore.FieldValue.delete(),
+          chunks: firebase.firestore.FieldValue.delete(),
+          migrated: true
+        });
 
-    const debts = await db.collection("debts").doc(user.uid).get();
-    if (debts.exists) {
-      const topDebts = (debts.data().debts || [])
-        .sort((a,b) => b.interest - a.interest)
-        .slice(0, 3)
-        .map(d => d.name).join(", ");
-      document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+        // Show success banner
+        if (banner) {
+          banner.style.display = "block";
+          setTimeout(() => {
+            banner.style.opacity = "1";
+          }, 100);
 
-      const rawUtil = debts.data().creditUtilization;
-      const utilization = rawUtil !== undefined ? parseFloat(rawUtil).toFixed(2) : "0.00";
-      const utilTile = document.getElementById("creditUtilizationTile");
-      let badge = "";
+          setTimeout(() => {
+            banner.style.opacity = "0";
+            setTimeout(() => banner.style.display = "none", 1000);
+          }, 5000);
+        }
 
-      const utilValue = parseFloat(utilization);
+        // Manual close option
+        if (closeBtn) {
+          closeBtn.onclick = () => {
+            banner.style.opacity = "0";
+            setTimeout(() => banner.style.display = "none", 500);
+          };
+        }
 
-      // 🎨 Color Coding + Badge
-      if (utilValue < 30) {
-        utilTile.style.borderLeft = "5px solid #28a745"; // green
-        badge = "(Good ✅)";
-      } else if (utilValue < 50) {
-        utilTile.style.borderLeft = "5px solid #ffc107"; // yellow
-        badge = "(Warning ⚠️)";
-      } else {
-        utilTile.style.borderLeft = "5px solid #dc3545"; // red
-        badge = "(Danger ❌)";
+      } catch (err) {
+        console.error("❌ Migration failed:", err.message);
       }
-
-      utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
-    }
-  });
-</script>
+    });
+  </script>
 
 </body>
 </html>
