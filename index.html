@@ -99,6 +99,7 @@ auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
   const userRef = db.collection("users").doc(uid);
+
   const userDoc = await userRef.get();
   if (userDoc.exists) {
     const profile = userDoc.data();
@@ -127,7 +128,23 @@ auth.onAuthStateChanged(async user => {
 
   const debtSnap = await userRef.collection("debts").get();
   const data = debtSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  const creditDebts = data.filter(d => (d.type || '').toLowerCase() === 'credit');
+  const creditDebts = [], missingTypes = [];
+
+  for (const d of data) {
+    if (!d.type) {
+      missingTypes.push(d);
+      d.type = 'credit';
+    }
+    if ((d.type || '').toLowerCase().includes('credit')) creditDebts.push(d);
+  }
+
+  if (missingTypes.length > 0) {
+    for (const d of missingTypes) {
+      await userRef.collection("debts").doc(d.id).update({ type: "credit" });
+    }
+    document.getElementById("notification").style.display = "block";
+    document.getElementById("notification").innerText = `⚠️ Some debts were missing a type and were defaulted to "credit".`;
+  }
 
   const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
   const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
