@@ -105,6 +105,55 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       line-height: 1.6;
     }
+
+    /* ✅ Fully functional modal styles */
+    #amortizationModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+    }
+
+    #amortizationModalContent {
+      background: #fff;
+      width: 90%;
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      overflow-y: auto;
+      max-height: 85vh;
+      position: relative;
+    }
+
+    #amortizationModalContent table {
+      margin-top: 10px;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #amortizationModalContent th, #amortizationModalContent td {
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+
+    #amortizationModalContent th {
+      background: #007bff;
+      color: white;
+    }
+
+    .amortization-summary {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e9f7ef;
+      border: 1px solid #c3e6cb;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #155724;
+    }
   </style>
 </head>
 <body>
@@ -122,6 +171,7 @@
 
   <label for="extraPayment" style="margin-left: 20px;"><strong>Extra Monthly Payment:</strong></label>
   <input type="number" id="extraPayment" value="0" style="width: 80px;" />
+
   <table id="debtTable">
     <thead>
       <tr>
@@ -156,7 +206,8 @@
     💡 Add some debts above to see intelligent recommendations appear here.
   </div>
 
-  <div id="amortizationModal" style="display:none;">
+  <!-- Modal Popup -->
+  <div id="amortizationModal">
     <div id="amortizationModalContent">
       <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
       <h2>📄 Amortization Schedule</h2>
@@ -211,7 +262,6 @@ function calculateSummary() {
   const rows = Array.from(tableBody.querySelectorAll("tr"));
   const strategy = document.getElementById("strategyToggle").value;
 
-  // Strategy sorting
   rows.sort((a, b) => {
     const aBal = parseFloat(a.querySelectorAll("input")[2].value) || 0;
     const bBal = parseFloat(b.querySelectorAll("input")[2].value) || 0;
@@ -220,7 +270,6 @@ function calculateSummary() {
     return strategy === "snowball" ? aBal - bBal : bRate - aRate;
   });
 
-  // Reinsert sorted rows
   tableBody.innerHTML = "";
   rows.forEach(row => tableBody.appendChild(row));
 
@@ -277,25 +326,21 @@ function generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, max
 
   let html = "";
 
-  // 🔥 High CFI warning
   if (worstCFI > 50) {
     const worstName = rows[worstIndex].querySelector("input").value;
     html += `<div style="color:#dc3545; margin-bottom:8px;">⚠️ <strong>${worstName}</strong> has a high payoff difficulty (${Math.ceil(worstCFI)} months). 
       <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${worstIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
   }
 
-  // 💸 Highest interest first
   const highName = rows[highIndex].querySelector("input").value;
   html += `<div style="color:#007bff; margin-bottom:8px;">💸 Focus on <strong>${highName}</strong> — highest rate at <strong>${highestRate.toFixed(2)}%</strong>. 
     <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${highIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
 
-  // 📈 Extra payment projection
   if (extra > 0) {
     const savedMonths = Math.floor(maxMonths * 0.15);
     html += `<div style="color:#28a745;">📈 With your extra $${extra.toFixed(2)}/mo, you could save <strong>${savedMonths}</strong> months!</div>`;
   }
 
-  // 📅 Projected debt-free date
   const projectedDate = new Date();
   projectedDate.setMonth(projectedDate.getMonth() + maxMonths);
   html += `<div style="margin-top: 10px;">📅 Estimated debt-free date: <strong>${projectedDate.toLocaleDateString()}</strong></div>`;
@@ -346,7 +391,7 @@ function loadDebts() {
 
 auth.onAuthStateChanged(user => {
   if (user) loadDebts();
-  else calculateSummary(); // fallback
+  else calculateSummary();
 });
 
 function removeRow(btn) {
