@@ -17,34 +17,54 @@
     nav { text-align: center; margin-bottom: 20px; }
     nav a { font-weight: bold; color: #007BFF; font-size: 16px; text-decoration: none; }
     h1 { text-align: center; }
-
     table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #222; color: #fff; }
-
     .priority-urgent { background-color: #ffe5e5; }
     .priority-medium { background-color: #fff3cd; }
     .priority-low { background-color: #e6f4ea; }
-
     button { margin: 5px; padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
     button:hover { background: #0056b3; }
-
     .summary { margin-top: 20px; font-size: 18px; }
 
+    /* Modal for Amortization */
     #amortizationModal {
-      display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000;
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
     }
     #amortizationModalContent {
-      background:white; width:90%; max-width:800px; margin:50px auto; padding:20px; border-radius:8px;
-      position:relative; overflow-y:auto; max-height:90%;
+      background: white;
+      width: 90%;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      border-radius: 8px;
+      position: relative;
+      overflow-y: auto;
+      max-height: 90%;
     }
-    #amortizationModalContent table { margin-top:10px; width:100%; }
-    #amortizationModalContent th, #amortizationModalContent td { padding:8px; border:1px solid #ddd; }
-    #amortizationModalContent th { background:#007bff; color:white; }
-
+    #amortizationModalContent table {
+      margin-top: 10px;
+      width: 100%;
+    }
+    #amortizationModalContent th, #amortizationModalContent td {
+      padding: 8px;
+      border: 1px solid #ddd;
+    }
+    #amortizationModalContent th {
+      background: #007bff;
+      color: white;
+    }
     .amortization-summary {
-      margin-top:20px; padding:15px; background:#e9f7ef;
-      border:1px solid #d4edda; border-radius:8px; font-size:16px;
+      margin-top: 20px;
+      padding: 15px;
+      background: #e9f7ef;
+      border: 1px solid #d4edda;
+      border-radius: 8px;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -68,6 +88,7 @@
     <thead>
       <tr>
         <th>Debt Name</th>
+        <th>Type</th>
         <th>Limit ($)</th>
         <th>Balance ($)</th>
         <th>Interest Rate (%)</th>
@@ -82,6 +103,7 @@
     </thead>
     <tbody></tbody>
   </table>
+
   <button onclick="addDebt()">+ Add Debt</button>
   <button onclick="saveDebts()">💾 Save</button>
   <button onclick="loadDebts()">📂 Load</button>
@@ -92,18 +114,7 @@
     Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
   </div>
 
-  <div id="aiAdvisor" style="
-    margin-top: 15px;
-    font-size: 16px;
-    background: #ffffff;
-    border-left: 4px solid #007bff;
-    padding: 12px;
-    display: none;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    border-radius: 8px;
-    line-height: 1.6;
-  "></div>
-
+  <!-- Amortization Modal -->
   <div id="amortizationModal">
     <div id="amortizationModalContent">
       <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
@@ -112,7 +123,6 @@
       <div id="amortizationContent"></div>
     </div>
   </div>
-
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
@@ -122,13 +132,20 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-
 const tableBody = document.querySelector("#debtTable tbody");
 
-function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
+function addDebt(name = '', balance = '', rate = '', payment = '', limit = '', type = 'credit') {
   const row = document.createElement("tr");
   row.innerHTML = `
     <td><input value="${name}" /></td>
+    <td>
+      <select>
+        <option value="credit" ${type === 'credit' ? 'selected' : ''}>Credit</option>
+        <option value="loan" ${type === 'loan' ? 'selected' : ''}>Loan</option>
+        <option value="mortgage" ${type === 'mortgage' ? 'selected' : ''}>Mortgage</option>
+        <option value="other" ${type === 'other' ? 'selected' : ''}>Other</option>
+      </select>
+    </td>
     <td><input type="number" value="${limit}" /></td>
     <td><input type="number" value="${balance}" /></td>
     <td><input type="number" value="${rate}" /></td>
@@ -143,24 +160,14 @@ function addDebt(name = '', balance = '', rate = '', payment = '', limit = '') {
   tableBody.appendChild(row);
   calculateSummary();
 }
+
 function calculateSummary() {
   let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
   let creditBalance = 0, creditLimit = 0;
 
-  const rows = Array.from(tableBody.querySelectorAll("tr"));
-  const strategy = document.getElementById("strategyToggle")?.value || "avalanche";
-  rows.sort((a, b) => {
-    const aBal = parseFloat(a.querySelectorAll("input")[2].value) || 0;
-    const bBal = parseFloat(b.querySelectorAll("input")[2].value) || 0;
-    const aRate = parseFloat(a.querySelectorAll("input")[3].value) || 0;
-    const bRate = parseFloat(b.querySelectorAll("input")[3].value) || 0;
-    return strategy === "snowball" ? aBal - bBal : bRate - aRate;
-  });
-  tableBody.innerHTML = "";
-  rows.forEach(row => tableBody.appendChild(row));
-
-  rows.forEach(row => {
+  tableBody.querySelectorAll("tr").forEach(row => {
     const inputs = row.querySelectorAll("input");
+    const type = row.querySelector("select").value;
     const limit = parseFloat(inputs[1].value) || 0;
     const balance = parseFloat(inputs[2].value) || 0;
     const rate = parseFloat(inputs[3].value) || 0;
@@ -169,90 +176,29 @@ function calculateSummary() {
     totalBalance += balance;
     totalPayment += payment;
     totalLimit += limit;
-    if (limit > 0) { creditBalance += balance; creditLimit += limit; }
+
+    if (type === 'credit' && limit > 0) {
+      creditBalance += balance;
+      creditLimit += limit;
+    }
 
     if (balance > 0 && rate > 0 && payment > 0) {
-      const months = calcRealMonths(balance, rate, payment);
+      const r = rate / 100 / 12;
+      const months = Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
       const cfi = (balance / payment).toFixed(2);
-      const interest = calcTotalInterest(balance, rate, payment);
-      const { tag, class: priorityClass } = getPriorityTag(cfi);
+      const interest = (payment * months) - balance;
       row.querySelector(".monthsLeft").innerText = months;
       row.querySelector(".cfi").innerText = cfi;
       row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-      row.querySelector(".priority").innerText = tag;
-      row.className = priorityClass;
+      row.querySelector(".priority").innerText =
+        cfi < 20 ? "🔥 Urgent" : cfi < 50 ? "⚠️ Medium" : "✅ Low";
       totalInterest += interest;
     }
   });
 
-  const creditUtilization = creditLimit > 0 ? (creditBalance / creditLimit) * 100 : 0;
+  const utilization = creditLimit > 0 ? (creditBalance / creditLimit * 100).toFixed(2) : "0.00";
   document.getElementById("summaryText").innerText =
-    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${creditUtilization.toFixed(2)}%`;
-
-  const advisorBox = document.getElementById("aiAdvisor");
-  advisorBox.style.display = "block";
-  if (totalBalance === 0 || totalPayment === 0) {
-    advisorBox.innerHTML = "💡 <strong>No debts found.</strong> Add debts to receive intelligent recommendations.";
-    return;
-  }
-
-  let suggestion = "", worstCFI = 0, worstDebt = "", highInterestDebt = "", worstIndex = 0, highIndex = 0, highestRate = 0;
-  let totalMonthsEstimate = 0;
-  rows.forEach((row, i) => {
-    const inputs = row.querySelectorAll("input");
-    const name = inputs[0].value;
-    const balance = parseFloat(inputs[2].value) || 0;
-    const rate = parseFloat(inputs[3].value) || 0;
-    const payment = parseFloat(inputs[4].value) || 0;
-    const cfi = balance > 0 && payment > 0 ? balance / payment : 0;
-    if (rate > highestRate) { highestRate = rate; highInterestDebt = name; highIndex = i; }
-    if (cfi > worstCFI) { worstCFI = cfi; worstDebt = name; worstIndex = i; }
-    const r = rate / 100 / 12;
-    const months = r > 0 && payment > 0 ? Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r)) : 0;
-    totalMonthsEstimate = Math.max(totalMonthsEstimate, months);
-  });
-
-  let html = "";
-  if (worstCFI > 50) {
-    html += `<div style="color: #dc3545;">⚠️ <strong>${worstDebt}</strong> has a high cost-to-payoff ratio (${Math.ceil(worstCFI)} months). 
-      <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${worstIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
-  }
-  html += `<div style="color: #007bff;">💸 Focus on <strong>${highInterestDebt}</strong> — highest rate at <strong>${highestRate.toFixed(2)}%</strong>. 
-    <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${highIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
-  const extra = parseFloat(document.getElementById("extraPayment").value) || 0;
-  if (extra > 0) {
-    const savedMonths = Math.floor(totalMonthsEstimate * 0.15);
-    html += `<div style="color: #28a745;">📈 With your extra $${extra.toFixed(2)}/mo, you could save <strong>${savedMonths}</strong> months!</div>`;
-  }
-  const projectedDate = new Date();
-  projectedDate.setMonth(projectedDate.getMonth() + totalMonthsEstimate);
-  html += `<div style="margin-top: 10px;">📅 Estimated debt-free date: <strong>${projectedDate.toLocaleDateString()}</strong></div>`;
-  advisorBox.innerHTML = html;
-}
-
-function calcRealMonths(balance, rate, payment) {
-  const r = rate / 100 / 12;
-  if (balance <= 0 || r <= 0 || payment <= 0) return 0;
-  return Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
-}
-
-function calcTotalInterest(balance, rate, payment) {
-  let r = rate / 100 / 12, total = 0, month = 0;
-  while (balance > 0 && month < 1000) {
-    const interest = balance * r;
-    const principal = payment - interest;
-    if (principal <= 0) break;
-    balance -= principal;
-    total += interest;
-    month++;
-  }
-  return total;
-}
-
-function getPriorityTag(cfi) {
-  if (cfi < 20) return { tag: "🔥 Urgent", class: "priority-urgent" };
-  if (cfi < 50) return { tag: "⚠️ Medium", class: "priority-medium" };
-  return { tag: "✅ Low", class: "priority-low" };
+    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${utilization}%`;
 }
 
 function amortizeRow(button) {
@@ -279,7 +225,6 @@ function amortizeRow(button) {
     ➕ <strong>Extra Payment:</strong> $${extra.toFixed(2)}<br>
     📦 <strong>Total Payment:</strong> $${payment.toFixed(2)}<br>
     📈 <strong>Interest Rate:</strong> ${rate.toFixed(2)}%</p>
-    <p id="totalMonthsText" style="font-weight:bold;">📆 Calculating...</p>
     <table><thead><tr>
       <th>Month</th><th>Payment ($)</th><th>Principal ($)</th><th>Interest ($)</th><th>Balance Remaining ($)</th>
     </tr></thead><tbody>`;
@@ -303,11 +248,11 @@ function amortizeRow(button) {
     month++;
   }
 
-  html = html.replace("📆 Calculating...", `📆 <strong>Total Months to Pay Off:</strong> ${month - 1} months`);
   html += `</tbody></table>
     <div class="amortization-summary">
       📊 <strong>Total Paid:</strong> $${totalPaid.toFixed(2)}<br>
-      💸 <strong>Total Interest Paid:</strong> $${totalInterest.toFixed(2)}
+      💸 <strong>Total Interest Paid:</strong> $${totalInterest.toFixed(2)}<br>
+      📆 <strong>Total Months:</strong> ${month - 1}
     </div>`;
   content.innerHTML = html;
   document.getElementById("amortizationModal").style.display = "block";
@@ -328,58 +273,17 @@ function exportAmortizationToPDF() {
   doc.text("Debt Amortization Schedule", 14, 20);
   let summaryY = 30;
   Array.from(content.querySelectorAll("p, .amortization-summary")).forEach(el => {
-    doc.text(el.innerText, 14, summaryY);
+    doc.text(el.innerText.replace(/\\n/g, ''), 14, summaryY);
     summaryY += 8;
   });
   doc.autoTable({ head: [headers], body: data, startY: summaryY + 5, theme: 'striped', styles: { fontSize: 9 } });
   doc.save("Amortization_Schedule.pdf");
 }
 
-function saveDebts() {
-  const data = [];
-  tableBody.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    data.push({
-      name: inputs[0].value,
-      limit: inputs[1].value,
-      balance: inputs[2].value,
-      rate: inputs[3].value,
-      payment: inputs[4].value
-    });
-  });
-  localStorage.setItem("debtData", JSON.stringify(data));
-  const user = auth.currentUser;
-  if (user) {
-    db.collection('debts').doc(user.uid).set({ debts: data });
-  }
-}
-
-function loadDebts() {
-  const data = JSON.parse(localStorage.getItem("debtData")) || [];
-  tableBody.innerHTML = "";
-  data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-  calculateSummary();
-}
-
 function removeRow(btn) {
-  btn.parentElement.parentElement.remove();
+  btn.closest("tr").remove();
   calculateSummary();
 }
-
-auth.onAuthStateChanged(user => {
-  if (user) {
-    db.collection('debts').doc(user.uid).get().then(doc => {
-      if (doc.exists) {
-        const debts = doc.data().debts || [];
-        tableBody.innerHTML = "";
-        debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit));
-        calculateSummary();
-      }
-    });
-  } else {
-    loadDebts();
-  }
-});
 </script>
 </body>
 </html>
