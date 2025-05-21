@@ -99,12 +99,11 @@ auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
 
-  const userRef = db.collection("users").doc(uid);
-  const userDoc = await userRef.get();
-  if (userDoc.exists) {
-    const profile = userDoc.data();
-    document.getElementById("profileEmail").innerText = `Email: ${profile.email}`;
-    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(profile.joined).toLocaleDateString()}`;
+  const userDoc = await db.collection("users").doc(uid).get();
+  const profile = userDoc.data();
+  if (profile) {
+    document.getElementById("profileEmail").innerText = `Email: ${profile.email || 'N/A'}`;
+    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(profile.joined).toLocaleDateString() || 'N/A'}`;
   }
 
   const netWorthDoc = await db.collection("networth").doc(uid).get();
@@ -126,42 +125,25 @@ auth.onAuthStateChanged(async user => {
     document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
   }
 
-  const debtSnap = await userRef.collection("debts").get();
-  const data = debtSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  const creditDebts = [];
-  const missingTypes = [];
-
-  for (let i = 0; i < data.length; i++) {
-    const d = data[i];
-    if (!d.type) {
-      missingTypes.push(d);
-      d.type = 'credit';
-    }
-    if ((d.type || '').toLowerCase().includes('credit')) creditDebts.push(d);
-  }
-
-  if (missingTypes.length > 0) {
-    for (const d of missingTypes) {
-      await userRef.collection("debts").doc(d.id).update({ type: "credit" });
-    }
-    document.getElementById("notification").style.display = "block";
-    document.getElementById("notification").innerText = `⚠️ Some debts were missing a type and were defaulted to "credit".`;
-  }
-
-  const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
-  const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
-  const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
-
-  const utilTile = document.getElementById("creditUtilizationTile");
+  // 🔄 Pull credit utilization directly from user profile
+  const utilization = profile?.utilization || "0.00";
   let color = "#007bff", badge = "";
   if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
   else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
   else { color = "#dc3545"; badge = "(Danger ❌)"; }
 
+  const utilTile = document.getElementById("creditUtilizationTile");
   utilTile.style.borderLeft = `5px solid ${color}`;
   utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
 
-  const topDebts = [...data].sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
+  // 🔥 Load top 3 debts from user's subcollection
+  const debtSnap = await db.collection("users").doc(uid).collection("debts").get();
+  const allDebts = debtSnap.docs.map(doc => doc.data());
+  const topDebts = allDebts
+    .sort((a, b) => (b.interest || 0) - (a.interest || 0))
+    .slice(0, 3)
+    .map(d => d.name)
+    .join(", ");
   document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
 });
 </script>
