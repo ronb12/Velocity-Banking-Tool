@@ -71,6 +71,9 @@
   <a class="tool-link" href="1099_calculator.html">📟 1099 Tax Calculator</a>
   <a class="tool-link" href="net_worth_tracker.html">🧰 Net Worth Tracker</a>
   <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goals</a>
+  <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
+  <a class="tool-link" href="activity_feed.html">🧾 Master Activity Feed</a>
+  <a class="tool-link" href="notifications.html">📥 Notifications Center</a>
 </div>
 
 <script>
@@ -95,34 +98,6 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-  const userRef = db.collection("users").doc(uid);
-  const userDoc = await userRef.get();
-
-  if (userDoc.exists) {
-    const userData = userDoc.data();
-    document.getElementById("profileEmail").innerText = `Email: ${userData.email}`;
-    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(userData.joined).toLocaleDateString()}`;
-    document.getElementById("notification").innerText = `🔔 Welcome back, ${userData.email}`;
-    document.getElementById("notification").style.display = "block";
-  }
-
-  const budgetDoc = await db.collection("budgets").doc(uid + "_" + new Date().toISOString().slice(0, 7)).get();
-  if (budgetDoc.exists) {
-    const b = budgetDoc.data();
-    const totalIncome = (b.incomes || []).reduce((sum, i) => sum + i.amount, 0);
-    const totalExpenses = (b.expenses || []).reduce((sum, e) => sum + e.budgeted, 0);
-    document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${totalIncome.toFixed(2)}`;
-    document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(totalIncome - totalExpenses).toFixed(2)}`;
-  }
-
-  const netWorthDoc = await db.collection("networth").doc(uid).get();
-  if (netWorthDoc.exists) {
-    const nw = netWorthDoc.data();
-    const totalAssets = (nw.assets || []).reduce((sum, a) => sum + a.value, 0);
-    const totalLiabilities = (nw.liabilities || []).reduce((sum, l) => sum + l.value, 0);
-    document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
-  }
-
   const debtDoc = await db.collection("debts").doc(uid).get();
   const data = debtDoc.exists ? debtDoc.data().debts : [];
   const creditDebts = [];
@@ -146,8 +121,6 @@ auth.onAuthStateChanged(async user => {
   const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
   const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
   const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
-
-  console.log("Included in Utilization:", creditDebts);
 
   const utilTile = document.getElementById("creditUtilizationTile");
   let color = "#007bff", badge = "";
