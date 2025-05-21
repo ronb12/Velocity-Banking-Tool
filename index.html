@@ -98,8 +98,9 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-  const debtDoc = await db.collection("debts").doc(uid).get();
-  const data = debtDoc.exists ? debtDoc.data().debts : [];
+
+  const debtSnap = await db.collection("users").doc(uid).collection("debts").get();
+  const data = debtSnap.docs.map(doc => doc.data());
   const creditDebts = [];
   const missingTypes = [];
 
@@ -113,7 +114,6 @@ auth.onAuthStateChanged(async user => {
   }
 
   if (missingTypes.length > 0) {
-    await db.collection("debts").doc(uid).update({ debts: data });
     document.getElementById("notification").style.display = "block";
     document.getElementById("notification").innerText = `⚠️ Some debts were missing a type and were defaulted to "credit".`;
   }
