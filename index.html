@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
   <link rel="apple-touch-icon" href="icon-192.png" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -13,8 +12,8 @@
     body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; margin: 0; padding: 0; text-align: center; }
     header { background: #007bff; color: white; padding: 1em; position: relative; }
     button.logout, button.profile-btn {
-      position: absolute; top: 15px; padding: 8px 12px;
-      border-radius: 4px; border: none; color: white; cursor: pointer;
+      position: absolute; top: 15px; padding: 8px 12px; border-radius: 4px;
+      border: none; color: white; cursor: pointer;
     }
     .logout { right: 20px; background: #dc3545; }
     .profile-btn { left: 20px; background: #28a745; }
@@ -97,31 +96,16 @@ function toggleProfile() {
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
-// One-time patch to normalize 'type'
-async function patchMissingDebtTypes(uid) {
-  const ref = db.collection("users").doc(uid).collection("debts");
-  const snap = await ref.get();
-  for (const doc of snap.docs) {
-    const data = doc.data();
-    const type = (data.type || "").toLowerCase();
-    if (!data.type) {
-      await doc.ref.update({ type: "credit" });
-    } else if (data.type !== type) {
-      await doc.ref.update({ type });
-    }
-  }
-}
-
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
 
-  await patchMissingDebtTypes(uid);
-
   const userRef = db.collection("users").doc(uid);
   const userDoc = await userRef.get();
 
-  if (!userDoc.exists) await userRef.set({ email: user.email, joined: new Date().toISOString() });
+  if (!userDoc.exists) {
+    await userRef.set({ email: user.email, joined: new Date().toISOString() });
+  }
 
   const userData = userDoc.data();
   document.getElementById("profileEmail").innerText = `Email: ${userData.email}`;
@@ -130,7 +114,9 @@ auth.onAuthStateChanged(async user => {
   document.getElementById("notification").style.display = "block";
 
   if (!userData?.migrated && Array.isArray(userData?.debts)) {
-    for (const d of userData.debts) await userRef.collection("debts").add(d);
+    for (const debt of userData.debts) {
+      await userRef.collection("debts").add(debt);
+    }
     await userRef.update({ debts: firebase.firestore.FieldValue.delete(), migrated: true });
     document.getElementById("migrationBanner").style.display = "block";
     setTimeout(() => document.getElementById("migrationBanner").style.display = "none", 5000);
@@ -138,8 +124,9 @@ auth.onAuthStateChanged(async user => {
 
   const netWorthDoc = await db.collection("networth").doc(uid).get();
   if (netWorthDoc.exists) {
-    const { assets = [], liabilities = [] } = netWorthDoc.data();
-    const netWorth = assets.reduce((s, a) => s + a.value, 0) - liabilities.reduce((s, l) => s + l.value, 0);
+    const assets = netWorthDoc.data().assets || [];
+    const liabilities = netWorthDoc.data().liabilities || [];
+    const netWorth = assets.reduce((sum, a) => sum + a.value, 0) - liabilities.reduce((sum, l) => sum + l.value, 0);
     document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${netWorth.toFixed(2)}`;
   }
 
@@ -147,30 +134,35 @@ auth.onAuthStateChanged(async user => {
   const budgetDoc = await db.collection("budgets").doc(uid + "_" + monthId).get();
   if (budgetDoc.exists) {
     const data = budgetDoc.data();
-    const totalIncome = (data.incomes || []).reduce((s, i) => s + i.amount, 0);
-    const totalExpenses = (data.expenses || []).reduce((s, e) => s + e.budgeted, 0);
+    const totalIncome = (data.incomes || []).reduce((sum, i) => sum + i.amount, 0);
+    const totalExpenses = (data.expenses || []).reduce((sum, e) => sum + e.budgeted, 0);
     document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${totalIncome.toFixed(2)}`;
     document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(totalIncome - totalExpenses).toFixed(2)}`;
   }
 
-  const debts = (await userRef.collection("debts").get()).docs.map(doc => doc.data());
+  const debtSnap = await userRef.collection("debts").get();
+  const allDebts = debtSnap.docs.map(doc => doc.data());
 
-  // Top 3 debts
-  const topDebts = debts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
+  const topDebts = allDebts
+    .sort((a, b) => (b.interest || 0) - (a.interest || 0))
+    .slice(0, 3)
+    .map(d => d.name)
+    .join(", ");
   document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
 
-  // ✅ Accurate credit utilization
-  const creditDebts = debts.filter(d => (d.type || "").toLowerCase() === "credit");
-  const totalUsed = creditDebts.reduce((s, d) => s + parseFloat(d.balance || 0), 0);
-  const totalLimit = creditDebts.reduce((s, d) => s + parseFloat(d.limit || 0), 0);
+  const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === "credit");
+  console.log("📊 Included in Utilization:", creditDebts.map(d => ({ name: d.name, balance: d.balance, limit: d.limit, type: d.type })));
+
+  const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
+  const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
   const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
 
+  const utilTile = document.getElementById("creditUtilizationTile");
   let color = "#007bff", badge = "";
   if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
   else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
   else { color = "#dc3545"; badge = "(Danger ❌)"; }
 
-  const utilTile = document.getElementById("creditUtilizationTile");
   utilTile.style.borderLeft = `5px solid ${color}`;
   utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
 });
