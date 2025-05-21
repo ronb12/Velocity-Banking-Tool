@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – AI Enhanced</title>
+  <title>Debt Tracker – Final Fixed</title>
 
   <link rel="icon" type="image/png" href="favicon.png" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -83,9 +83,6 @@
     button:hover {
       background: #0056b3;
     }
-    button[style*="background:#dc3545"] {
-      background: #dc3545 !important;
-    }
     .summary {
       margin-top: 20px;
       font-size: 18px;
@@ -105,8 +102,6 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       line-height: 1.6;
     }
-
-    /* ✅ Fully functional modal styles */
     #amortizationModal {
       display: none;
       position: fixed;
@@ -115,7 +110,6 @@
       background: rgba(0, 0, 0, 0.6);
       z-index: 1000;
     }
-
     #amortizationModalContent {
       background: #fff;
       width: 90%;
@@ -128,23 +122,19 @@
       max-height: 85vh;
       position: relative;
     }
-
     #amortizationModalContent table {
       margin-top: 10px;
       width: 100%;
       border-collapse: collapse;
     }
-
     #amortizationModalContent th, #amortizationModalContent td {
       padding: 10px;
       border: 1px solid #ddd;
     }
-
     #amortizationModalContent th {
       background: #007bff;
       color: white;
     }
-
     .amortization-summary {
       margin-top: 20px;
       padding: 15px;
@@ -161,7 +151,7 @@
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
 
-  <h1>Debt Tracker – AI Enhanced</h1>
+  <h1>Debt Tracker – Final Fixed</h1>
 
   <label for="strategyToggle"><strong>Payoff Strategy:</strong></label>
   <select id="strategyToggle" onchange="calculateSummary()">
@@ -206,7 +196,7 @@
     💡 Add some debts above to see intelligent recommendations appear here.
   </div>
 
-  <!-- Modal Popup -->
+  <!-- Amortization Modal -->
   <div id="amortizationModal">
     <div id="amortizationModalContent">
       <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
@@ -328,23 +318,22 @@ function generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, max
 
   if (worstCFI > 50) {
     const worstName = rows[worstIndex].querySelector("input").value;
-    html += `<div style="color:#dc3545; margin-bottom:8px;">⚠️ <strong>${worstName}</strong> has a high payoff difficulty (${Math.ceil(worstCFI)} months). 
+    html += `<div style="color:#dc3545;">⚠️ <strong>${worstName}</strong> will take the longest to pay off (${Math.ceil(worstCFI)} months). 
       <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${worstIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
   }
 
   const highName = rows[highIndex].querySelector("input").value;
-  html += `<div style="color:#007bff; margin-bottom:8px;">💸 Focus on <strong>${highName}</strong> — highest rate at <strong>${highestRate.toFixed(2)}%</strong>. 
+  html += `<div style="color:#007bff;">💸 Focus on <strong>${highName}</strong> — highest rate at <strong>${highestRate.toFixed(2)}%</strong>. 
     <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${highIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
 
   if (extra > 0) {
     const savedMonths = Math.floor(maxMonths * 0.15);
-    html += `<div style="color:#28a745;">📈 With your extra $${extra.toFixed(2)}/mo, you could save <strong>${savedMonths}</strong> months!</div>`;
+    html += `<div style="color:#28a745;">📈 Your $${extra}/mo extra could save <strong>${savedMonths} months</strong>!</div>`;
   }
 
   const projectedDate = new Date();
   projectedDate.setMonth(projectedDate.getMonth() + maxMonths);
   html += `<div style="margin-top: 10px;">📅 Estimated debt-free date: <strong>${projectedDate.toLocaleDateString()}</strong></div>`;
-
   box.innerHTML = html;
 }
 
@@ -365,9 +354,7 @@ function saveDebts() {
   localStorage.setItem("debtData", JSON.stringify(data));
   const user = auth.currentUser;
   if (user) {
-    db.collection('debts').doc(user.uid).set({ debts: data })
-      .then(() => alert("✅ Debts saved successfully!"))
-      .catch(err => alert("❌ Save failed: " + err.message));
+    db.collection('debts').doc(user.uid).set({ debts: data });
   }
 }
 
@@ -383,8 +370,9 @@ function loadDebts() {
       }
     });
   } else {
-    const data = JSON.parse(localStorage.getItem("debtData") || "[]");
-    data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit, d.type || 'credit'));
+    const local = JSON.parse(localStorage.getItem("debtData") || "[]");
+    tableBody.innerHTML = "";
+    local.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit, d.type || 'credit'));
     calculateSummary();
   }
 }
@@ -421,7 +409,8 @@ function amortizeRow(button) {
     return;
   }
 
-  let html = `<h3>💼 Debt: ${name}</h3><table><thead><tr>
+  let html = `<h3>💼 Debt: ${name}</h3><p>💸 Base: $${base.toFixed(2)} | ➕ Extra: $${extra.toFixed(2)} | 📦 Total: $${payment.toFixed(2)} | Rate: ${rate.toFixed(2)}%</p>`;
+  html += `<table><thead><tr>
     <th>Month</th><th>Payment ($)</th><th>Principal ($)</th><th>Interest ($)</th><th>Balance Remaining ($)</th>
   </tr></thead><tbody>`;
 
@@ -458,12 +447,30 @@ function exportAmortizationToPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape" });
   const content = document.getElementById("amortizationContent");
+
+  const title = content.querySelector("h3")?.innerText || "Debt Amortization";
+  const summary = Array.from(content.querySelectorAll("p, .amortization-summary")).map(el => el.innerText);
   const rows = content.querySelectorAll("table tbody tr");
   const headers = ["Month", "Payment", "Principal", "Interest", "Balance"];
   const data = Array.from(rows).map(r => Array.from(r.children).map(c => c.innerText));
+
   doc.setFontSize(16);
-  doc.text("Debt Amortization Schedule", 14, 20);
-  doc.autoTable({ head: [headers], body: data, startY: 30, theme: 'striped', styles: { fontSize: 9 } });
+  doc.text(title, 14, 20);
+  let y = 30;
+  doc.setFontSize(11);
+  summary.forEach(line => {
+    doc.text(line, 14, y);
+    y += 6;
+  });
+
+  doc.autoTable({
+    head: [headers],
+    body: data,
+    startY: y + 4,
+    theme: 'striped',
+    styles: { fontSize: 9 }
+  });
+
   doc.save("Amortization_Schedule.pdf");
 }
 </script>
