@@ -98,8 +98,8 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-  const userRef = db.collection("users").doc(uid);
 
+  const userRef = db.collection("users").doc(uid);
   const userDoc = await userRef.get();
   if (userDoc.exists) {
     const profile = userDoc.data();
@@ -128,9 +128,11 @@ auth.onAuthStateChanged(async user => {
 
   const debtSnap = await userRef.collection("debts").get();
   const data = debtSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  const creditDebts = [], missingTypes = [];
+  const creditDebts = [];
+  const missingTypes = [];
 
-  for (const d of data) {
+  for (let i = 0; i < data.length; i++) {
+    const d = data[i];
     if (!d.type) {
       missingTypes.push(d);
       d.type = 'credit';
