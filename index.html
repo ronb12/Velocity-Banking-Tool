@@ -95,19 +95,10 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-  const userRef = db.collection("users").doc(uid);
+  const debtDoc = await db.collection("debts").doc(uid).get();
+  const data = debtDoc.exists ? debtDoc.data().debts : [];
 
-  const debtSnap = await userRef.collection("debts").get();
-  const allDebts = debtSnap.docs.map(doc => doc.data());
-
-  const creditDebts = allDebts.filter(d => (d?.type || '').toLowerCase() === 'credit');
-  const missingType = allDebts.filter(d => !d.type);
-  if (missingType.length > 0) {
-    console.warn("⚠️ Some debts are missing the 'type' field:", missingType);
-  }
-
-  console.log("✅ Debts used for credit utilization:", creditDebts);
-
+  const creditDebts = data.filter(d => (d?.type || '').toLowerCase() === 'credit');
   const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
   const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
   const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
