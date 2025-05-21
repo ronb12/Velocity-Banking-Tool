@@ -95,9 +95,36 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
+  const userRef = db.collection("users").doc(uid);
+  const userDoc = await userRef.get();
+
+  if (userDoc.exists) {
+    const userData = userDoc.data();
+    document.getElementById("profileEmail").innerText = `Email: ${userData.email}`;
+    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(userData.joined).toLocaleDateString()}`;
+    document.getElementById("notification").innerText = `🔔 Welcome back, ${userData.email}`;
+    document.getElementById("notification").style.display = "block";
+  }
+
+  const budgetDoc = await db.collection("budgets").doc(uid + "_" + new Date().toISOString().slice(0, 7)).get();
+  if (budgetDoc.exists) {
+    const b = budgetDoc.data();
+    const totalIncome = (b.incomes || []).reduce((sum, i) => sum + i.amount, 0);
+    const totalExpenses = (b.expenses || []).reduce((sum, e) => sum + e.budgeted, 0);
+    document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${totalIncome.toFixed(2)}`;
+    document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(totalIncome - totalExpenses).toFixed(2)}`;
+  }
+
+  const netWorthDoc = await db.collection("networth").doc(uid).get();
+  if (netWorthDoc.exists) {
+    const nw = netWorthDoc.data();
+    const totalAssets = (nw.assets || []).reduce((sum, a) => sum + a.value, 0);
+    const totalLiabilities = (nw.liabilities || []).reduce((sum, l) => sum + l.value, 0);
+    document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
+  }
+
   const debtDoc = await db.collection("debts").doc(uid).get();
   const data = debtDoc.exists ? debtDoc.data().debts : [];
-
   const creditDebts = [];
   const missingTypes = [];
 
@@ -130,6 +157,9 @@ auth.onAuthStateChanged(async user => {
 
   utilTile.style.borderLeft = `5px solid ${color}`;
   utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
+
+  const topDebts = [...data].sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
+  document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
 });
 </script>
 </body>
