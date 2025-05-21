@@ -127,7 +127,7 @@ auth.onAuthStateChanged(async user => {
 
   const debtSnap = await db.collection("users").doc(uid).collection("debts").get();
   const allDebts = debtSnap.docs.map(doc => doc.data());
-  const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit');
+  const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit' && parseFloat(d.limit || 0) > 0);
   const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
   const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
   const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
