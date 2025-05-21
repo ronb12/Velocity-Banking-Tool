@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Debt Tracker – Full Featured</title>
+  <title>Debt Tracker – AI Enhanced</title>
 
   <link rel="icon" type="image/png" href="favicon.png" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -95,42 +95,15 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       border-radius: 6px;
     }
-    #amortizationModal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      z-index: 1000;
-    }
-    #amortizationModalContent {
-      background: white;
-      width: 90%;
-      max-width: 800px;
-      margin: 50px auto;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      overflow-y: auto;
-      max-height: 90%;
-    }
-    #amortizationModalContent table {
-      margin-top: 10px; width: 100%;
-      border-collapse: collapse;
-    }
-    #amortizationModalContent th, #amortizationModalContent td {
-      padding: 10px; border: 1px solid #ddd;
-    }
-    #amortizationModalContent th {
-      background: #007bff; color: white;
-    }
-    .amortization-summary {
+    #aiAdvisor {
       margin-top: 20px;
-      padding: 15px;
-      background: #e9f7ef;
-      border: 1px solid #c3e6cb;
-      border-radius: 8px;
+      padding: 16px;
       font-size: 16px;
-      color: #155724;
+      background: #ffffff;
+      border-left: 6px solid #6f42c1;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      line-height: 1.6;
     }
   </style>
 </head>
@@ -139,7 +112,7 @@
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
 
-  <h1>Debt Tracker – Full Featured</h1>
+  <h1>Debt Tracker – AI Enhanced</h1>
 
   <label for="strategyToggle"><strong>Payoff Strategy:</strong></label>
   <select id="strategyToggle" onchange="calculateSummary()">
@@ -149,7 +122,6 @@
 
   <label for="extraPayment" style="margin-left: 20px;"><strong>Extra Monthly Payment:</strong></label>
   <input type="number" id="extraPayment" value="0" style="width: 80px;" />
-
   <table id="debtTable">
     <thead>
       <tr>
@@ -177,13 +149,18 @@
   <button onclick="window.print()">🖨️ Print Page</button>
 
   <div class="summary" id="summaryText">
-    Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0
+    Total Debt: $0 | Total Monthly Payments: $0 | Total Interest: $0 | Total Limit: $0 | Credit Utilization: 0%
   </div>
 
-  <div id="amortizationModal">
+  <div id="aiAdvisor">
+    💡 Add some debts above to see intelligent recommendations appear here.
+  </div>
+
+  <div id="amortizationModal" style="display:none;">
     <div id="amortizationModalContent">
       <button onclick="closeAmortization()" style="position:absolute; top:10px; right:10px; background:#dc3545;">❌ Close</button>
       <h2>📄 Amortization Schedule</h2>
+      <button onclick="exportAmortizationToPDF()" style="margin-bottom:10px;">📄 Export to PDF</button>
       <div id="amortizationContent"></div>
     </div>
   </div>
@@ -228,8 +205,26 @@ function addDebt(name = '', balance = '', rate = '', payment = '', limit = '', t
 function calculateSummary() {
   let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
   let creditBalance = 0, creditLimit = 0;
+  let maxMonths = 0;
+  let worstCFI = 0, worstIndex = 0, highestRate = 0, highIndex = 0;
 
-  tableBody.querySelectorAll("tr").forEach(row => {
+  const rows = Array.from(tableBody.querySelectorAll("tr"));
+  const strategy = document.getElementById("strategyToggle").value;
+
+  // Strategy sorting
+  rows.sort((a, b) => {
+    const aBal = parseFloat(a.querySelectorAll("input")[2].value) || 0;
+    const bBal = parseFloat(b.querySelectorAll("input")[2].value) || 0;
+    const aRate = parseFloat(a.querySelectorAll("input")[3].value) || 0;
+    const bRate = parseFloat(b.querySelectorAll("input")[3].value) || 0;
+    return strategy === "snowball" ? aBal - bBal : bRate - aRate;
+  });
+
+  // Reinsert sorted rows
+  tableBody.innerHTML = "";
+  rows.forEach(row => tableBody.appendChild(row));
+
+  rows.forEach((row, i) => {
     const inputs = row.querySelectorAll("input");
     const type = row.querySelector("select").value;
     const limit = parseFloat(inputs[1].value) || 0;
@@ -251,19 +246,116 @@ function calculateSummary() {
       const months = Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
       const cfi = (balance / payment).toFixed(2);
       const interest = (payment * months) - balance;
+
       row.querySelector(".monthsLeft").innerText = months;
       row.querySelector(".cfi").innerText = cfi;
       row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
       row.querySelector(".priority").innerText =
         cfi < 20 ? "🔥 Urgent" : cfi < 50 ? "⚠️ Medium" : "✅ Low";
       row.className = cfi < 20 ? 'priority-urgent' : cfi < 50 ? 'priority-medium' : 'priority-low';
+
       totalInterest += interest;
+      if (months > maxMonths) maxMonths = months;
+      if (cfi > worstCFI) { worstCFI = cfi; worstIndex = i; }
+      if (rate > highestRate) { highestRate = rate; highIndex = i; }
     }
   });
 
   const utilization = creditLimit > 0 ? (creditBalance / creditLimit * 100).toFixed(2) : "0.00";
   document.getElementById("summaryText").innerText =
     `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${utilization}%`;
+
+  generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, maxMonths);
+}
+function generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, maxMonths) {
+  const box = document.getElementById("aiAdvisor");
+  const extra = parseFloat(document.getElementById("extraPayment").value) || 0;
+  if (rows.length === 0) {
+    box.innerHTML = "💡 Add some debts above to see intelligent recommendations appear here.";
+    return;
+  }
+
+  let html = "";
+
+  // 🔥 High CFI warning
+  if (worstCFI > 50) {
+    const worstName = rows[worstIndex].querySelector("input").value;
+    html += `<div style="color:#dc3545; margin-bottom:8px;">⚠️ <strong>${worstName}</strong> has a high payoff difficulty (${Math.ceil(worstCFI)} months). 
+      <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${worstIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
+  }
+
+  // 💸 Highest interest first
+  const highName = rows[highIndex].querySelector("input").value;
+  html += `<div style="color:#007bff; margin-bottom:8px;">💸 Focus on <strong>${highName}</strong> — highest rate at <strong>${highestRate.toFixed(2)}%</strong>. 
+    <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${highIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
+
+  // 📈 Extra payment projection
+  if (extra > 0) {
+    const savedMonths = Math.floor(maxMonths * 0.15);
+    html += `<div style="color:#28a745;">📈 With your extra $${extra.toFixed(2)}/mo, you could save <strong>${savedMonths}</strong> months!</div>`;
+  }
+
+  // 📅 Projected debt-free date
+  const projectedDate = new Date();
+  projectedDate.setMonth(projectedDate.getMonth() + maxMonths);
+  html += `<div style="margin-top: 10px;">📅 Estimated debt-free date: <strong>${projectedDate.toLocaleDateString()}</strong></div>`;
+
+  box.innerHTML = html;
+}
+
+function saveDebts() {
+  const data = [];
+  tableBody.querySelectorAll("tr").forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const type = row.querySelector("select").value;
+    data.push({
+      name: inputs[0].value,
+      type: type,
+      limit: inputs[2].value,
+      balance: inputs[3].value,
+      rate: inputs[4].value,
+      payment: inputs[5].value
+    });
+  });
+  localStorage.setItem("debtData", JSON.stringify(data));
+  const user = auth.currentUser;
+  if (user) {
+    db.collection('debts').doc(user.uid).set({ debts: data })
+      .then(() => alert("✅ Debts saved successfully!"))
+      .catch(err => alert("❌ Save failed: " + err.message));
+  }
+}
+
+function loadDebts() {
+  const user = auth.currentUser;
+  if (user) {
+    db.collection("debts").doc(user.uid).get().then(doc => {
+      if (doc.exists) {
+        const debts = doc.data().debts || [];
+        tableBody.innerHTML = "";
+        debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit, d.type || 'credit'));
+        calculateSummary();
+      }
+    });
+  } else {
+    const data = JSON.parse(localStorage.getItem("debtData") || "[]");
+    data.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit, d.type || 'credit'));
+    calculateSummary();
+  }
+}
+
+auth.onAuthStateChanged(user => {
+  if (user) loadDebts();
+  else calculateSummary(); // fallback
+});
+
+function removeRow(btn) {
+  btn.closest("tr").remove();
+  calculateSummary();
+}
+
+function closeAmortization() {
+  document.getElementById("amortizationModal").style.display = "none";
 }
 
 function amortizeRow(button) {
@@ -317,10 +409,6 @@ function amortizeRow(button) {
   document.getElementById("amortizationModal").style.display = "block";
 }
 
-function closeAmortization() {
-  document.getElementById("amortizationModal").style.display = "none";
-}
-
 function exportAmortizationToPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape" });
@@ -332,51 +420,6 @@ function exportAmortizationToPDF() {
   doc.text("Debt Amortization Schedule", 14, 20);
   doc.autoTable({ head: [headers], body: data, startY: 30, theme: 'striped', styles: { fontSize: 9 } });
   doc.save("Amortization_Schedule.pdf");
-}
-
-function saveDebts() {
-  const data = [];
-  tableBody.querySelectorAll("tr").forEach(row => {
-    const inputs = row.querySelectorAll("input");
-    const type = row.querySelector("select").value;
-    data.push({
-      name: inputs[0].value,
-      type: type,
-      limit: inputs[2].value,
-      balance: inputs[3].value,
-      rate: inputs[4].value,
-      payment: inputs[5].value
-    });
-  });
-  const user = auth.currentUser;
-  if (user) {
-    db.collection('debts').doc(user.uid).set({ debts: data });
-  }
-}
-
-function loadDebts() {
-  const user = auth.currentUser;
-  if (user) {
-    db.collection("debts").doc(user.uid).get().then(doc => {
-      if (doc.exists) {
-        const debts = doc.data().debts || [];
-        tableBody.innerHTML = "";
-        debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.limit, d.type || 'credit'));
-        calculateSummary();
-      }
-    });
-  }
-}
-
-auth.onAuthStateChanged(user => {
-  if (user) {
-    loadDebts();
-  }
-});
-
-function removeRow(btn) {
-  btn.closest("tr").remove();
-  calculateSummary();
 }
 </script>
 </body>
