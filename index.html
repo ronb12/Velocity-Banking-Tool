@@ -98,10 +98,29 @@ auth.onAuthStateChanged(async user => {
   const debtDoc = await db.collection("debts").doc(uid).get();
   const data = debtDoc.exists ? debtDoc.data().debts : [];
 
-  const creditDebts = data.filter(d => (d?.type || '').toLowerCase() === 'credit');
+  const creditDebts = [];
+  const missingTypes = [];
+
+  for (let i = 0; i < data.length; i++) {
+    const d = data[i];
+    if (!d.type) {
+      missingTypes.push(d);
+      d.type = 'credit';
+    }
+    if ((d.type || '').toLowerCase() === 'credit') creditDebts.push(d);
+  }
+
+  if (missingTypes.length > 0) {
+    await db.collection("debts").doc(uid).update({ debts: data });
+    document.getElementById("notification").style.display = "block";
+    document.getElementById("notification").innerText = `⚠️ Some debts were missing a type and were defaulted to "credit".`;
+  }
+
   const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
   const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
   const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
+
+  console.log("Included in Utilization:", creditDebts);
 
   const utilTile = document.getElementById("creditUtilizationTile");
   let color = "#007bff", badge = "";
