@@ -315,10 +315,9 @@ function generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, max
   }
 
   let html = "";
-
   if (worstCFI > 50) {
     const worstName = rows[worstIndex].querySelector("input").value;
-    html += `<div style="color:#dc3545;">⚠️ <strong>${worstName}</strong> will take the longest to pay off (${Math.ceil(worstCFI)} months). 
+    html += `<div style="color:#dc3545;">⚠️ <strong>${worstName}</strong> will take longest to pay off (${Math.ceil(worstCFI)} months). 
       <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${worstIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
   }
 
@@ -328,12 +327,13 @@ function generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, max
 
   if (extra > 0) {
     const savedMonths = Math.floor(maxMonths * 0.15);
-    html += `<div style="color:#28a745;">📈 Your $${extra}/mo extra could save <strong>${savedMonths} months</strong>!</div>`;
+    html += `<div style="color:#28a745;">📈 With $${extra}/mo extra, you could save <strong>${savedMonths} months</strong>.</div>`;
   }
 
   const projectedDate = new Date();
   projectedDate.setMonth(projectedDate.getMonth() + maxMonths);
   html += `<div style="margin-top: 10px;">📅 Estimated debt-free date: <strong>${projectedDate.toLocaleDateString()}</strong></div>`;
+
   box.innerHTML = html;
 }
 
@@ -341,16 +341,19 @@ function saveDebts() {
   const data = [];
   tableBody.querySelectorAll("tr").forEach(row => {
     const inputs = row.querySelectorAll("input");
-    const type = row.querySelector("select").value;
+    const selects = row.querySelectorAll("select");
+    if (inputs.length < 5 || selects.length < 1) return;
+
     data.push({
       name: inputs[0].value,
-      type: type,
-      limit: inputs[2].value,
-      balance: inputs[3].value,
-      rate: inputs[4].value,
-      payment: inputs[5].value
+      type: selects[0].value,
+      limit: inputs[1].value,
+      balance: inputs[2].value,
+      rate: inputs[3].value,
+      payment: inputs[4].value
     });
   });
+
   localStorage.setItem("debtData", JSON.stringify(data));
   const user = auth.currentUser;
   if (user) {
