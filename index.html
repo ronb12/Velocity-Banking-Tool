@@ -12,15 +12,31 @@
   <style>
     body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; margin: 0; padding: 0; text-align: center; }
     header { background: #007bff; color: white; padding: 1em; position: relative; }
-    button.logout, button.profile-btn { position: absolute; top: 15px; padding: 8px 12px; border-radius: 4px; border: none; color: white; cursor: pointer; }
+    button.logout, button.profile-btn {
+      position: absolute; top: 15px; padding: 8px 12px; border-radius: 4px; border: none; color: white; cursor: pointer;
+    }
     .logout { right: 20px; background: #dc3545; }
     .profile-btn { left: 20px; background: #28a745; }
-    .tool-link { display: block; margin: 10px auto; padding: 12px; background: #007bff; color: white; width: 300px; border-radius: 8px; text-decoration: none; }
-    .dashboard-tile { display: inline-block; margin: 10px; padding: 15px; background: white; border-left: 5px solid #007bff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-width: 180px; font-weight: bold; }
-    .alert, #migrationBanner { margin: 20px auto; padding: 10px; font-weight: 500; max-width: 600px; border-radius: 8px; display: none; }
+    .tool-link {
+      display: block; margin: 10px auto; padding: 12px; background: #007bff;
+      color: white; width: 300px; border-radius: 8px; text-decoration: none;
+    }
+    .dashboard-tile {
+      display: inline-block; margin: 10px; padding: 15px; background: white;
+      border-left: 5px solid #007bff; border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-width: 180px; font-weight: bold;
+    }
+    .alert, #migrationBanner {
+      margin: 20px auto; padding: 10px; font-weight: 500;
+      max-width: 600px; border-radius: 8px; display: none;
+    }
     .alert { background: #ffc107; color: #000; }
     #migrationBanner { background: #d4edda; color: #155724; }
-    #profileBox { display: none; background: #fff; border: 1px solid #ccc; margin: 10px auto; padding: 15px; border-radius: 8px; max-width: 400px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    #profileBox {
+      display: none; background: #fff; border: 1px solid #ccc;
+      margin: 10px auto; padding: 15px; border-radius: 8px;
+      max-width: 400px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
@@ -62,96 +78,101 @@
 </div>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-    authDomain: "mobile-debt-tracker.firebaseapp.com",
-    projectId: "mobile-debt-tracker"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+const firebaseConfig = {
+  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+  authDomain: "mobile-debt-tracker.firebaseapp.com",
+  projectId: "mobile-debt-tracker"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-  function logout() {
-    auth.signOut().then(() => window.location.href = "login.html");
+function logout() {
+  auth.signOut().then(() => window.location.href = "login.html");
+}
+function toggleProfile() {
+  const box = document.getElementById("profileBox");
+  box.style.display = box.style.display === "none" ? "block" : "none";
+}
+
+// 🔧 Patch missing debt "type" field to ensure credit utilization works
+async function patchMissingDebtTypes(uid) {
+  const debtRef = db.collection("users").doc(uid).collection("debts");
+  const snapshot = await debtRef.get();
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const currentType = data.type;
+    if (!currentType) {
+      await doc.ref.update({ type: "credit" });
+      console.log(`✅ Patched missing type for: ${data.name}`);
+    } else if (typeof currentType === "string" && currentType !== currentType.toLowerCase()) {
+      await doc.ref.update({ type: currentType.toLowerCase() });
+      console.log(`🔡 Normalized type for: ${data.name}`);
+    }
+  }
+}
+
+auth.onAuthStateChanged(async user => {
+  if (!user) return window.location.href = "login.html";
+  const uid = user.uid;
+
+  await patchMissingDebtTypes(uid); // ✅ Sync before continuing
+
+  const userRef = db.collection("users").doc(uid);
+  const userDoc = await userRef.get();
+  if (!userDoc.exists) await userRef.set({ email: user.email, joined: new Date().toISOString() });
+
+  const userData = userDoc.data();
+  document.getElementById("profileEmail").innerText = `Email: ${userData.email}`;
+  document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(userData.joined).toLocaleDateString()}`;
+  document.getElementById("notification").innerText = `🔔 Welcome back, ${userData.email}`;
+  document.getElementById("notification").style.display = "block";
+
+  if (!userData?.migrated && Array.isArray(userData?.debts)) {
+    for (const debt of userData.debts) await userRef.collection("debts").add(debt);
+    await userRef.update({ debts: firebase.firestore.FieldValue.delete(), migrated: true });
+    document.getElementById("migrationBanner").style.display = "block";
+    setTimeout(() => document.getElementById("migrationBanner").style.display = "none", 5000);
   }
 
-  function toggleProfile() {
-    const box = document.getElementById("profileBox");
-    box.style.display = box.style.display === "none" ? "block" : "none";
+  const netWorthDoc = await db.collection("networth").doc(uid).get();
+  if (netWorthDoc.exists) {
+    const { assets = [], liabilities = [] } = netWorthDoc.data();
+    const netWorth = assets.reduce((sum, a) => sum + a.value, 0) - liabilities.reduce((sum, l) => sum + l.value, 0);
+    document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${netWorth.toFixed(2)}`;
   }
 
-  auth.onAuthStateChanged(async user => {
-    if (!user) return window.location.href = "login.html";
+  const monthId = new Date().toISOString().slice(0, 7);
+  const budgetDoc = await db.collection("budgets").doc(uid + "_" + monthId).get();
+  if (budgetDoc.exists) {
+    const { incomes = [], expenses = [] } = budgetDoc.data();
+    const totalIncome = incomes.reduce((sum, i) => sum + i.amount, 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.budgeted, 0);
+    document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${totalIncome.toFixed(2)}`;
+    document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(totalIncome - totalExpenses).toFixed(2)}`;
+  }
 
-    const uid = user.uid;
-    const userRef = db.collection("users").doc(uid);
-    const userDoc = await userRef.get();
+  const debtSnap = await userRef.collection("debts").get();
+  const allDebts = debtSnap.docs.map(doc => doc.data());
+  const topDebts = allDebts
+    .sort((a, b) => (b.interest || 0) - (a.interest || 0))
+    .slice(0, 3)
+    .map(d => d.name).join(", ");
+  document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
 
-    if (!userDoc.exists) {
-      await userRef.set({ email: user.email, joined: new Date().toISOString() });
-    }
+  const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit');
+  const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
+  const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
+  const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
 
-    const userData = (await userRef.get()).data();
-    document.getElementById("profileEmail").innerText = `Email: ${userData.email}`;
-    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(userData.joined).toLocaleDateString()}`;
-    document.getElementById("notification").innerText = `🔔 Welcome back, ${userData.email}`;
-    document.getElementById("notification").style.display = "block";
-
-    if (!userData?.migrated && Array.isArray(userData?.debts)) {
-      for (const debt of userData.debts) {
-        await userRef.collection("debts").add(debt);
-      }
-      await userRef.update({
-        debts: firebase.firestore.FieldValue.delete(),
-        migrated: true
-      });
-      const banner = document.getElementById("migrationBanner");
-      banner.style.display = "block";
-      setTimeout(() => banner.style.display = "none", 5000);
-    }
-
-    const netWorthDoc = await db.collection("networth").doc(uid).get();
-    if (netWorthDoc.exists) {
-      const assets = netWorthDoc.data().assets || [];
-      const liabilities = netWorthDoc.data().liabilities || [];
-      const netWorth = assets.reduce((sum, a) => sum + a.value, 0) - liabilities.reduce((sum, l) => sum + l.value, 0);
-      document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${netWorth.toFixed(2)}`;
-    }
-
-    const monthId = new Date().toISOString().slice(0, 7);
-    const budgetDoc = await db.collection("budgets").doc(uid + "_" + monthId).get();
-    if (budgetDoc.exists) {
-      const data = budgetDoc.data();
-      const totalIncome = (data.incomes || []).reduce((sum, i) => sum + i.amount, 0);
-      const totalExpenses = (data.expenses || []).reduce((sum, e) => sum + e.budgeted, 0);
-      document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${totalIncome.toFixed(2)}`;
-      document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(totalIncome - totalExpenses).toFixed(2)}`;
-    }
-
-    const debtSnap = await userRef.collection("debts").get();
-    const allDebts = debtSnap.docs.map(doc => doc.data());
-    const topDebts = allDebts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
-    document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
-
-    // ✅ Correct: filter only type === "credit" for utilization
-    const creditDebts = allDebts.filter(d => d.type === "credit");
-    const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
-    const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
-    const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
-
-    const utilTile = document.getElementById("creditUtilizationTile");
-    let badge = "", color = "#007bff";
-    if (utilization < 30) {
-      color = "#28a745"; badge = "(Good ✅)";
-    } else if (utilization < 50) {
-      color = "#ffc107"; badge = "(Warning ⚠️)";
-    } else {
-      color = "#dc3545"; badge = "(Danger ❌)";
-    }
-
-    utilTile.style.borderLeft = `5px solid ${color}`;
-    utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
-  });
+  const utilTile = document.getElementById("creditUtilizationTile");
+  let badge = "", color = "#007bff";
+  if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
+  else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
+  else { color = "#dc3545"; badge = "(Danger ❌)"; }
+  utilTile.style.borderLeft = `5px solid ${color}`;
+  utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
+});
 </script>
 </body>
 </html>
