@@ -98,9 +98,9 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-
   const userDoc = await db.collection("users").doc(uid).get();
   const profile = userDoc.data();
+
   if (profile) {
     document.getElementById("profileEmail").innerText = `Email: ${profile.email || 'N/A'}`;
     document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(profile.joined).toLocaleDateString() || 'N/A'}`;
@@ -125,11 +125,9 @@ auth.onAuthStateChanged(async user => {
     document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
   }
 
-  // 🔄 Pull only credit-type debts for utilization
   const debtSnap = await db.collection("users").doc(uid).collection("debts").get();
   const allDebts = debtSnap.docs.map(doc => doc.data());
   const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit');
-
   const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
   const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
   const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
@@ -143,7 +141,7 @@ auth.onAuthStateChanged(async user => {
   utilTile.style.borderLeft = `5px solid ${color}`;
   utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
 
-  const topDebts = [...allDebts].sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
+  const topDebts = allDebts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
   document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
 });
 </script>
