@@ -10,71 +10,17 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f4f4f9;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    header {
-      background: #007bff;
-      color: white;
-      padding: 1em;
-      position: relative;
-    }
-    button.logout, button.profile-btn {
-      position: absolute;
-      top: 15px;
-      padding: 8px 12px;
-      border-radius: 4px;
-      border: none;
-      color: white;
-      cursor: pointer;
-    }
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; margin: 0; padding: 0; text-align: center; }
+    header { background: #007bff; color: white; padding: 1em; position: relative; }
+    button.logout, button.profile-btn { position: absolute; top: 15px; padding: 8px 12px; border-radius: 4px; border: none; color: white; cursor: pointer; }
     .logout { right: 20px; background: #dc3545; }
     .profile-btn { left: 20px; background: #28a745; }
-    .tool-link {
-      display: block;
-      margin: 10px auto;
-      padding: 12px;
-      background: #007bff;
-      color: white;
-      width: 300px;
-      border-radius: 8px;
-      text-decoration: none;
-    }
-    .dashboard-tile {
-      display: inline-block;
-      margin: 10px;
-      padding: 15px;
-      background: white;
-      border-left: 5px solid #007bff;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      min-width: 180px;
-      font-weight: bold;
-    }
-    .alert, #migrationBanner {
-      margin: 20px auto;
-      padding: 10px;
-      font-weight: 500;
-      max-width: 600px;
-      border-radius: 8px;
-      display: none;
-    }
+    .tool-link { display: block; margin: 10px auto; padding: 12px; background: #007bff; color: white; width: 300px; border-radius: 8px; text-decoration: none; }
+    .dashboard-tile { display: inline-block; margin: 10px; padding: 15px; background: white; border-left: 5px solid #007bff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-width: 180px; font-weight: bold; }
+    .alert, #migrationBanner { margin: 20px auto; padding: 10px; font-weight: 500; max-width: 600px; border-radius: 8px; display: none; }
     .alert { background: #ffc107; color: #000; }
     #migrationBanner { background: #d4edda; color: #155724; }
-    #profileBox {
-      display: none;
-      background: #fff;
-      border: 1px solid #ccc;
-      margin: 10px auto;
-      padding: 15px;
-      border-radius: 8px;
-      max-width: 400px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
+    #profileBox { display: none; background: #fff; border: 1px solid #ccc; margin: 10px auto; padding: 15px; border-radius: 8px; max-width: 400px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
@@ -168,9 +114,7 @@
     if (netWorthDoc.exists) {
       const assets = netWorthDoc.data().assets || [];
       const liabilities = netWorthDoc.data().liabilities || [];
-      const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
-      const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
-      const netWorth = totalAssets - totalLiabilities;
+      const netWorth = assets.reduce((sum, a) => sum + a.value, 0) - liabilities.reduce((sum, l) => sum + l.value, 0);
       document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${netWorth.toFixed(2)}`;
     }
 
@@ -186,17 +130,16 @@
 
     const debtSnap = await userRef.collection("debts").get();
     const allDebts = debtSnap.docs.map(doc => doc.data());
-    const topDebts = allDebts
-      .sort((a, b) => (b.interest || 0) - (a.interest || 0))
-      .slice(0, 3)
-      .map(d => d.name).join(", ");
+    const topDebts = allDebts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
     document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
 
-    const totalUsed = allDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
-    const totalLimit = allDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
+    // ✅ Correct: filter only type === "credit" for utilization
+    const creditDebts = allDebts.filter(d => d.type === "credit");
+    const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
+    const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
     const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
-    const utilTile = document.getElementById("creditUtilizationTile");
 
+    const utilTile = document.getElementById("creditUtilizationTile");
     let badge = "", color = "#007bff";
     if (utilization < 30) {
       color = "#28a745"; badge = "(Good ✅)";
