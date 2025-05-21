@@ -137,7 +137,7 @@ auth.onAuthStateChanged(async user => {
       missingTypes.push(d);
       d.type = 'credit';
     }
-    if ((d.type || '').toLowerCase() === 'credit') creditDebts.push(d);
+    if ((d.type || '').toLowerCase().includes('credit')) creditDebts.push(d);
   }
 
   if (missingTypes.length > 0) {
