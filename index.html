@@ -4,16 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
-  <link rel="apple-touch-icon" href="icon-192.png" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; margin: 0; padding: 0; text-align: center; }
     header { background: #007bff; color: white; padding: 1em; position: relative; }
-    button.logout, button.profile-btn {
-      position: absolute; top: 15px; padding: 8px 12px; border-radius: 4px;
-      border: none; color: white; cursor: pointer;
+    .logout, .profile-btn {
+      position: absolute; top: 15px; padding: 8px 12px; border-radius: 4px; border: none; color: white; cursor: pointer;
     }
     .logout { right: 20px; background: #dc3545; }
     .profile-btn { left: 20px; background: #28a745; }
@@ -45,7 +43,7 @@
 <header>
   🚀 Bradley's Dashboard
   <button class="profile-btn" onclick="toggleProfile()">👤 My Profile</button>
-  <button class="logout" onclick="logout()">🔒 Logout</button>
+  <button class="logout" onclick="logout()">🔐 Logout</button>
 </header>
 
 <div id="notification" class="alert"></div>
@@ -58,7 +56,7 @@
 </div>
 
 <div class="dashboard" id="dashboardTiles">
-  <div class="dashboard-tile" id="netWorthTile">🧮 Total Net Worth: $0.00</div>
+  <div class="dashboard-tile" id="netWorthTile">🧰 Total Net Worth: $0.00</div>
   <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
   <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
   <div class="dashboard-tile" id="topDebtsTile">🔥 Top 3 Debts: Loading...</div>
@@ -70,12 +68,9 @@
   <a class="tool-link" href="budget.html">💰 Budget Tracker</a>
   <a class="tool-link" href="Velocity_Calculator.html">📊 Velocity Calculator</a>
   <a class="tool-link" href="Debt_Tracker.html">📋 Debt Tracker</a>
-  <a class="tool-link" href="1099_calculator.html">🧾 1099 Tax Calculator</a>
-  <a class="tool-link" href="net_worth_tracker.html">🧮 Net Worth Tracker</a>
+  <a class="tool-link" href="1099_calculator.html">📟 1099 Tax Calculator</a>
+  <a class="tool-link" href="net_worth_tracker.html">🧰 Net Worth Tracker</a>
   <a class="tool-link" href="savings_goal_tracker.html">🏦 Savings Goals</a>
-  <a class="tool-link" href="challenge_library.html">📚 Challenge Library</a>
-  <a class="tool-link" href="activity_feed.html">🧾 Master Activity Feed</a>
-  <a class="tool-link" href="notifications.html">📥 Notifications Center</a>
 </div>
 
 <script>
@@ -91,6 +86,7 @@ const db = firebase.firestore();
 function logout() {
   auth.signOut().then(() => window.location.href = "login.html");
 }
+
 function toggleProfile() {
   const box = document.getElementById("profileBox");
   box.style.display = box.style.display === "none" ? "block" : "none";
@@ -99,59 +95,18 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-
   const userRef = db.collection("users").doc(uid);
-  const userDoc = await userRef.get();
-
-  if (!userDoc.exists) {
-    await userRef.set({ email: user.email, joined: new Date().toISOString() });
-  }
-
-  const userData = userDoc.data();
-  document.getElementById("profileEmail").innerText = `Email: ${userData.email}`;
-  document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(userData.joined).toLocaleDateString()}`;
-  document.getElementById("notification").innerText = `🔔 Welcome back, ${userData.email}`;
-  document.getElementById("notification").style.display = "block";
-
-  if (!userData?.migrated && Array.isArray(userData?.debts)) {
-    for (const debt of userData.debts) {
-      await userRef.collection("debts").add(debt);
-    }
-    await userRef.update({ debts: firebase.firestore.FieldValue.delete(), migrated: true });
-    document.getElementById("migrationBanner").style.display = "block";
-    setTimeout(() => document.getElementById("migrationBanner").style.display = "none", 5000);
-  }
-
-  const netWorthDoc = await db.collection("networth").doc(uid).get();
-  if (netWorthDoc.exists) {
-    const assets = netWorthDoc.data().assets || [];
-    const liabilities = netWorthDoc.data().liabilities || [];
-    const netWorth = assets.reduce((sum, a) => sum + a.value, 0) - liabilities.reduce((sum, l) => sum + l.value, 0);
-    document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${netWorth.toFixed(2)}`;
-  }
-
-  const monthId = new Date().toISOString().slice(0, 7);
-  const budgetDoc = await db.collection("budgets").doc(uid + "_" + monthId).get();
-  if (budgetDoc.exists) {
-    const data = budgetDoc.data();
-    const totalIncome = (data.incomes || []).reduce((sum, i) => sum + i.amount, 0);
-    const totalExpenses = (data.expenses || []).reduce((sum, e) => sum + e.budgeted, 0);
-    document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${totalIncome.toFixed(2)}`;
-    document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(totalIncome - totalExpenses).toFixed(2)}`;
-  }
 
   const debtSnap = await userRef.collection("debts").get();
   const allDebts = debtSnap.docs.map(doc => doc.data());
 
-  const topDebts = allDebts
-    .sort((a, b) => (b.interest || 0) - (a.interest || 0))
-    .slice(0, 3)
-    .map(d => d.name)
-    .join(", ");
-  document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+  const creditDebts = allDebts.filter(d => (d?.type || '').toLowerCase() === 'credit');
+  const missingType = allDebts.filter(d => !d.type);
+  if (missingType.length > 0) {
+    console.warn("⚠️ Some debts are missing the 'type' field:", missingType);
+  }
 
-  const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === "credit");
-  console.log("📊 Included in Utilization:", creditDebts.map(d => ({ name: d.name, balance: d.balance, limit: d.limit, type: d.type })));
+  console.log("✅ Debts used for credit utilization:", creditDebts);
 
   const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
   const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
