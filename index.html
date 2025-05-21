@@ -98,8 +98,7 @@ function toggleProfile() {
 auth.onAuthStateChanged(async user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-  const userRef = db.collection("users").doc(uid);
-  const userDoc = await userRef.get();
+  const userDoc = await db.collection("users").doc(uid).get();
   const profile = userDoc.data();
 
   if (profile) {
@@ -107,6 +106,7 @@ auth.onAuthStateChanged(async user => {
     document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(profile.joined).toLocaleDateString() || 'N/A'}`;
   }
 
+  // 🧮 Net Worth
   const netWorthDoc = await db.collection("networth").doc(uid).get();
   if (netWorthDoc.exists) {
     const netData = netWorthDoc.data();
@@ -116,6 +116,7 @@ auth.onAuthStateChanged(async user => {
     document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${netWorth.toFixed(2)}`;
   }
 
+  // 💰 Budget
   const monthId = new Date().toISOString().slice(0, 7);
   const budgetDoc = await db.collection("budgets").doc(uid + "_" + monthId).get();
   if (budgetDoc.exists) {
@@ -126,15 +127,8 @@ auth.onAuthStateChanged(async user => {
     document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
   }
 
-  const debtSnap = await userRef.collection("debts").get();
-  const allDebts = debtSnap.docs.map(doc => doc.data());
-  const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit');
-  const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
-  const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
-  const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
-
-  await userRef.update({ utilization });
-
+  // 🔄 Pull Utilization from /users/{uid}.utilization
+  const utilization = parseFloat(profile?.utilization || 0).toFixed(2);
   const utilTile = document.getElementById("creditUtilizationTile");
   let color = "#007bff", badge = "";
   if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
@@ -144,7 +138,14 @@ auth.onAuthStateChanged(async user => {
   utilTile.style.borderLeft = `5px solid ${color}`;
   utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
 
-  const topDebts = allDebts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
+  // 🔥 Top 3 Debts
+  const debtSnap = await db.collection("users").doc(uid).collection("debts").get();
+  const allDebts = debtSnap.docs.map(doc => doc.data());
+  const topDebts = allDebts
+    .sort((a, b) => (b.interest || 0) - (a.interest || 0))
+    .slice(0, 3)
+    .map(d => d.name)
+    .join(", ");
   document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
 });
 </script>
