@@ -127,14 +127,17 @@ auth.onAuthStateChanged(async user => {
     document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
   }
 
-  const debtSnap = await userRef.collection("debts").get();
-  const allDebts = debtSnap.docs.map(doc => doc.data());
-  const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit' && parseFloat(d.limit || 0) > 0);
-  const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
-  const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
-  const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
+ const debtSnap = await userRef.collection("debts").get();
+const allDebts = debtSnap.docs.map(doc => doc.data());
+const creditDebts = allDebts.filter(d =>
+  (d.type || '').toLowerCase() === 'credit' && parseFloat(d.limit || 0) > 0
+);
+const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
+const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
+const utilization = totalLimit > 0 ? ((totalUsed / totalLimit) * 100).toFixed(2) : "0.00";
 
-  await userRef.update({ utilization }); // 🔄 Save to Firestore for reuse
+// 🔄 Save utilization to Firestore for dashboard use
+await userRef.update({ utilization });
 
   const utilTile = document.getElementById("creditUtilizationTile");
   let color = "#007bff", badge = "";
