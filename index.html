@@ -87,22 +87,23 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// ✅ New cache settings (no deprecation warning)
-db.settings({ cache: { cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED } });
-db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-  console.warn("Offline persistence error:", err.code);
+// ✅ Use new future-proof Firestore cache settings
+db.settings({
+  cache: {
+    type: "persistent",
+    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
+  }
 });
 
 function logout() {
   auth.signOut().then(() => window.location.href = "login.html");
 }
-
 function toggleProfile() {
   const box = document.getElementById("profileBox");
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
-// ✅ Load localStorage as fallback
+// ✅ Load localStorage as fallback while Firebase initializes
 window.addEventListener("DOMContentLoaded", () => {
   const profile = JSON.parse(localStorage.getItem("profile") || "{}");
   if (profile.email) document.getElementById("profileEmail").innerText = `Email: ${profile.email}`;
