@@ -76,7 +76,6 @@ function loadDashboardData() {
   const user = auth.currentUser;
   if (!user) return;
 
-  // 🔵 Net Worth
   db.collection("networth").doc(user.uid).onSnapshot(doc => {
     if (doc.exists) {
       const d = doc.data();
@@ -87,7 +86,6 @@ function loadDashboardData() {
     }
   });
 
-  // 🟡 Budget
   const month = new Date().toISOString().slice(0, 7);
   db.collection("budgets").doc(`${user.uid}_${month}`).onSnapshot(doc => {
     if (doc.exists) {
@@ -99,7 +97,6 @@ function loadDashboardData() {
     }
   });
 
-  // 🔴 Debts + Credit Utilization
   db.collection("users").doc(user.uid).collection("debts").onSnapshot(snapshot => {
     const debts = snapshot.docs.map(doc => doc.data());
     const top = debts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
@@ -121,8 +118,7 @@ function loadDashboardData() {
   });
 }
 
-// ✅ Functions for specific pages
-
+// ✅ Specific Page Listeners
 function listenForDebtUpdates() {
   const user = auth.currentUser;
   if (user) {
@@ -212,9 +208,11 @@ function setupNetWorthAutoSave() {
   }
 }
 
-// ✅ Master Activity Logger
+// ✅ Updated Master Activity Logger
 function logActivity(type, text) {
-  const feed = JSON.parse(localStorage.getItem('masterActivityFeed') || '[]');
+  const user = auth.currentUser;
+  if (!user) return;
+
   const icons = {
     save: '💾',
     expense: '💸',
@@ -224,14 +222,24 @@ function logActivity(type, text) {
   };
   const icon = icons[type] || icons.default;
 
-  feed.push({
+  const entry = {
     type,
     icon,
     text,
-    timestamp: new Date().toISOString()
-  });
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  };
 
-  localStorage.setItem('masterActivityFeed', JSON.stringify(feed));
+  // 🔁 Save locally
+  const localFeed = JSON.parse(localStorage.getItem('masterActivityFeed') || '[]');
+  localFeed.push({ ...entry, timestamp: new Date().toISOString() });
+  localStorage.setItem('masterActivityFeed', JSON.stringify(localFeed));
+
+  // ☁️ Save to Firestore
+  db.collection("users")
+    .doc(user.uid)
+    .collection("activity_logs")
+    .add(entry)
+    .catch(err => console.error("❌ Failed to log to Firestore:", err));
 }
 
 // ✅ Theme Toggle
