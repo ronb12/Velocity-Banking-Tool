@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📜 Master Activity Feed</title>
-  
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -24,9 +26,7 @@
       text-align: center;
       color: #007bff;
     }
-    .entry-group {
-      margin-top: 20px;
-    }
+    .entry-group { margin-top: 20px; }
     .entry-date {
       font-weight: bold;
       margin: 15px 0 5px;
@@ -49,17 +49,9 @@
       align-items: center;
       gap: 10px;
     }
-    .entry-icon {
-      font-size: 20px;
-    }
-    .entry-text {
-      font-size: 15px;
-      color: #333;
-    }
-    .entry-time {
-      font-size: 13px;
-      color: #777;
-    }
+    .entry-icon { font-size: 20px; }
+    .entry-text { font-size: 15px; color: #333; }
+    .entry-time { font-size: 13px; color: #777; }
     button {
       margin-top: 20px;
       padding: 10px 20px;
@@ -69,9 +61,7 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    button:hover {
-      background: #0056b3;
-    }
+    button:hover { background: #0056b3; }
     a.back-link {
       display: inline-block;
       margin-bottom: 20px;
@@ -83,18 +73,25 @@
     }
   </style>
 </head>
-
 <body>
 <div class="container">
   <a class="back-link" href="index.html">🔙 Back to Dashboard</a>
   <h1>📜 Master Activity Feed</h1>
 
   <div id="activityFeed"></div>
-
   <button onclick="exportActivity()">📤 Export to CSV</button>
 </div>
 
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+  authDomain: "mobile-debt-tracker.firebaseapp.com",
+  projectId: "mobile-debt-tracker"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 function formatDate(date) {
   const options = { month: 'long', day: 'numeric' };
   return date.toLocaleDateString(undefined, options);
@@ -104,19 +101,24 @@ function formatTime(date) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function renderFeed() {
-  const feed = JSON.parse(localStorage.getItem('activityFeedLogs') || '[]').reverse();
-  const grouped = {};
+async function renderFeed(user) {
+  const container = document.getElementById('activityFeed');
+  container.innerHTML = '';
 
-  feed.forEach(entry => {
-    const date = new Date(entry.timestamp);
+  const snapshot = await db.collection("users").doc(user.uid).collection("activity_logs").orderBy("timestamp", "desc").limit(100).get();
+  if (snapshot.empty) {
+    container.innerHTML = "<p>No activity logged yet.</p>";
+    return;
+  }
+
+  const grouped = {};
+  snapshot.forEach(doc => {
+    const entry = doc.data();
+    const date = entry.timestamp?.toDate?.() || new Date();
     const dateLabel = formatDate(date);
     if (!grouped[dateLabel]) grouped[dateLabel] = [];
     grouped[dateLabel].push({ ...entry, time: formatTime(date) });
   });
-
-  const container = document.getElementById('activityFeed');
-  container.innerHTML = '';
 
   for (const date in grouped) {
     const groupDiv = document.createElement('div');
@@ -130,7 +132,7 @@ function renderFeed() {
         <div class="left">
           <div class="entry-icon">${entry.icon || '📝'}</div>
           <div>
-            <div class="entry-text">${entry.message || entry.text}</div>
+            <div class="entry-text">${entry.text}</div>
             <div class="entry-time">${entry.time}</div>
           </div>
         </div>
@@ -143,28 +145,30 @@ function renderFeed() {
 }
 
 function exportActivity() {
-  const feed = JSON.parse(localStorage.getItem('activityFeedLogs') || '[]');
-  if (!feed.length) return alert('No activities to export.');
+  auth.onAuthStateChanged(async user => {
+    if (!user) return alert("Login required to export.");
+    const snap = await db.collection("users").doc(user.uid).collection("activity_logs").orderBy("timestamp", "desc").get();
+    if (snap.empty) return alert("No activities to export.");
 
-  let csv = 'Date,Time,Action\n';
-  feed.forEach(entry => {
-    const date = new Date(entry.timestamp);
-    const dateStr = formatDate(date);
-    const timeStr = formatTime(date);
-    csv += `"${dateStr}","${timeStr}","${entry.message || entry.text}"\n`;
+    let csv = 'Date,Time,Action\n';
+    snap.forEach(doc => {
+      const entry = doc.data();
+      const date = entry.timestamp?.toDate?.() || new Date();
+      csv += `"${formatDate(date)}","${formatTime(date)}","${entry.text}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'activity_feed.csv';
+    a.click();
   });
-
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'activity_feed.csv';
-  a.click();
 }
 
-window.onload = () => {
-  renderFeed();
-};
+auth.onAuthStateChanged(user => {
+  if (!user) return location.href = "login.html";
+  renderFeed(user);
+});
 </script>
-
 </body>
 </html>
