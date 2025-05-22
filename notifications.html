@@ -16,9 +16,23 @@
       margin: auto;
     }
 
-    h1 {
-      color: #333;
+    h1 { color: #333; text-align: center; }
+
+    #toast {
+      visibility: hidden;
+      min-width: 250px;
+      background: #333;
+      color: #fff;
       text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      transition: visibility 0s, opacity 0.5s ease-in-out;
+      opacity: 0;
     }
 
     .notification {
@@ -43,7 +57,7 @@
       margin-top: 8px;
     }
 
-    button.mark-read {
+    button.mark-read, button.clear-all {
       position: absolute;
       top: 10px;
       right: 10px;
@@ -56,31 +70,39 @@
       cursor: pointer;
     }
 
-    button.mark-read:hover {
-      background: #218838;
+    button.clear-all {
+      background: #dc3545;
+      right: auto;
+      left: 10px;
     }
 
-    #loading {
-      text-align: center;
-      margin-top: 30px;
-      font-style: italic;
-    }
+    #loading { text-align: center; margin-top: 30px; font-style: italic; }
 
-    .back {
-      display: inline-block;
-      margin-top: 20px;
-      text-decoration: none;
-      color: #007bff;
-      font-weight: bold;
-    }
+    .back { display: inline-block; margin-top: 20px; text-decoration: none; color: #007bff; font-weight: bold; }
+    .back:hover { text-decoration: underline; }
 
-    .back:hover {
-      text-decoration: underline;
+    #filterSection {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
     }
   </style>
 </head>
 <body>
   <h1>🔔 Notifications</h1>
+  <div id="toast"></div>
+
+  <div id="filterSection">
+    <select id="notifFilter">
+      <option value="">All Types</option>
+      <option value="budget">Budget</option>
+      <option value="debt">Debt</option>
+      <option value="system">System</option>
+    </select>
+    <button class="clear-all" onclick="clearAllNotifications()">🗑 Clear All</button>
+  </div>
+
   <div id="loading">Loading notifications...</div>
   <div id="notifications"></div>
   <a href="index.html" class="back">← Back to Dashboard</a>
@@ -90,7 +112,7 @@
       apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
       authDomain: "mobile-debt-tracker.firebaseapp.com",
       projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.firebasestorage.app",
+      storageBucket: "mobile-debt-tracker.appspot.com",
       messagingSenderId: "153601029964",
       appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
     };
@@ -99,24 +121,30 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    auth.onAuthStateChanged(async user => {
-      if (!user) {
-        window.location.href = "login.html";
-        return;
-      }
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.visibility = "visible";
+      toast.style.opacity = "1";
+      setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.visibility = "hidden";
+      }, 3000);
+    }
 
+    async function loadNotifications(user) {
       const container = document.getElementById("notifications");
       const loading = document.getElementById("loading");
+      const filter = document.getElementById("notifFilter").value;
+
+      container.innerHTML = "";
+      loading.style.display = "block";
 
       try {
-        const snapshot = await db
-          .collection("users")
-          .doc(user.uid)
-          .collection("notifications")
-          .orderBy("timestamp", "desc")
-          .limit(50)
-          .get();
+        let query = db.collection("users").doc(user.uid).collection("notifications").orderBy("timestamp", "desc").limit(50);
+        if (filter) query = query.where("type", "==", filter);
 
+        const snapshot = await query.get();
         loading.style.display = "none";
 
         if (snapshot.empty) {
@@ -128,10 +156,11 @@
           const n = doc.data();
           const div = document.createElement("div");
           div.className = "notification" + (!n.read ? " unread" : "");
+          div.setAttribute("data-id", doc.id);
 
           div.innerHTML = `
-            <div>${n.message || "No message provided."}</div>
-            <time>${n.timestamp ? new Date(n.timestamp.toDate()).toLocaleString() : "Unknown time"}</time>
+            <div>${n.message || "No message."}</div>
+            <time>${n.timestamp ? new Date(n.timestamp.toDate()).toLocaleString() : "Unknown"}</time>
             ${!n.read ? `<button class="mark-read" onclick="markAsRead('${doc.id}')">Mark as Read</button>` : ""}
           `;
 
@@ -141,20 +170,39 @@
         loading.innerText = "⚠️ Failed to load notifications.";
         console.error("Error loading notifications:", error);
       }
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (!user) return location.href = "login.html";
+
+      loadNotifications(user);
+
+      document.getElementById("notifFilter").addEventListener("change", () => {
+        loadNotifications(user);
+      });
 
       window.markAsRead = async function(docId) {
-        const notifRef = db
-          .collection("users")
-          .doc(user.uid)
-          .collection("notifications")
-          .doc(docId);
-
         try {
-          await notifRef.update({ read: true });
-          location.reload();
+          await db.collection("users").doc(user.uid).collection("notifications").doc(docId).update({ read: true });
+          showToast("✅ Notification marked as read");
+          loadNotifications(user);
         } catch (err) {
           alert("❌ Failed to mark as read.");
           console.error("Mark as read failed:", err);
+        }
+      };
+
+      window.clearAllNotifications = async function() {
+        try {
+          const snap = await db.collection("users").doc(user.uid).collection("notifications").get();
+          const batch = db.batch();
+          snap.forEach(doc => batch.delete(doc.ref));
+          await batch.commit();
+          showToast("✅ All notifications cleared.");
+          loadNotifications(user);
+        } catch (err) {
+          alert("❌ Failed to clear notifications.");
+          console.error("Clear all failed:", err);
         }
       };
     });
