@@ -83,7 +83,14 @@ A powerful, real-time personal finance dashboard built with Firebase and HTML/CS
 
 ## 📸 Screenshots
 
-> _(Add your own screenshots here or GIF previews!)_
+### 🔷 Dashboard View
+![Dashboard](screenshots/dashboard.png)
+
+### 🔶 Debt Tracker
+![Debt Tracker](screenshots/debt_tracker.png)
+
+### 💰 Budget Tracker
+![Budget Tracker](screenshots/budget_tracker.png)
 
 ---
 
