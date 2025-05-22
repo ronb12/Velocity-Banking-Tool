@@ -56,11 +56,11 @@
 </div>
 
 <div class="dashboard" id="dashboardTiles">
-  <div class="dashboard-tile" id="netWorthTile">🧰 Total Net Worth: $0.00</div>
-  <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: $0.00</div>
-  <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: $0.00</div>
+  <div class="dashboard-tile" id="netWorthTile">🧰 Total Net Worth: Loading...</div>
+  <div class="dashboard-tile" id="monthlyBudgetTile">💰 Monthly Budget: Loading...</div>
+  <div class="dashboard-tile" id="remainingToBudgetTile">📉 Remaining to Budget: Loading...</div>
   <div class="dashboard-tile" id="topDebtsTile">🔥 Top 3 Debts: Loading...</div>
-  <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: 0%</div>
+  <div class="dashboard-tile" id="creditUtilizationTile">💳 Credit Utilization: Loading...</div>
 </div>
 
 <div class="tools">
@@ -82,49 +82,62 @@ const firebaseConfig = {
   authDomain: "mobile-debt-tracker.firebaseapp.com",
   projectId: "mobile-debt-tracker"
 };
+
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-db.enablePersistence().catch(err => {
-  console.warn("Offline persistence failed:", err.code);
+
+// ✅ New cache settings (no deprecation warning)
+db.settings({ cache: { cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED } });
+db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+  console.warn("Offline persistence error:", err.code);
 });
 
 function logout() {
   auth.signOut().then(() => window.location.href = "login.html");
 }
+
 function toggleProfile() {
   const box = document.getElementById("profileBox");
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
-</script>
-<script>
+
+// ✅ Load localStorage as fallback
+window.addEventListener("DOMContentLoaded", () => {
+  const profile = JSON.parse(localStorage.getItem("profile") || "{}");
+  if (profile.email) document.getElementById("profileEmail").innerText = `Email: ${profile.email}`;
+  if (profile.joined) document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(profile.joined).toLocaleDateString()}`;
+  if (localStorage.getItem("netWorth")) document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${localStorage.getItem("netWorth")}`;
+  if (localStorage.getItem("monthlyBudget")) {
+    const b = JSON.parse(localStorage.getItem("monthlyBudget"));
+    document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${b.income.toFixed(2)}`;
+    document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${b.remaining.toFixed(2)}`;
+  }
+  if (localStorage.getItem("topDebts")) document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${localStorage.getItem("topDebts")}`;
+  if (localStorage.getItem("creditUtilization")) {
+    const u = parseFloat(localStorage.getItem("creditUtilization"));
+    let color = "#007bff", badge = "";
+    if (u < 30) { color = "#28a745"; badge = "(Good ✅)"; }
+    else if (u < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
+    else { color = "#dc3545"; badge = "(Danger ❌)"; }
+    const utilTile = document.getElementById("creditUtilizationTile");
+    utilTile.style.borderLeft = `5px solid ${color}`;
+    utilTile.innerText = `💳 Credit Utilization: ${u.toFixed(2)}% ${badge}`;
+  }
+});
+
 auth.onAuthStateChanged(user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
-
   const userRef = db.collection("users").doc(uid);
 
-  // 🔄 Profile Sync
   userRef.onSnapshot(doc => {
     const profile = doc.data();
     localStorage.setItem("profile", JSON.stringify(profile));
-
     document.getElementById("profileEmail").innerText = `Email: ${profile.email || 'N/A'}`;
-    document.getElementById("profileJoinDate").innerText =
-      `Joined: ${profile.joined ? new Date(profile.joined).toLocaleDateString() : 'N/A'}`;
-
-    const utilization = parseFloat(profile.utilization || 0);
-    let color = "#007bff", badge = "";
-    if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
-    else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
-    else { color = "#dc3545"; badge = "(Danger ❌)"; }
-
-    const utilTile = document.getElementById("creditUtilizationTile");
-    utilTile.style.borderLeft = `5px solid ${color}`;
-    utilTile.innerText = `💳 Credit Utilization: ${utilization.toFixed(2)}% ${badge}`;
+    document.getElementById("profileJoinDate").innerText = `Joined: ${profile.joined ? new Date(profile.joined).toLocaleDateString() : 'N/A'}`;
   });
 
-  // 🧮 Net Worth Sync
   db.collection("networth").doc(uid).onSnapshot(doc => {
     const data = doc.data();
     const assets = data.assets || [];
@@ -134,7 +147,6 @@ auth.onAuthStateChanged(user => {
     localStorage.setItem("netWorth", netWorth.toFixed(2));
   });
 
-  // 💰 Budget Sync
   const monthId = new Date().toISOString().slice(0, 7);
   db.collection("budgets").doc(`${uid}_${monthId}`).onSnapshot(doc => {
     const budget = doc.data();
@@ -145,7 +157,6 @@ auth.onAuthStateChanged(user => {
     localStorage.setItem("monthlyBudget", JSON.stringify({ income, remaining: income - expenses }));
   });
 
-  // 🔥 Debts Sync
   db.collection("users").doc(uid).collection("debts").onSnapshot(snapshot => {
     const allDebts = snapshot.docs.map(doc => doc.data());
     const topDebts = allDebts
@@ -153,8 +164,23 @@ auth.onAuthStateChanged(user => {
       .slice(0, 3)
       .map(d => d.name || "Unnamed")
       .join(", ");
-    document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+    document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts}`;
     localStorage.setItem("topDebts", topDebts);
+
+    const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit' && parseFloat(d.limit || 0) > 0);
+    const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
+    const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
+    const utilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
+
+    let color = "#007bff", badge = "";
+    if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
+    else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
+    else { color = "#dc3545"; badge = "(Danger ❌)"; }
+
+    const utilTile = document.getElementById("creditUtilizationTile");
+    utilTile.style.borderLeft = `5px solid ${color}`;
+    utilTile.innerText = `💳 Credit Utilization: ${utilization.toFixed(2)}% ${badge}`;
+    localStorage.setItem("creditUtilization", utilization.toFixed(2));
   });
 });
 </script>
