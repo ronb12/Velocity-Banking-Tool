@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Velocity Banking Toolkit</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -76,8 +77,8 @@
   <a class="tool-link" href="notifications.html">📥 Notifications Center</a>
 </div>
 
+<!-- ✅ Initialize Firebase once and expose db/auth globally -->
 <script>
-// ✅ First: initialize Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -86,109 +87,12 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-// ✅ Second: configure Firestore settings BEFORE any usage
-const db = firebase.firestore();
-db.settings({
-  cache: {
-    type: "persistent",
-    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
-  }
-});
-
-// ✅ Third: auth
-const auth = firebase.auth();
-
-// ✅ Utility functions
-function logout() {
-  auth.signOut().then(() => window.location.href = "login.html");
-}
-function toggleProfile() {
-  const box = document.getElementById("profileBox");
-  box.style.display = box.style.display === "none" ? "block" : "none";
-}
-
-// ✅ Fallback data from localStorage
-window.addEventListener("DOMContentLoaded", () => {
-  const profile = JSON.parse(localStorage.getItem("profile") || "{}");
-  if (profile.email) document.getElementById("profileEmail").innerText = `Email: ${profile.email}`;
-  if (profile.joined) document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(profile.joined).toLocaleDateString()}`;
-  if (localStorage.getItem("netWorth")) document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${localStorage.getItem("netWorth")}`;
-  if (localStorage.getItem("monthlyBudget")) {
-    const b = JSON.parse(localStorage.getItem("monthlyBudget"));
-    document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${b.income.toFixed(2)}`;
-    document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${b.remaining.toFixed(2)}`;
-  }
-  if (localStorage.getItem("topDebts")) document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${localStorage.getItem("topDebts")}`;
-  if (localStorage.getItem("creditUtilization")) {
-    const u = parseFloat(localStorage.getItem("creditUtilization"));
-    let color = "#007bff", badge = "";
-    if (u < 30) { color = "#28a745"; badge = "(Good ✅)"; }
-    else if (u < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
-    else { color = "#dc3545"; badge = "(Danger ❌)"; }
-    const utilTile = document.getElementById("creditUtilizationTile");
-    utilTile.style.borderLeft = `5px solid ${color}`;
-    utilTile.innerText = `💳 Credit Utilization: ${u.toFixed(2)}% ${badge}`;
-  }
-});
-
-// ✅ Real-time sync with Firestore
-auth.onAuthStateChanged(user => {
-  if (!user) return location.href = "login.html";
-  const uid = user.uid;
-  const userRef = db.collection("users").doc(uid);
-
-  userRef.onSnapshot(doc => {
-    const profile = doc.data();
-    localStorage.setItem("profile", JSON.stringify(profile));
-    document.getElementById("profileEmail").innerText = `Email: ${profile.email || 'N/A'}`;
-    document.getElementById("profileJoinDate").innerText = `Joined: ${profile.joined ? new Date(profile.joined).toLocaleDateString() : 'N/A'}`;
-  });
-
-  db.collection("networth").doc(uid).onSnapshot(doc => {
-    const data = doc.data();
-    const assets = data.assets || [];
-    const liabilities = data.liabilities || [];
-    const netWorth = assets.reduce((sum, a) => sum + (a.value || 0), 0) - liabilities.reduce((sum, l) => sum + (l.value || 0), 0);
-    document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${netWorth.toFixed(2)}`;
-    localStorage.setItem("netWorth", netWorth.toFixed(2));
-  });
-
-  const monthId = new Date().toISOString().slice(0, 7);
-  db.collection("budgets").doc(`${uid}_${monthId}`).onSnapshot(doc => {
-    const budget = doc.data();
-    const income = (budget.incomes || []).reduce((sum, i) => sum + (i.amount || 0), 0);
-    const expenses = (budget.expenses || []).reduce((sum, e) => sum + (e.budgeted || 0), 0);
-    document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
-    document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
-    localStorage.setItem("monthlyBudget", JSON.stringify({ income, remaining: income - expenses }));
-  });
-
-  db.collection("users").doc(uid).collection("debts").onSnapshot(snapshot => {
-    const allDebts = snapshot.docs.map(doc => doc.data());
-    const topDebts = allDebts
-      .sort((a, b) => (b.interest || 0) - (a.interest || 0))
-      .slice(0, 3)
-      .map(d => d.name || "Unnamed")
-      .join(", ");
-    document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts}`;
-    localStorage.setItem("topDebts", topDebts);
-
-    const creditDebts = allDebts.filter(d => (d.type || '').toLowerCase() === 'credit' && parseFloat(d.limit || 0) > 0);
-    const totalUsed = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
-    const totalLimit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
-    const utilization = totalLimit > 0 ? (totalUsed / totalLimit) * 100 : 0;
-
-    let color = "#007bff", badge = "";
-    if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
-    else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
-    else { color = "#dc3545"; badge = "(Danger ❌)"; }
-
-    const utilTile = document.getElementById("creditUtilizationTile");
-    utilTile.style.borderLeft = `5px solid ${color}`;
-    utilTile.innerText = `💳 Credit Utilization: ${utilization.toFixed(2)}% ${badge}`;
-    localStorage.setItem("creditUtilization", utilization.toFixed(2));
-  });
-});
+// ✅ Global scope injection
+window.db = firebase.firestore();
+window.auth = firebase.auth();
 </script>
+
+<!-- ✅ Load global logic AFTER firebase is ready -->
+<script src="global.js"></script>
 </body>
 </html>
