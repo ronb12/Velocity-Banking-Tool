@@ -85,30 +85,35 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+db.enablePersistence().catch(err => {
+  console.warn("Offline persistence failed:", err.code);
+});
 
 function logout() {
   auth.signOut().then(() => window.location.href = "login.html");
 }
-
 function toggleProfile() {
   const box = document.getElementById("profileBox");
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
-
-auth.onAuthStateChanged(async user => {
+</script>
+<script>
+auth.onAuthStateChanged(user => {
   if (!user) return location.href = "login.html";
-
   const uid = user.uid;
+
   const userRef = db.collection("users").doc(uid);
-  const userDoc = await userRef.get();
 
-  if (userDoc.exists) {
-    const profile = userDoc.data();
+  // 🔄 Profile Sync
+  userRef.onSnapshot(doc => {
+    const profile = doc.data();
+    localStorage.setItem("profile", JSON.stringify(profile));
+
     document.getElementById("profileEmail").innerText = `Email: ${profile.email || 'N/A'}`;
-    document.getElementById("profileJoinDate").innerText = `Joined: ${new Date(profile.joined).toLocaleDateString() || 'N/A'}`;
+    document.getElementById("profileJoinDate").innerText =
+      `Joined: ${profile.joined ? new Date(profile.joined).toLocaleDateString() : 'N/A'}`;
 
-    // ✅ Credit Utilization from profile field
-    const utilization = profile.utilization || "0.00";
+    const utilization = parseFloat(profile.utilization || 0);
     let color = "#007bff", badge = "";
     if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
     else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
@@ -116,33 +121,41 @@ auth.onAuthStateChanged(async user => {
 
     const utilTile = document.getElementById("creditUtilizationTile");
     utilTile.style.borderLeft = `5px solid ${color}`;
-    utilTile.innerText = `💳 Credit Utilization: ${utilization}% ${badge}`;
-  }
+    utilTile.innerText = `💳 Credit Utilization: ${utilization.toFixed(2)}% ${badge}`;
+  });
 
-  const netWorthDoc = await db.collection("networth").doc(uid).get();
-  if (netWorthDoc.exists) {
-    const netData = netWorthDoc.data();
-    const assets = netData.assets || [];
-    const liabilities = netData.liabilities || [];
+  // 🧮 Net Worth Sync
+  db.collection("networth").doc(uid).onSnapshot(doc => {
+    const data = doc.data();
+    const assets = data.assets || [];
+    const liabilities = data.liabilities || [];
     const netWorth = assets.reduce((sum, a) => sum + (a.value || 0), 0) - liabilities.reduce((sum, l) => sum + (l.value || 0), 0);
     document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${netWorth.toFixed(2)}`;
-  }
+    localStorage.setItem("netWorth", netWorth.toFixed(2));
+  });
 
+  // 💰 Budget Sync
   const monthId = new Date().toISOString().slice(0, 7);
-  const budgetDoc = await db.collection("budgets").doc(uid + "_" + monthId).get();
-  if (budgetDoc.exists) {
-    const budget = budgetDoc.data();
+  db.collection("budgets").doc(`${uid}_${monthId}`).onSnapshot(doc => {
+    const budget = doc.data();
     const income = (budget.incomes || []).reduce((sum, i) => sum + (i.amount || 0), 0);
     const expenses = (budget.expenses || []).reduce((sum, e) => sum + (e.budgeted || 0), 0);
     document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
     document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
-  }
+    localStorage.setItem("monthlyBudget", JSON.stringify({ income, remaining: income - expenses }));
+  });
 
-  // 🔥 Top 3 Debts
-  const debtSnap = await db.collection("users").doc(uid).collection("debts").get();
-  const allDebts = debtSnap.docs.map(doc => doc.data());
-  const topDebts = allDebts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
-  document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+  // 🔥 Debts Sync
+  db.collection("users").doc(uid).collection("debts").onSnapshot(snapshot => {
+    const allDebts = snapshot.docs.map(doc => doc.data());
+    const topDebts = allDebts
+      .sort((a, b) => (b.interest || 0) - (a.interest || 0))
+      .slice(0, 3)
+      .map(d => d.name || "Unnamed")
+      .join(", ");
+    document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${topDebts || "N/A"}`;
+    localStorage.setItem("topDebts", topDebts);
+  });
 });
 </script>
 </body>
