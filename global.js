@@ -1,6 +1,7 @@
 // ✅ NO firebase.initializeApp here
 // ✅ Only reference the already-initialized firebase
 const db = firebase.firestore();
+const auth = firebase.auth();
 
 // ✅ Global logout
 function logout() {
@@ -65,10 +66,62 @@ auth.onAuthStateChanged(async user => {
   } else if (path.includes("net_worth_tracker.html")) {
     listenForNetWorthUpdates();
     setupNetWorthAutoSave();
+  } else if (path.includes("index.html") || path.endsWith("/")) {
+    loadDashboardData();
   }
 });
 
-// ✅ Functions per page
+// ✅ Dashboard Tile Loader for index.html
+function loadDashboardData() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  // 🔵 Net Worth
+  db.collection("networth").doc(user.uid).onSnapshot(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      const assets = d.assets || [];
+      const liabilities = d.liabilities || [];
+      const total = assets.reduce((s, a) => s + (a.value || 0), 0) - liabilities.reduce((s, l) => s + (l.value || 0), 0);
+      document.getElementById("netWorthTile").innerText = `🧰 Total Net Worth: $${total.toFixed(2)}`;
+    }
+  });
+
+  // 🟡 Budget
+  const month = new Date().toISOString().slice(0, 7);
+  db.collection("budgets").doc(`${user.uid}_${month}`).onSnapshot(doc => {
+    if (doc.exists) {
+      const d = doc.data();
+      const income = (d.incomes || []).reduce((s, i) => s + (i.amount || 0), 0);
+      const expenses = (d.expenses || []).reduce((s, e) => s + (e.budgeted || 0), 0);
+      document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
+      document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
+    }
+  });
+
+  // 🔴 Debts + Credit Utilization
+  db.collection("users").doc(user.uid).collection("debts").onSnapshot(snapshot => {
+    const debts = snapshot.docs.map(doc => doc.data());
+    const top = debts.sort((a, b) => (b.interest || 0) - (a.interest || 0)).slice(0, 3).map(d => d.name).join(", ");
+    document.getElementById("topDebtsTile").innerText = `🔥 Top 3 Debts: ${top || "N/A"}`;
+
+    const creditDebts = debts.filter(d => (d.type || '').toLowerCase() === 'credit' && parseFloat(d.limit || 0) > 0);
+    const used = creditDebts.reduce((sum, d) => sum + parseFloat(d.balance || 0), 0);
+    const limit = creditDebts.reduce((sum, d) => sum + parseFloat(d.limit || 0), 0);
+    const utilization = limit > 0 ? (used / limit) * 100 : 0;
+
+    let color = "#007bff", badge = "";
+    if (utilization < 30) { color = "#28a745"; badge = "(Good ✅)"; }
+    else if (utilization < 50) { color = "#ffc107"; badge = "(Warning ⚠️)"; }
+    else { color = "#dc3545"; badge = "(Danger ❌)"; }
+
+    const utilTile = document.getElementById("creditUtilizationTile");
+    utilTile.style.borderLeft = `5px solid ${color}`;
+    utilTile.innerText = `💳 Credit Utilization: ${utilization.toFixed(2)}% ${badge}`;
+  });
+}
+
+// ✅ Functions for specific pages
 
 function listenForDebtUpdates() {
   const user = auth.currentUser;
@@ -88,7 +141,7 @@ function listenForDebtUpdates() {
 function setupDebtAutoSave() {
   const table = document.querySelector("#debtTable");
   if (table) {
-    table.addEventListener("input", function() {
+    table.addEventListener("input", function () {
       showSaving();
       clearTimeout(window.autoSaveTimer);
       window.autoSaveTimer = setTimeout(() => {
@@ -103,7 +156,7 @@ function setupDebtAutoSave() {
 function listenForBudgetUpdates() {
   const user = auth.currentUser;
   if (user) {
-    const month = new Date().toISOString().slice(0,7);
+    const month = new Date().toISOString().slice(0, 7);
     db.collection("budgets").doc(user.uid + "_" + month)
       .onSnapshot(doc => {
         if (doc.exists && document.getElementById("budgetTable")) {
@@ -116,7 +169,7 @@ function listenForBudgetUpdates() {
 function setupBudgetAutoSave() {
   const table = document.querySelector("#budgetTable");
   if (table) {
-    table.addEventListener("input", function() {
+    table.addEventListener("input", function () {
       showSaving();
       clearTimeout(window.autoSaveTimer);
       window.autoSaveTimer = setTimeout(() => {
@@ -147,7 +200,7 @@ function listenForNetWorthUpdates() {
 function setupNetWorthAutoSave() {
   const table = document.querySelector("#netWorthTable");
   if (table) {
-    table.addEventListener("input", function() {
+    table.addEventListener("input", function () {
       showSaving();
       clearTimeout(window.autoSaveTimer);
       window.autoSaveTimer = setTimeout(() => {
