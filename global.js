@@ -18,7 +18,7 @@ function toggleProfile() {
 function showSaving() {
   const saveStatus = document.getElementById("saveStatus");
   if (!saveStatus) return;
-  saveStatus.innerText = "💾 Saving...";
+  saveStatus.innerText = "📎 Saving...";
   saveStatus.style.color = "orange";
 }
 
@@ -187,7 +187,7 @@ function listenForNetWorthUpdates() {
           const liabilities = doc.data().liabilities || [];
           const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
           const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
-          document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
+          document.getElementById("netWorthTile").innerText = `🧾 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
         }
       });
   }
@@ -214,10 +214,10 @@ function logActivity(type, text) {
   if (!user) return;
 
   const icons = {
-    save: '💾',
+    save: '📎',
     expense: '💸',
     income: '💰',
-    note: '📝',
+    note: '🗘️',
     default: '📌'
   };
   const icon = icons[type] || icons.default;
@@ -259,3 +259,6 @@ window.addEventListener('load', () => {
     document.body.classList.add('dark');
   }
 });
+
+// ✅ Make activity logger globally accessible
+window.logActivity = logActivity;
