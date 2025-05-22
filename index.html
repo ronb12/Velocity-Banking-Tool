@@ -77,6 +77,7 @@
 </div>
 
 <script>
+// ✅ First: initialize Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
@@ -84,10 +85,9 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
 
-// ✅ Use new future-proof Firestore cache settings
+// ✅ Second: configure Firestore settings BEFORE any usage
+const db = firebase.firestore();
 db.settings({
   cache: {
     type: "persistent",
@@ -95,6 +95,10 @@ db.settings({
   }
 });
 
+// ✅ Third: auth
+const auth = firebase.auth();
+
+// ✅ Utility functions
 function logout() {
   auth.signOut().then(() => window.location.href = "login.html");
 }
@@ -103,7 +107,7 @@ function toggleProfile() {
   box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
-// ✅ Load localStorage as fallback while Firebase initializes
+// ✅ Fallback data from localStorage
 window.addEventListener("DOMContentLoaded", () => {
   const profile = JSON.parse(localStorage.getItem("profile") || "{}");
   if (profile.email) document.getElementById("profileEmail").innerText = `Email: ${profile.email}`;
@@ -127,6 +131,7 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// ✅ Real-time sync with Firestore
 auth.onAuthStateChanged(user => {
   if (!user) return location.href = "login.html";
   const uid = user.uid;
