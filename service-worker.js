@@ -1,36 +1,40 @@
-const CACHE_NAME = "finance-hub-cache-v2";
-const urlsToCache = [
-  "index.html",
-  "manifest.json",
-  "service-worker.js",
-  "icon-192.png",
-  "icon-512.png",
-  "https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js",
-  "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js",
-  "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"
+const CACHE_NAME = 'velocity-banking-v1';
+const STATIC_CACHE = 'static-v1';
+const DYNAMIC_CACHE = 'dynamic-v1';
+const VERSION = '1.0.0'; // Add version tracking
+
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/budget.html',
+  '/Debt_Tracker.html',
+  '/Velocity_Calculator.html',
+  '/Credit_Score_Estimator.html',
+  '/theme.css',
+  '/global.js',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
-// Install event – cache files
-self.addEventListener("install", event => {
+// Install event - cache static assets
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then(cache => {
-        console.log("✅ Cache Opened");
-        return cache.addAll(urlsToCache);
-      })
-      .catch(error => {
-        console.error("❌ Error caching files:", error);
+        console.log('Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
       })
   );
+  // Activate new service worker immediately
+  self.skipWaiting();
 });
 
-// Fetch event – serve cached if available
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-      .catch(error => {
-        console.error("❌ Fetch failed; fallback may be needed:", error);
-      })
-  );
-});
+// Activate event - clean up old caches and take control
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== STATIC
