@@ -1,5 +1,6 @@
 // Import Firebase services from firebase-config.js
 import { auth, db } from './firebase-config.js';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
 // Session management
 let currentUser = null;
@@ -86,16 +87,16 @@ auth.onAuthStateChanged(async user => {
     });
 
     // Initialize user data in Firestore if needed
-    const userRef = db.collection("users").doc(user.uid);
-    const doc = await userRef.get();
-    if (!doc.exists) {
-      await userRef.set({ 
+    const userRef = doc(db, 'users', user.uid);
+    const docSnap = await getDoc(userRef);
+    if (!docSnap.exists()) {
+      await setDoc(userRef, { 
         email: user.email, 
         joined: new Date().toISOString(),
         lastLogin: new Date().toISOString()
       });
     } else {
-      await userRef.update({ lastLogin: new Date().toISOString() });
+      await updateDoc(userRef, { lastLogin: new Date().toISOString() });
     }
   } else {
     // Update UI for logged out user

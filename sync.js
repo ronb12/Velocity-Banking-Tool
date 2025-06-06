@@ -3,7 +3,7 @@
 // ✅ Only pure syncing functions
 
 import { auth, db } from './firebase-config.js';
-import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+import { doc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
 // Auto-listeners for dashboard tiles
 auth.onAuthStateChanged(async user => {
@@ -49,7 +49,7 @@ auth.onAuthStateChanged(async user => {
 if (typeof firebase !== 'undefined' && typeof db !== 'undefined') {
   firebase.auth().onAuthStateChanged(user => {
     if (!user) return;
-    db.collection('users').doc(user.uid).onSnapshot(doc => {
+    doc(db, 'users', user.uid).onSnapshot(doc => {
       const utilization = doc.data().creditUtilization || 0;
       const utilTile = document.getElementById('creditUtilizationTile');
       if (!utilTile) return;
