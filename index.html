@@ -65,9 +65,8 @@
   <div class="dashboard">
     <header>
       <h1>📊 Dashboard (Updated: June 5, 2025)</h1>
-      <div class="user-menu auth-required" style="display: none;">
-        <!-- Will be populated by auth.js -->
-      </div>
+      <button id="darkModeToggle" style="position:absolute;top:15px;right:20px;background:#333;color:#fff;padding:8px 12px;border-radius:4px;border:none;cursor:pointer;">🌙 Toggle Dark Mode</button>
+      <div class="user-menu auth-required" style="display: none;"></div>
     </header>
 
     <div class="quick-links">
@@ -75,11 +74,11 @@
         <h3>💰 Budget Tracker</h3>
         <p>Track your income and expenses</p>
       </a>
-      <a href="debt-tracker.html" class="card">
+      <a href="Debt_Tracker.html" class="card">
         <h3>📈 Debt Tracker</h3>
         <p>Monitor and manage your debts</p>
       </a>
-      <a href="velocity-calculator.html" class="card">
+      <a href="Velocity_Calculator.html" class="card">
         <h3>⚡ Velocity Calculator</h3>
         <p>Calculate your debt payoff strategy</p>
       </a>
@@ -87,13 +86,39 @@
         <h3>💎 Net Worth Tracker</h3>
         <p>Track your assets and liabilities</p>
       </a>
+      <a href="Credit_Score_Estimator.html" class="card">
+        <h3>💳 Credit Score Estimator</h3>
+        <p>Estimate your credit score</p>
+      </a>
+      <a href="1099_calculator.html" class="card">
+        <h3>📟 1099 Tax Estimator</h3>
+        <p>Estimate your self-employed taxes</p>
+      </a>
+      <a href="savings_goal_tracker.html" class="card">
+        <h3>🎯 Savings Goal Tracker</h3>
+        <p>Track your savings goals</p>
+      </a>
+      <a href="notifications.html" class="card">
+        <h3>🔔 Notifications Center</h3>
+        <p>View all your notifications</p>
+      </a>
+      <a href="activity_feed.html" class="card">
+        <h3>🧾 Activity Feed</h3>
+        <p>See your full audit trail</p>
+      </a>
+      <a href="challenge_library.html" class="card">
+        <h3>🏆 Challenge Library</h3>
+        <p>Explore savings challenges</p>
+      </a>
+    </div>
+
+    <div class="dashboard-tiles">
+      <div id="creditUtilizationTile" class="dashboard-tile" style="min-width:220px;">💳 Credit Utilization: Loading...</div>
     </div>
 
     <div class="recent-activity auth-required" style="display: none;">
       <h2>Recent Activity</h2>
-      <div id="activityList">
-        <!-- Will be populated by JavaScript -->
-      </div>
+      <div id="activityList"></div>
     </div>
   </div>
 
@@ -140,6 +165,19 @@
         loadRecentActivity();
       }
     });
+  </script>
+
+  <script>
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    darkModeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+    // Load theme from storage
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+    }
   </script>
 </body>
 </html>

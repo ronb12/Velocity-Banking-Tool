@@ -57,3 +57,27 @@ auth.onAuthStateChanged(async user => {
     });
   }
 });
+
+// Credit Utilization Monitor for Dashboard
+if (typeof firebase !== 'undefined' && typeof db !== 'undefined') {
+  firebase.auth().onAuthStateChanged(user => {
+    if (!user) return;
+    db.collection('users').doc(user.uid).onSnapshot(doc => {
+      const utilization = doc.data().creditUtilization || 0;
+      const utilTile = document.getElementById('creditUtilizationTile');
+      if (!utilTile) return;
+      let badge = '';
+      if (utilization < 30) {
+        badge = '🟢';
+        utilTile.style.borderLeftColor = '#28a745';
+      } else if (utilization < 50) {
+        badge = '🟡';
+        utilTile.style.borderLeftColor = '#ffc107';
+      } else {
+        badge = '🔴';
+        utilTile.style.borderLeftColor = '#dc3545';
+      }
+      utilTile.innerText = `💳 Credit Utilization: ${parseFloat(utilization).toFixed(2)}% ${badge}`;
+    });
+  });
+}
