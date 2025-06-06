@@ -36,10 +36,11 @@ auth.onAuthStateChanged(async user => {
     });
 
     onSnapshot(debtsRef, docSnap => {
-      if (docSnap.exists() && document.getElementById("debtSummaryTile")) {
+      const debtTile = document.getElementById("debtSummaryTile");
+      if (docSnap.exists() && debtTile) {
         const data = docSnap.data();
-        const totalDebt = (data.debts || []).reduce((sum, d) => sum + d.balance, 0);
-        document.getElementById("debtSummaryTile").innerText = `📊 Total Debt: $${totalDebt.toFixed(2)}`;
+        const totalDebt = (data.debts || []).reduce((sum, d) => sum + (Number(d.balance) || 0), 0);
+        debtTile.innerText = `📊 Total Debt: $${totalDebt.toFixed(2)}`;
       }
     });
   }
