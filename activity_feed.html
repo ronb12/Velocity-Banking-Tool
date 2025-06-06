@@ -4,171 +4,48 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>📜 Master Activity Feed</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    h1 {
-      text-align: center;
-      color: #007bff;
-    }
-    .entry-group { margin-top: 20px; }
-    .entry-date {
-      font-weight: bold;
-      margin: 15px 0 5px;
-      font-size: 18px;
-      color: #333;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 5px;
-    }
-    .entry {
-      background: #f9f9f9;
-      padding: 10px 15px;
-      border-radius: 6px;
-      margin-top: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .entry .left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .entry-icon { font-size: 20px; }
-    .entry-text { font-size: 15px; color: #333; }
-    .entry-time { font-size: 13px; color: #777; }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover { background: #0056b3; }
-    a.back-link {
-      display: inline-block;
-      margin-bottom: 20px;
-      background: #007bff;
-      padding: 10px 20px;
-      border-radius: 6px;
-      color: white;
-      text-decoration: none;
-    }
-  </style>
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
-<div class="container">
-  <a class="back-link" href="index.html">🔙 Back to Dashboard</a>
-  <h1>📜 Master Activity Feed</h1>
+  <div class="container">
+    <h1>Master Activity Feed</h1>
+    <div id="activityFeed"></div>
+    <a href="index.html" class="back">← Back to Dashboard</a>
+  </div>
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { collection, query, orderBy, getDocs } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
-  <div id="activityFeed"></div>
-  <button onclick="exportActivity()">📤 Export to CSV</button>
-</div>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-  authDomain: "mobile-debt-tracker.firebaseapp.com",
-  projectId: "mobile-debt-tracker"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-function formatDate(date) {
-  const options = { month: 'long', day: 'numeric' };
-  return date.toLocaleDateString(undefined, options);
-}
-
-function formatTime(date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-async function renderFeed(user) {
-  const container = document.getElementById('activityFeed');
-  container.innerHTML = '';
-
-  const snapshot = await db.collection("users").doc(user.uid).collection("activity_logs").orderBy("timestamp", "desc").limit(100).get();
-  if (snapshot.empty) {
-    container.innerHTML = "<p>No activity logged yet.</p>";
-    return;
-  }
-
-  const grouped = {};
-  snapshot.forEach(doc => {
-    const entry = doc.data();
-    const date = entry.timestamp?.toDate?.() || new Date();
-    const dateLabel = formatDate(date);
-    if (!grouped[dateLabel]) grouped[dateLabel] = [];
-    grouped[dateLabel].push({ ...entry, time: formatTime(date) });
-  });
-
-  for (const date in grouped) {
-    const groupDiv = document.createElement('div');
-    groupDiv.className = 'entry-group';
-    groupDiv.innerHTML = `<div class="entry-date">🗓️ ${date}</div>`;
-
-    grouped[date].forEach(entry => {
-      const div = document.createElement('div');
-      div.className = 'entry';
-      div.innerHTML = `
-        <div class="left">
-          <div class="entry-icon">${entry.icon || '📝'}</div>
-          <div>
-            <div class="entry-text">${entry.text}</div>
-            <div class="entry-time">${entry.time}</div>
+    async function loadActivityFeed(user) {
+      const feedDiv = document.getElementById('activityFeed');
+      feedDiv.innerHTML = '<div style="text-align:center;">Loading...</div>';
+      const q = query(collection(db, 'users', user.uid, 'activity_logs'), orderBy('timestamp', 'desc'));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        feedDiv.innerHTML = '<div style="text-align:center;">No activity found.</div>';
+        return;
+      }
+      let html = '';
+      snapshot.forEach(docSnap => {
+        const entry = docSnap.data();
+        html += `<div class="entry">
+          <div class="left">
+            <span class="entry-icon">${entry.icon || '📝'}</span>
+            <span class="entry-text">${entry.text || ''}</span>
           </div>
-        </div>
-      `;
-      groupDiv.appendChild(div);
+          <span class="entry-time">${entry.timestamp ? new Date(entry.timestamp.seconds * 1000).toLocaleString() : ''}</span>
+        </div>`;
+      });
+      feedDiv.innerHTML = html;
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loadActivityFeed(user);
+      } else {
+        document.getElementById('activityFeed').innerHTML = '<div style="text-align:center;">Please log in to view your activity feed.</div>';
+      }
     });
-
-    container.appendChild(groupDiv);
-  }
-}
-
-function exportActivity() {
-  auth.onAuthStateChanged(async user => {
-    if (!user) return alert("Login required to export.");
-    const snap = await db.collection("users").doc(user.uid).collection("activity_logs").orderBy("timestamp", "desc").get();
-    if (snap.empty) return alert("No activities to export.");
-
-    let csv = 'Date,Time,Action\n';
-    snap.forEach(doc => {
-      const entry = doc.data();
-      const date = entry.timestamp?.toDate?.() || new Date();
-      csv += `"${formatDate(date)}","${formatTime(date)}","${entry.text}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'activity_feed.csv';
-    a.click();
-  });
-}
-
-auth.onAuthStateChanged(user => {
-  if (!user) return location.href = "login.html";
-  renderFeed(user);
-});
-</script>
+  </script>
 </body>
 </html>

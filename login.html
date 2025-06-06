@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login | Bradley's Toolkit</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script type="module" src="firebase-config.js"></script>
-  <script type="module" src="auth.js"></script>
+  <link rel="stylesheet" href="theme.css">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <!-- iOS meta tags -->
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="VB Toolkit">
 
@@ -132,22 +131,18 @@
   </style>
 </head>
 <body>
-  <div class="login-box">
-    <h2>🔐 Login</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
-    <div class="password-strength" id="passwordStrength"></div>
-    <div class="remember-me">
-      <input type="checkbox" id="rememberMe" />
-      <label for="rememberMe">Remember me</label>
-    </div>
-    <button onclick="login()">Login with Email</button>
-    <button onclick="googleLogin()">Login with Google</button>
-    <div class="login-attempts" id="loginAttempts"></div>
-    <a href="reset.html">Forgot Password?</a> |
-    <a href="register.html">Create Account</a>
-    <p class="error" id="error"></p>
-    <p class="success" id="success"></p>
+  <div class="login-container">
+    <h1>Login</h1>
+    <div id="error" class="error"></div>
+    <form id="loginForm" onsubmit="return false;">
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <label><input type="checkbox" id="rememberMe" /> Remember Me</label>
+      <button type="submit">Login</button>
+      <button type="button" id="googleLoginBtn">Sign in with Google</button>
+      <div id="loginAttempts"></div>
+    </form>
+    <a href="register.html">Create an account</a>
   </div>
 
   <div class="session-timeout" id="sessionTimeout">
@@ -157,35 +152,16 @@
 
   <script type="module">
     import { auth } from './firebase-config.js';
-    import { startSessionTimer, extendSession } from './auth.js';
+    import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 
     let loginAttempts = 0;
     const MAX_LOGIN_ATTEMPTS = 5;
-    const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+    const LOCKOUT_DURATION = 15 * 60 * 1000;
 
-    // Password strength checker
-    function checkPasswordStrength(password) {
-      const strengthBar = document.getElementById('passwordStrength');
-      let strength = 0;
-      
-      if (password.length >= 8) strength++;
-      if (password.match(/[a-z]+/)) strength++;
-      if (password.match(/[A-Z]+/)) strength++;
-      if (password.match(/[0-9]+/)) strength++;
-      if (password.match(/[^a-zA-Z0-9]+/)) strength++;
+    document.getElementById('loginForm').onsubmit = login;
+    document.getElementById('googleLoginBtn').onclick = googleLogin;
 
-      strengthBar.className = 'password-strength';
-      if (strength <= 2) {
-        strengthBar.classList.add('strength-weak');
-      } else if (strength <= 4) {
-        strengthBar.classList.add('strength-medium');
-      } else {
-        strengthBar.classList.add('strength-strong');
-      }
-    }
-
-    // Login function with attempt limiting
-    window.login = function() {
+    function login() {
       if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
         const lockoutEnd = localStorage.getItem('lockoutEnd');
         if (lockoutEnd && Date.now() < parseInt(lockoutEnd)) {
@@ -197,52 +173,39 @@
           localStorage.removeItem('lockoutEnd');
         }
       }
-
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       const rememberMe = document.getElementById("rememberMe").checked;
-
-      auth.setPersistence(rememberMe ? 
-        firebase.auth.Auth.Persistence.LOCAL : 
-        firebase.auth.Auth.Persistence.SESSION
-      ).then(() => {
-        return auth.signInWithEmailAndPassword(email, password);
-      }).then(() => {
-        loginAttempts = 0;
-        localStorage.removeItem('loginAttempts');
-        startSessionTimer();
-        window.location.href = "index.html";
-      }).catch(error => {
-        loginAttempts++;
-        localStorage.setItem('loginAttempts', loginAttempts);
-        
-        if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-          const lockoutEnd = Date.now() + LOCKOUT_DURATION;
-          localStorage.setItem('lockoutEnd', lockoutEnd);
-          document.getElementById('error').innerText = `Too many attempts. Please try again in 15 minutes.`;
-        } else {
-          document.getElementById('error').innerText = error.message;
-        }
-      });
-    };
-
-    // Google login
-    window.googleLogin = function() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
+      setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
+        .then(() => signInWithEmailAndPassword(auth, email, password))
         .then(() => {
-          startSessionTimer();
+          loginAttempts = 0;
+          localStorage.removeItem('loginAttempts');
+          window.location.href = "index.html";
+        })
+        .catch(error => {
+          loginAttempts++;
+          localStorage.setItem('loginAttempts', loginAttempts);
+          if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+            const lockoutEnd = Date.now() + LOCKOUT_DURATION;
+            localStorage.setItem('lockoutEnd', lockoutEnd);
+            document.getElementById('error').innerText = `Too many attempts. Please try again in 15 minutes.`;
+          } else {
+            document.getElementById('error').innerText = error.message;
+          }
+        });
+    }
+
+    function googleLogin() {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider)
+        .then(() => {
           window.location.href = "index.html";
         })
         .catch(error => {
           document.getElementById("error").innerText = error.message;
         });
-    };
-
-    // Event listeners
-    document.getElementById('password').addEventListener('input', (e) => {
-      checkPasswordStrength(e.target.value);
-    });
+    }
 
     // Check for existing login attempts
     window.addEventListener('load', () => {

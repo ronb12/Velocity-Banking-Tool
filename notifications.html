@@ -4,122 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🔔 Notifications | Bradley's Toolkit</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f9fafb;
-      padding: 20px;
-      max-width: 700px;
-      margin: auto;
-    }
-
-    h1 { color: #333; text-align: center; }
-
-    #toast {
-      visibility: hidden;
-      min-width: 250px;
-      background: #333;
-      color: #fff;
-      text-align: center;
-      padding: 10px;
-      border-radius: 4px;
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9999;
-      transition: visibility 0s, opacity 0.5s ease-in-out;
-      opacity: 0;
-    }
-
-    .notification {
-      background: #fff;
-      border-left: 5px solid #007bff;
-      margin: 10px 0;
-      padding: 15px;
-      border-radius: 5px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      position: relative;
-    }
-
-    .notification.unread {
-      border-left-color: #ffc107;
-      background: #fff9e6;
-    }
-
-    .notification time {
-      display: block;
-      font-size: 12px;
-      color: #888;
-      margin-top: 8px;
-    }
-
-    button.mark-read, button.clear-all {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    button.clear-all {
-      background: #dc3545;
-      right: auto;
-      left: 10px;
-    }
-
-    #loading { text-align: center; margin-top: 30px; font-style: italic; }
-
-    .back { display: inline-block; margin-top: 20px; text-decoration: none; color: #007bff; font-weight: bold; }
-    .back:hover { text-decoration: underline; }
-
-    #filterSection {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-  </style>
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
-  <h1>🔔 Notifications</h1>
-  <div id="toast"></div>
-
-  <div id="filterSection">
+  <div class="container">
+    <h1>Notifications</h1>
     <select id="notifFilter">
-      <option value="">All Types</option>
-      <option value="budget">Budget</option>
-      <option value="debt">Debt</option>
-      <option value="system">System</option>
+      <option value="all">All</option>
+      <option value="unread">Unread</option>
+      <option value="read">Read</option>
     </select>
-    <button class="clear-all" onclick="clearAllNotifications()">🗑 Clear All</button>
+    <button class="clear-all" onclick="clearAllNotifications()">Clear All</button>
+    <div id="loading">Loading notifications...</div>
+    <div id="notifications"></div>
+    <div id="toast"></div>
   </div>
-
-  <div id="loading">Loading notifications...</div>
-  <div id="notifications"></div>
-  <a href="index.html" class="back">← Back to Dashboard</a>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.appspot.com",
-      messagingSenderId: "153601029964",
-      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { collection, query, where, orderBy, getDocs, updateDoc, doc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     function showToast(msg) {
       const toast = document.getElementById("toast");
@@ -136,75 +38,66 @@
       const container = document.getElementById("notifications");
       const loading = document.getElementById("loading");
       const filter = document.getElementById("notifFilter").value;
-
       container.innerHTML = "";
       loading.style.display = "block";
-
-      try {
-        let query = db.collection("users").doc(user.uid).collection("notifications").orderBy("timestamp", "desc").limit(50);
-        if (filter) query = query.where("type", "==", filter);
-
-        const snapshot = await query.get();
-        loading.style.display = "none";
-
-        if (snapshot.empty) {
-          container.innerHTML = "<p>No notifications yet.</p>";
-          return;
-        }
-
-        snapshot.forEach(doc => {
-          const n = doc.data();
-          const div = document.createElement("div");
-          div.className = "notification" + (!n.read ? " unread" : "");
-          div.setAttribute("data-id", doc.id);
-
-          div.innerHTML = `
-            <div>${n.message || "No message."}</div>
-            <time>${n.timestamp ? new Date(n.timestamp.toDate()).toLocaleString() : "Unknown"}</time>
-            ${!n.read ? `<button class="mark-read" onclick="markAsRead('${doc.id}')">Mark as Read</button>` : ""}
-          `;
-
-          container.appendChild(div);
-        });
-      } catch (error) {
-        loading.innerText = "⚠️ Failed to load notifications.";
-        console.error("Error loading notifications:", error);
+      let q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('timestamp', 'desc'));
+      if (filter === 'unread') {
+        q = query(q, where('read', '==', false));
+      } else if (filter === 'read') {
+        q = query(q, where('read', '==', true));
       }
+      const snapshot = await getDocs(q);
+      loading.style.display = "none";
+      if (snapshot.empty) {
+        container.innerHTML = '<div style="text-align:center;">No notifications found.</div>';
+        return;
+      }
+      snapshot.forEach(docSnap => {
+        const notif = docSnap.data();
+        const div = document.createElement('div');
+        div.className = 'notification' + (notif.read ? '' : ' unread');
+        div.innerHTML = `
+          <div>${notif.message}</div>
+          <time>${notif.timestamp ? new Date(notif.timestamp.seconds * 1000).toLocaleString() : ''}</time>
+          <button class="mark-read" onclick="markAsRead('${docSnap.id}')">Mark as Read</button>
+        `;
+        container.appendChild(div);
+      });
     }
 
-    auth.onAuthStateChanged(user => {
-      if (!user) return location.href = "login.html";
-
+    window.markAsRead = async function(id) {
+      const user = auth.currentUser;
+      if (!user) return;
+      const notifRef = doc(db, 'users', user.uid, 'notifications', id);
+      await updateDoc(notifRef, { read: true });
+      showToast('Marked as read');
       loadNotifications(user);
+    };
 
-      document.getElementById("notifFilter").addEventListener("change", () => {
+    window.clearAllNotifications = async function() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const q = query(collection(db, 'users', user.uid, 'notifications'));
+      const snapshot = await getDocs(q);
+      for (const docSnap of snapshot.docs) {
+        await deleteDoc(doc(db, 'users', user.uid, 'notifications', docSnap.id));
+      }
+      showToast('All notifications cleared');
+      loadNotifications(user);
+    };
+
+    document.getElementById('notifFilter').addEventListener('change', () => {
+      const user = auth.currentUser;
+      if (user) loadNotifications(user);
+    });
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
         loadNotifications(user);
-      });
-
-      window.markAsRead = async function(docId) {
-        try {
-          await db.collection("users").doc(user.uid).collection("notifications").doc(docId).update({ read: true });
-          showToast("✅ Notification marked as read");
-          loadNotifications(user);
-        } catch (err) {
-          alert("❌ Failed to mark as read.");
-          console.error("Mark as read failed:", err);
-        }
-      };
-
-      window.clearAllNotifications = async function() {
-        try {
-          const snap = await db.collection("users").doc(user.uid).collection("notifications").get();
-          const batch = db.batch();
-          snap.forEach(doc => batch.delete(doc.ref));
-          await batch.commit();
-          showToast("✅ All notifications cleared.");
-          loadNotifications(user);
-        } catch (err) {
-          alert("❌ Failed to clear notifications.");
-          console.error("Clear all failed:", err);
-        }
-      };
+      } else {
+        document.getElementById("notifications").innerHTML = '<div style="text-align:center;">Please log in to view notifications.</div>';
+        document.getElementById("loading").style.display = "none";
+      }
     });
   </script>
 </body>
