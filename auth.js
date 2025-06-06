@@ -1,0 +1,127 @@
+// Import Firebase services from firebase-config.js
+import { auth, db } from './firebase-config.js';
+
+// Session management
+let currentUser = null;
+let sessionTimer = null;
+const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+// Start session timer
+function startSessionTimer() {
+  clearTimeout(sessionTimer);
+  sessionTimer = setTimeout(() => {
+    document.getElementById('sessionTimeout').style.display = 'block';
+    startTimeoutCountdown();
+  }, SESSION_TIMEOUT - 60000); // Show warning 1 minute before timeout
+}
+
+// Start timeout countdown
+function startTimeoutCountdown() {
+  let timeLeft = 60;
+  const countdownElement = document.getElementById('timeoutCountdown');
+  
+  const countdown = setInterval(() => {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (timeLeft <= 0) {
+      clearInterval(countdown);
+      logout();
+    }
+    timeLeft--;
+  }, 1000);
+}
+
+// Extend session
+function extendSession() {
+  document.getElementById('sessionTimeout').style.display = 'none';
+  startSessionTimer();
+}
+
+// Logout function
+function logout() {
+  auth.signOut().then(() => {
+    window.location.href = "login.html";
+  }).catch((error) => {
+    console.error("Error signing out:", error);
+  });
+}
+
+// Update UI for logged-in user
+function updateUIForLoggedInUser(user) {
+  const userMenu = document.querySelector('.user-menu');
+  if (userMenu) {
+    userMenu.innerHTML = `
+      <span class="user-email">${user.email}</span>
+      <button onclick="logout()" class="logout-btn">Logout</button>
+    `;
+  }
+}
+
+// Authentication state observer
+auth.onAuthStateChanged(async user => {
+  currentUser = user;
+  
+  if (user) {
+    // Check if email is verified
+    if (!user.emailVerified) {
+      auth.signOut();
+      window.location.href = "login.html?error=Please verify your email first";
+      return;
+    }
+    
+    // Start session timer
+    startSessionTimer();
+    
+    // Update UI for logged in user
+    updateUIForLoggedInUser(user);
+    
+    // Show/hide auth-dependent elements
+    document.querySelectorAll('.auth-required').forEach(element => {
+      element.style.display = 'block';
+    });
+    document.querySelectorAll('.auth-not-required').forEach(element => {
+      element.style.display = 'none';
+    });
+
+    // Initialize user data in Firestore if needed
+    const userRef = db.collection("users").doc(user.uid);
+    const doc = await userRef.get();
+    if (!doc.exists) {
+      await userRef.set({ 
+        email: user.email, 
+        joined: new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      });
+    } else {
+      await userRef.update({ lastLogin: new Date().toISOString() });
+    }
+  } else {
+    // Update UI for logged out user
+    document.querySelectorAll('.auth-required').forEach(element => {
+      element.style.display = 'none';
+    });
+    document.querySelectorAll('.auth-not-required').forEach(element => {
+      element.style.display = 'block';
+    });
+    
+    // Redirect to login if on protected page
+    const protectedPages = ['dashboard.html', 'budget.html', 'debt-tracker.html', 'velocity-calculator.html'];
+    const currentPage = window.location.pathname.split('/').pop();
+    if (protectedPages.includes(currentPage)) {
+      window.location.href = "login.html";
+    }
+  }
+});
+
+// Export functions and variables
+export {
+  auth,
+  db,
+  currentUser,
+  startSessionTimer,
+  extendSession,
+  logout,
+  updateUIForLoggedInUser
+}; 

@@ -128,4 +128,18 @@
           `;
           activityList.appendChild(div);
         });
-      
+      } catch (error) {
+        showError('Failed to load recent activity');
+        console.error('Error loading activity:', error);
+      }
+    }
+
+    // Load dashboard data when auth state changes
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loadRecentActivity();
+      }
+    });
+  </script>
+</body>
+</html>

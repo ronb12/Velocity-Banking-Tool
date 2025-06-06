@@ -6,6 +6,8 @@
   <title>Login | Bradley's Toolkit</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="auth.js"></script>
   <!-- iOS meta tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -38,6 +40,14 @@
       width: 90%;
       padding: 10px;
       margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    input:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
     }
 
     button {
@@ -49,6 +59,7 @@
       cursor: pointer;
       width: 100%;
       margin-bottom: 10px;
+      transition: background-color 0.3s;
     }
 
     button:hover {
@@ -56,7 +67,13 @@
     }
 
     .error {
-      color: red;
+      color: #dc3545;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .success {
+      color: #28a745;
       font-size: 14px;
       margin-top: 10px;
     }
@@ -72,6 +89,46 @@
     a:hover {
       text-decoration: underline;
     }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
+    .remember-me input {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    .password-strength {
+      height: 4px;
+      margin: 5px 0;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    .strength-weak { background-color: #dc3545; width: 33%; }
+    .strength-medium { background-color: #ffc107; width: 66%; }
+    .strength-strong { background-color: #28a745; width: 100%; }
+
+    .login-attempts {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 5px;
+    }
+
+    .session-timeout {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -79,56 +136,119 @@
     <h2>🔐 Login</h2>
     <input type="email" id="email" placeholder="Email" />
     <input type="password" id="password" placeholder="Password" />
+    <div class="password-strength" id="passwordStrength"></div>
+    <div class="remember-me">
+      <input type="checkbox" id="rememberMe" />
+      <label for="rememberMe">Remember me</label>
+    </div>
     <button onclick="login()">Login with Email</button>
     <button onclick="googleLogin()">Login with Google</button>
+    <div class="login-attempts" id="loginAttempts"></div>
     <a href="reset.html">Forgot Password?</a> |
     <a href="register.html">Create Account</a>
     <p class="error" id="error"></p>
+    <p class="success" id="success"></p>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.firebasestorage.app",
-      messagingSenderId: "153601029964",
-      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
-      measurementId: "G-ZKXW42Y7YZ"
-    };
+  <div class="session-timeout" id="sessionTimeout">
+    Your session will expire in <span id="timeoutCountdown">5:00</span>
+    <button onclick="extendSession()">Stay Logged In</button>
+  </div>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+  <script type="module">
+    import { auth } from './firebase-config.js';
+    import { startSessionTimer, extendSession } from './auth.js';
 
-    function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          window.location.href = "index.html";
-        })
-        .catch(error => {
-          document.getElementById("error").innerText = error.message;
-        });
+    let loginAttempts = 0;
+    const MAX_LOGIN_ATTEMPTS = 5;
+    const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+      const strengthBar = document.getElementById('passwordStrength');
+      let strength = 0;
+      
+      if (password.length >= 8) strength++;
+      if (password.match(/[a-z]+/)) strength++;
+      if (password.match(/[A-Z]+/)) strength++;
+      if (password.match(/[0-9]+/)) strength++;
+      if (password.match(/[^a-zA-Z0-9]+/)) strength++;
+
+      strengthBar.className = 'password-strength';
+      if (strength <= 2) {
+        strengthBar.classList.add('strength-weak');
+      } else if (strength <= 4) {
+        strengthBar.classList.add('strength-medium');
+      } else {
+        strengthBar.classList.add('strength-strong');
+      }
     }
 
-    function googleLogin() {
+    // Login function with attempt limiting
+    window.login = function() {
+      if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+        const lockoutEnd = localStorage.getItem('lockoutEnd');
+        if (lockoutEnd && Date.now() < parseInt(lockoutEnd)) {
+          const remainingTime = Math.ceil((parseInt(lockoutEnd) - Date.now()) / 60000);
+          document.getElementById('error').innerText = `Too many attempts. Please try again in ${remainingTime} minutes.`;
+          return;
+        } else {
+          loginAttempts = 0;
+          localStorage.removeItem('lockoutEnd');
+        }
+      }
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const rememberMe = document.getElementById("rememberMe").checked;
+
+      auth.setPersistence(rememberMe ? 
+        firebase.auth.Auth.Persistence.LOCAL : 
+        firebase.auth.Auth.Persistence.SESSION
+      ).then(() => {
+        return auth.signInWithEmailAndPassword(email, password);
+      }).then(() => {
+        loginAttempts = 0;
+        localStorage.removeItem('loginAttempts');
+        startSessionTimer();
+        window.location.href = "index.html";
+      }).catch(error => {
+        loginAttempts++;
+        localStorage.setItem('loginAttempts', loginAttempts);
+        
+        if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+          const lockoutEnd = Date.now() + LOCKOUT_DURATION;
+          localStorage.setItem('lockoutEnd', lockoutEnd);
+          document.getElementById('error').innerText = `Too many attempts. Please try again in 15 minutes.`;
+        } else {
+          document.getElementById('error').innerText = error.message;
+        }
+      });
+    };
+
+    // Google login
+    window.googleLogin = function() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider)
         .then(() => {
+          startSessionTimer();
           window.location.href = "index.html";
         })
         .catch(error => {
           document.getElementById("error").innerText = error.message;
         });
-    }
+    };
 
+    // Event listeners
+    document.getElementById('password').addEventListener('input', (e) => {
+      checkPasswordStrength(e.target.value);
+    });
+
+    // Check for existing login attempts
     window.addEventListener('load', () => {
-      auth.onAuthStateChanged(user => {
-        if (user) {
-          window.location.href = "index.html";
-        }
-      });
+      loginAttempts = parseInt(localStorage.getItem('loginAttempts')) || 0;
+      document.getElementById('loginAttempts').textContent = 
+        loginAttempts > 0 ? `${MAX_LOGIN_ATTEMPTS - loginAttempts} attempts remaining` : '';
     });
   </script>
 </body>

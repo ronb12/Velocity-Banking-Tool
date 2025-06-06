@@ -107,6 +107,7 @@
         <input type="range" id="paymentHistory" min="0" max="100" value="100" />
         <div class="value-badge" id="paymentHistoryVal">100%</div>
       </div>
+      <p class="help-text">On-time payments are crucial for a good credit score. Aim for 100% on-time payments.</p>
     </div>
 
     <div class="form-group">
@@ -115,16 +116,19 @@
         <input type="range" id="utilization" min="0" max="100" value="30" />
         <div class="value-badge" id="utilizationVal">30%</div>
       </div>
+      <p class="help-text">Keep your credit utilization below 30% to maintain a good score.</p>
     </div>
 
     <div class="form-group">
       <label for="historyLength">Credit History Length (Years)</label>
       <input type="number" id="historyLength" min="0" max="30" value="5" />
+      <p class="help-text">A longer credit history can positively impact your score.</p>
     </div>
 
     <div class="form-group">
       <label for="inquiries">Recent Credit Inquiries (last 12 months)</label>
       <input type="number" id="inquiries" min="0" max="30" value="2" />
+      <p class="help-text">Fewer inquiries are better. Limit the number of credit applications.</p>
     </div>
 
     <div class="form-group">
@@ -133,11 +137,22 @@
         <option value="yes">Yes</option>
         <option value="no">No</option>
       </select>
+      <p class="help-text">Having a mix of credit types can improve your score.</p>
     </div>
 
     <div id="scoreOutput">Estimated Score: 720</div>
     <div id="scoreAdvice" class="scoreColor good">Your credit is looking good! Stay consistent.</div>
-    
+
+    <button id="saveScore">Save Score</button>
+    <button id="compareScore">Compare with Average</button>
+    <button id="printScore">Print Score</button>
+
+    <div id="feedback">
+      <h3>Feedback</h3>
+      <textarea id="feedbackText" placeholder="Share your thoughts on this tool..."></textarea>
+      <button id="submitFeedback">Submit Feedback</button>
+    </div>
+
     <p style="margin-top: 15px; font-size: 14px; color: #777;">
       <strong>Note:</strong> This score is only an estimate. Always check your actual credit report for the most accurate information.
     </p>
@@ -172,30 +187,30 @@
 
       // Payment History
       if (ph >= 99) score -= 0;
-      else if (ph >= 95) score -= 20;
-      else if (ph >= 90) score -= 50;
-      else score -= 100;
+      else if (ph >= 95) score -= 30;
+      else if (ph >= 90) score -= 60;
+      else score -= 120;
 
       // Utilization
       if (util <= 10) score -= 0;
-      else if (util <= 30) score -= 30;
-      else if (util <= 50) score -= 70;
-      else score -= 150;
+      else if (util <= 30) score -= 40;
+      else if (util <= 50) score -= 80;
+      else score -= 160;
 
       // History Length
       if (history >= 8) score -= 0;
-      else if (history >= 4) score -= 20;
-      else if (history >= 2) score -= 50;
-      else score -= 80;
+      else if (history >= 4) score -= 30;
+      else if (history >= 2) score -= 60;
+      else score -= 100;
 
       // Inquiries
       if (inquiries <= 2) score -= 0;
-      else if (inquiries <= 5) score -= 20;
-      else if (inquiries <= 10) score -= 50;
-      else score -= 80;
+      else if (inquiries <= 5) score -= 30;
+      else if (inquiries <= 10) score -= 60;
+      else score -= 100;
 
       // Credit Mix
-      if (!mix) score -= 20;
+      if (!mix) score -= 30;
 
       // Clamp Score
       score = Math.max(300, Math.min(850, Math.round(score)));
@@ -212,7 +227,7 @@
         elements.scoreAdvice.textContent = "Good – Stay consistent and let history grow.";
         elements.scoreAdvice.className = "scoreColor good";
       } else {
-        elements.scoreAdvice.textContent = "Excellent – You’re in a great position. Keep it up!";
+        elements.scoreAdvice.textContent = "Excellent – You're in a great position. Keep it up!";
         elements.scoreAdvice.className = "scoreColor excellent";
       }
     }
@@ -224,6 +239,28 @@
     });
 
     updateValues();
+
+    document.getElementById("saveScore").addEventListener("click", function() {
+      const score = elements.scoreOutput.textContent;
+      localStorage.setItem("savedScore", score);
+      alert("Score saved!");
+    });
+
+    document.getElementById("compareScore").addEventListener("click", function() {
+      const averageScore = 700; // Example average score
+      const userScore = parseInt(elements.scoreOutput.textContent.split(": ")[1]);
+      alert(`Your score: ${userScore}\nAverage score: ${averageScore}`);
+    });
+
+    document.getElementById("printScore").addEventListener("click", function() {
+      window.print();
+    });
+
+    document.getElementById("submitFeedback").addEventListener("click", function() {
+      const feedback = document.getElementById("feedbackText").value;
+      alert("Thank you for your feedback!");
+      document.getElementById("feedbackText").value = "";
+    });
   </script>
 
 </body>

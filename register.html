@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Create Account | Bradley's Toolkit</title>
+  <title>Register | Bradley's Toolkit</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="auth.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,6 +16,7 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
     }
 
     .register-box {
@@ -21,7 +24,7 @@
       padding: 30px;
       border-radius: 10px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-      width: 300px;
+      width: 320px;
       text-align: center;
     }
 
@@ -29,64 +32,210 @@
       width: 90%;
       padding: 10px;
       margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    input:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
     }
 
     button {
-      background: #28a745;
+      background: #007bff;
       color: white;
       padding: 10px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       width: 100%;
+      margin-bottom: 10px;
+      transition: background-color 0.3s;
     }
 
-    button:hover {
-      background: #218838;
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background: #0056b3;
     }
 
     .error {
-      color: red;
+      color: #dc3545;
       font-size: 14px;
       margin-top: 10px;
+    }
+
+    .success {
+      color: #28a745;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    a {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 13px;
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .password-strength {
+      height: 4px;
+      margin: 5px 0;
+      border-radius: 2px;
+      transition: all 0.3s;
+    }
+
+    .strength-weak { background-color: #dc3545; width: 33%; }
+    .strength-medium { background-color: #ffc107; width: 66%; }
+    .strength-strong { background-color: #28a745; width: 100%; }
+
+    .requirements {
+      text-align: left;
+      font-size: 12px;
+      color: #6c757d;
+      margin: 10px 0;
+    }
+
+    .requirement {
+      margin: 5px 0;
+    }
+
+    .requirement.met {
+      color: #28a745;
+    }
+
+    .verification-notice {
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="register-box">
-    <h2>🆕 Create Account</h2>
+    <h2>📝 Create Account</h2>
     <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password (min 6 characters)" />
-    <button onclick="createAccount()">Create Account</button>
+    <input type="password" id="password" placeholder="Password" />
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" />
+    <div class="password-strength" id="passwordStrength"></div>
+    <div class="requirements" id="requirements">
+      <div class="requirement" id="length">• At least 8 characters</div>
+      <div class="requirement" id="lowercase">• At least one lowercase letter</div>
+      <div class="requirement" id="uppercase">• At least one uppercase letter</div>
+      <div class="requirement" id="number">• At least one number</div>
+      <div class="requirement" id="special">• At least one special character</div>
+    </div>
+    <button id="createAccount" onclick="createAccount()" disabled>Create Account</button>
+    <div class="verification-notice" id="verificationNotice">
+      Please check your email to verify your account.
+    </div>
+    <a href="login.html">Already have an account? Login</a>
     <p class="error" id="error"></p>
+    <p class="success" id="success"></p>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
-      projectId: "mobile-debt-tracker",
-      storageBucket: "mobile-debt-tracker.firebasestorage.app",
-      messagingSenderId: "153601029964",
-      appId: "1:153601029964:web:ddd1880ba21bce2e9041e9",
-      measurementId: "G-ZKXW42Y7YZ"
-    };
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    // Password validation
+    function validatePassword(password) {
+      const requirements = {
+        length: password.length >= 8,
+        lowercase: /[a-z]/.test(password),
+        uppercase: /[A-Z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[^a-zA-Z0-9]/.test(password)
+      };
 
-    function createAccount() {
+      // Update requirement indicators
+      Object.keys(requirements).forEach(req => {
+        const element = document.getElementById(req);
+        if (requirements[req]) {
+          element.classList.add('met');
+        } else {
+          element.classList.remove('met');
+        }
+      });
+
+      // Update password strength indicator
+      const strengthBar = document.getElementById('passwordStrength');
+      const strength = Object.values(requirements).filter(Boolean).length;
+      
+      strengthBar.className = 'password-strength';
+      if (strength <= 2) {
+        strengthBar.classList.add('strength-weak');
+      } else if (strength <= 4) {
+        strengthBar.classList.add('strength-medium');
+      } else {
+        strengthBar.classList.add('strength-strong');
+      }
+
+      // Enable/disable create account button
+      const createAccountBtn = document.getElementById('createAccount');
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      createAccountBtn.disabled = !(Object.values(requirements).every(Boolean) && password === confirmPassword);
+
+      return Object.values(requirements).every(Boolean);
+    }
+
+    // Create account function
+    window.createAccount = function() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (password !== confirmPassword) {
+        document.getElementById("error").innerText = "Passwords do not match";
+        return;
+      }
+
+      if (!validatePassword(password)) {
+        document.getElementById("error").innerText = "Password does not meet requirements";
+        return;
+      }
 
       auth.createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          // Send verification email
+          return userCredential.user.sendEmailVerification();
+        })
         .then(() => {
-          window.location.href = "index.html"; // Redirect on success
+          document.getElementById("success").innerText = "Account created successfully!";
+          document.getElementById("verificationNotice").style.display = "block";
+          document.getElementById("createAccount").disabled = true;
+          
+          // Create user document in Firestore
+          return db.collection('users').doc(auth.currentUser.uid).set({
+            email: email,
+            createdAt: new Date(),
+            verified: false
+          });
         })
         .catch(error => {
           document.getElementById("error").innerText = error.message;
         });
-    }
+    };
+
+    // Event listeners
+    document.getElementById('password').addEventListener('input', (e) => {
+      validatePassword(e.target.value);
+    });
+
+    document.getElementById('confirmPassword').addEventListener('input', (e) => {
+      const password = document.getElementById('password').value;
+      validatePassword(password);
+    });
   </script>
 </body>
 </html>

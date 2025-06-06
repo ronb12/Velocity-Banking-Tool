@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Runner</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="auth.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border-left: 4px solid #ddd; }
+        .pass { border-left-color: #28a745; }
+        .fail { border-left-color: #dc3545; }
+        .error { border-left-color: #ffc107; }
+        .summary { margin-top: 20px; padding: 15px; background: #f8f9fa; }
+    </style>
+</head>
+<body>
+    <h1>Test Runner</h1>
+    <button onclick="runTests()">Run Tests</button>
+    <div id="results"></div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { startSessionTimer, extendSession } from './auth.js';
+
+        // Test suite
+        const tests = {
+            passwordValidation: {
+                validateWeakPassword: () => {
+                    const password = 'password';
+                    const requirements = {
+                        length: password.length >= 8,
+                        lowercase: /[a-z]/.test(password),
+                        uppercase: /[A-Z]/.test(password),
+                        number: /[0-9]/.test(password),
+                        special: /[^a-zA-Z0-9]/.test(password)
+                    };
+                    return !Object.values(requirements).every(Boolean);
+                },
+
+                validateMediumPassword: () => {
+                    const password = 'Password123';
+                    const requirements = {
+                        length: password.length >= 8,
+                        lowercase: /[a-z]/.test(password),
+                        uppercase: /[A-Z]/.test(password),
+                        number: /[0-9]/.test(password),
+                        special: /[^a-zA-Z0-9]/.test(password)
+                    };
+                    return Object.values(requirements).filter(Boolean).length === 4;
+                },
+
+                validateStrongPassword: () => {
+                    const password = 'P@ssw0rd123!';
+                    const requirements = {
+                        length: password.length >= 8,
+                        lowercase: /[a-z]/.test(password),
+                        uppercase: /[A-Z]/.test(password),
+                        number: /[0-9]/.test(password),
+                        special: /[^a-zA-Z0-9]/.test(password)
+                    };
+                    return Object.values(requirements).every(Boolean);
+                }
+            },
+
+            sessionManagement: {
+                startSession: () => {
+                    const timer = startSessionTimer();
+                    return timer !== null;
+                },
+
+                extendSession: () => {
+                    const result = extendSession();
+                    return result === true;
+                }
+            },
+
+            loginAttempts: {
+                trackAttempts: () => {
+                    const attempts = parseInt(localStorage.getItem('loginAttempts')) || 0;
+                    localStorage.setItem('loginAttempts', attempts + 1);
+                    return parseInt(localStorage.getItem('loginAttempts')) === attempts + 1;
+                },
+
+                resetAttempts: () => {
+                    localStorage.setItem('loginAttempts', '0');
+                    return parseInt(localStorage.getItem('loginAttempts')) === 0;
+                }
+            }
+        };
+
+        // Run tests
+        window.runTests = async () => {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            let passed = 0;
+            let failed = 0;
+            let error = 0;
+            
+            for (const [category, categoryTests] of Object.entries(tests)) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.innerHTML = `<h2>${category}</h2>`;
+                results.appendChild(categoryDiv);
+                
+                for (const [testName, testFn] of Object.entries(categoryTests)) {
+                    const testDiv = document.createElement('div');
+                    testDiv.className = 'test';
+                    testDiv.innerHTML = `<strong>${testName}</strong>: Running...`;
+                    categoryDiv.appendChild(testDiv);
+                    
+                    try {
+                        const result = await testFn();
+                        if (result) {
+                            passed++;
+                            testDiv.className += ' pass';
+                            testDiv.innerHTML = `<strong>${testName}</strong>: ✅ PASSED`;
+                        } else {
+                            failed++;
+                            testDiv.className += ' fail';
+                            testDiv.innerHTML = `<strong>${testName}</strong>: ❌ FAILED`;
+                        }
+                    } catch (e) {
+                        error++;
+                        testDiv.className += ' error';
+                        testDiv.innerHTML = `<strong>${testName}</strong>: ⚠️ ERROR - ${e.message}`;
+                    }
+                }
+            }
+            
+            const total = passed + failed + error;
+            const successRate = ((passed / total) * 100).toFixed(2);
+            
+            const summary = document.createElement('div');
+            summary.className = 'summary';
+            summary.innerHTML = `
+                <h3>Test Summary</h3>
+                <p>Total Tests: ${total}</p>
+                <p>Passed: ${passed}</p>
+                <p>Failed: ${failed}</p>
+                <p>Errors: ${error}</p>
+                <p>Success Rate: ${successRate}%</p>
+            `;
+            results.appendChild(summary);
+        };
+    </script>
+</body>
+</html> 
