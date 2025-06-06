@@ -35,9 +35,9 @@
 <body>
   <div class="dashboard">
     <header>
-      <div class="header-left">
-        <h1>🚀 Bradley's Financial Tools</h1>
-        <p class="subtitle">Your complete financial management solution</p>
+      <div class="header-title">
+        <span style="font-size:2.2rem;">💼</span>
+        Bradley's Financial Tools
       </div>
       <div class="header-controls">
         <button id="darkModeToggle" class="control-btn">🌙 Dark Mode</button>
@@ -49,32 +49,32 @@
     </header>
 
     <div class="dashboard-stats">
-      <div id="creditUtilizationTile" class="stat-tile">
+      <div id="creditUtilizationTile" class="stat-tile" data-type="warning">
         <div class="stat-icon">💳</div>
         <div class="stat-content">
           <h3>Credit Utilization</h3>
-          <p class="stat-value">Loading...</p>
+          <p class="stat-value" id="creditUtilizationValue"><span class="spinner"></span></p>
         </div>
       </div>
-      <div id="netWorthTile" class="stat-tile">
+      <div id="netWorthTile" class="stat-tile" data-type="success">
         <div class="stat-icon">💎</div>
         <div class="stat-content">
           <h3>Net Worth</h3>
-          <p class="stat-value">Loading...</p>
+          <p class="stat-value" id="netWorthValue"><span class="spinner"></span></p>
         </div>
       </div>
-      <div id="debtSummaryTile" class="stat-tile">
+      <div id="debtSummaryTile" class="stat-tile" data-type="danger">
         <div class="stat-icon">📊</div>
         <div class="stat-content">
           <h3>Total Debt</h3>
-          <p class="stat-value">Loading...</p>
+          <p class="stat-value" id="debtSummaryValue"><span class="spinner"></span></p>
         </div>
       </div>
-      <div id="savingsTile" class="stat-tile">
+      <div id="savingsTile" class="stat-tile" data-type="success">
         <div class="stat-icon">🎯</div>
         <div class="stat-content">
           <h3>Savings Progress</h3>
-          <p class="stat-value">Loading...</p>
+          <p class="stat-value" id="savingsValue"><span class="spinner"></span></p>
         </div>
       </div>
     </div>
@@ -171,40 +171,48 @@
       darkModeToggle.textContent = '☀️ Light Mode';
     }
 
-    // Initialize dashboard data
+    // Spinner HTML
+    const spinner = '<span style="display:inline-block;width:1.2em;height:1.2em;border:2px solid #cbd5e1;border-top:2px solid #2563eb;border-radius:50%;animation:spin 1s linear infinite;"></span>';
+    // Set fallback after 1.5s if no data
+    function setFallback(id, value) {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el && (el.innerHTML.includes('spinner') || el.textContent.trim() === '')) {
+          el.textContent = value;
+        }
+      }, 1500);
+    }
+    setFallback('creditUtilizationValue', 'No data yet');
+    setFallback('netWorthValue', 'No data yet');
+    setFallback('debtSummaryValue', 'No data yet');
+    setFallback('savingsValue', 'No data yet');
+
+    // Live data from Firestore
     auth.onAuthStateChanged(async user => {
       if (user) {
         const userRef = db.collection('users').doc(user.uid);
-        const doc = await userRef.get();
-        if (doc.exists) {
-          const data = doc.data();
-          
-          // Update Credit Utilization
-          const utilTile = document.getElementById('creditUtilizationTile');
-          if (utilTile && data.creditUtilization !== undefined) {
-            utilTile.querySelector('.stat-value').textContent = `${data.creditUtilization}%`;
-          }
-
-          // Update Net Worth
-          const netWorthTile = document.getElementById('netWorthTile');
-          if (netWorthTile && data.netWorth !== undefined) {
-            netWorthTile.querySelector('.stat-value').textContent = `$${data.netWorth.toLocaleString()}`;
-          }
-
-          // Update Debt Summary
-          const debtTile = document.getElementById('debtSummaryTile');
-          if (debtTile && data.totalDebt !== undefined) {
-            debtTile.querySelector('.stat-value').textContent = `$${data.totalDebt.toLocaleString()}`;
-          }
-
-          // Update Savings Goals
-          const savingsTile = document.getElementById('savingsTile');
-          if (savingsTile && data.savingsProgress !== undefined) {
-            savingsTile.querySelector('.stat-value').textContent = `${data.savingsProgress}% of goals`;
-          }
-        }
+        userRef.onSnapshot(doc => {
+          const data = doc.data() || {};
+          document.getElementById('creditUtilizationValue').textContent =
+            data.creditUtilization !== undefined ? `${data.creditUtilization}%` : 'No data yet';
+          document.getElementById('netWorthValue').textContent =
+            data.netWorth !== undefined ? `$${Number(data.netWorth).toLocaleString()}` : 'No data yet';
+          document.getElementById('debtSummaryValue').textContent =
+            data.totalDebt !== undefined ? `$${Number(data.totalDebt).toLocaleString()}` : 'No data yet';
+          document.getElementById('savingsValue').textContent =
+            data.savingsProgress !== undefined ? `${data.savingsProgress}% of goals` : 'No data yet';
+        });
+      } else {
+        document.getElementById('creditUtilizationValue').textContent = 'No data yet';
+        document.getElementById('netWorthValue').textContent = 'No data yet';
+        document.getElementById('debtSummaryValue').textContent = 'No data yet';
+        document.getElementById('savingsValue').textContent = 'No data yet';
       }
     });
   </script>
+  <style>
+    @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+    .spinner { display:inline-block;width:1.2em;height:1.2em;border:2px solid #cbd5e1;border-top:2px solid #2563eb;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;}
+  </style>
 </body>
 </html>
