@@ -64,27 +64,74 @@
 <body>
   <div class="dashboard">
     <header>
-      <h1 style="font-size:2.5em;margin-bottom:10px;">🚀 Bradley's Financial Tools Dashboard</h1>
-      <p style="font-size:1.1em;margin-bottom:30px;color:#555;">Choose a tool below to take control of your money and credit.</p>
-      <button id="darkModeToggle" style="position:absolute;top:15px;right:20px;background:#333;color:#fff;padding:8px 12px;border-radius:4px;border:none;cursor:pointer;">🌙 Toggle Dark Mode</button>
+      <h1>🚀 Bradley's Financial Tools</h1>
+      <p class="subtitle">Your complete financial management solution</p>
+      <button id="darkModeToggle">🌙 Toggle Dark Mode</button>
       <div class="user-menu auth-required" style="display: none;"></div>
     </header>
 
-    <div class="tile-grid">
-      <a href="Debt_Tracker.html" class="tile"><span class="tile-icon">📋</span><span class="tile-title">Debt Tracker</span></a>
-      <a href="budget.html" class="tile"><span class="tile-icon">💰</span><span class="tile-title">Budget Tracker</span></a>
-      <a href="Velocity_Calculator.html" class="tile"><span class="tile-icon">⚡</span><span class="tile-title">Velocity Calculator</span></a>
-      <a href="net_worth_tracker.html" class="tile"><span class="tile-icon">💎</span><span class="tile-title">Net Worth Tracker</span></a>
-      <a href="Credit_Score_Estimator.html" class="tile"><span class="tile-icon">💳</span><span class="tile-title">Credit Score Estimator</span></a>
-      <a href="1099_calculator.html" class="tile"><span class="tile-icon">📟</span><span class="tile-title">1099 Tax Estimator</span></a>
-      <a href="savings_goal_tracker.html" class="tile"><span class="tile-icon">🎯</span><span class="tile-title">Savings Goal Tracker</span></a>
-      <a href="notifications.html" class="tile"><span class="tile-icon">🔔</span><span class="tile-title">Notifications</span></a>
-      <a href="activity_feed.html" class="tile"><span class="tile-icon">🧾</span><span class="tile-title">Activity Feed</span></a>
-      <a href="challenge_library.html" class="tile"><span class="tile-icon">🏆</span><span class="tile-title">Challenge Library</span></a>
+    <div class="dashboard-tiles">
+      <div id="creditUtilizationTile" class="dashboard-tile">
+        <h3>💳 Credit Utilization</h3>
+        <p>Loading...</p>
+      </div>
+      <div class="dashboard-tile">
+        <h3>📊 Quick Stats</h3>
+        <p>Coming soon...</p>
+      </div>
     </div>
 
-    <div class="dashboard-tiles" style="margin-top:30px;">
-      <div id="creditUtilizationTile" class="dashboard-tile" style="min-width:220px;">💳 Credit Utilization: Loading...</div>
+    <div class="tile-grid">
+      <a href="Debt_Tracker.html" class="tile">
+        <span class="tile-icon">📋</span>
+        <span class="tile-title">Debt Tracker</span>
+        <span class="tile-description">Track and manage your debts</span>
+      </a>
+      <a href="budget.html" class="tile">
+        <span class="tile-icon">💰</span>
+        <span class="tile-title">Budget Tracker</span>
+        <span class="tile-description">Manage your income and expenses</span>
+      </a>
+      <a href="Velocity_Calculator.html" class="tile">
+        <span class="tile-icon">⚡</span>
+        <span class="tile-title">Velocity Calculator</span>
+        <span class="tile-description">Optimize your debt payoff strategy</span>
+      </a>
+      <a href="net_worth_tracker.html" class="tile">
+        <span class="tile-icon">💎</span>
+        <span class="tile-title">Net Worth Tracker</span>
+        <span class="tile-description">Monitor your financial growth</span>
+      </a>
+      <a href="Credit_Score_Estimator.html" class="tile">
+        <span class="tile-icon">💳</span>
+        <span class="tile-title">Credit Score Estimator</span>
+        <span class="tile-description">Estimate your credit score</span>
+      </a>
+      <a href="1099_calculator.html" class="tile">
+        <span class="tile-icon">📟</span>
+        <span class="tile-title">1099 Tax Estimator</span>
+        <span class="tile-description">Calculate your self-employed taxes</span>
+      </a>
+      <a href="savings_goal_tracker.html" class="tile">
+        <span class="tile-icon">🎯</span>
+        <span class="tile-title">Savings Goal Tracker</span>
+        <span class="tile-description">Track your savings progress</span>
+      </a>
+      <a href="notifications.html" class="tile">
+        <span class="tile-icon">🔔</span>
+        <span class="tile-title">Notifications</span>
+        <span class="tile-description">Stay updated on your finances</span>
+      </a>
+      <a href="activity_feed.html" class="tile">
+        <span class="tile-icon">🧾</span>
+        <span class="tile-title">Activity Feed</span>
+        <span class="tile-description">View your financial history</span>
+      </a>
+      <a href="challenge_library.html" class="tile">
+        <span class="tile-icon">🏆</span>
+        <span class="tile-title">Challenge Library</span>
+        <span class="tile-description">Explore savings challenges</span>
+      </a>
     </div>
 
     <div class="recent-activity auth-required" style="display: none;">
