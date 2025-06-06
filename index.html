@@ -75,9 +75,17 @@
         <h3>💳 Credit Utilization</h3>
         <p>Loading...</p>
       </div>
-      <div class="dashboard-tile">
-        <h3>📊 Quick Stats</h3>
-        <p>Coming soon...</p>
+      <div id="netWorthTile" class="dashboard-tile">
+        <h3>💎 Net Worth</h3>
+        <p>Loading...</p>
+      </div>
+      <div id="debtSummaryTile" class="dashboard-tile">
+        <h3>📊 Debt Summary</h3>
+        <p>Loading...</p>
+      </div>
+      <div id="savingsTile" class="dashboard-tile">
+        <h3>🎯 Savings Goals</h3>
+        <p>Loading...</p>
       </div>
     </div>
 
@@ -140,51 +148,19 @@
     </div>
   </div>
 
-  <script type="module">
-    import { auth, db } from './auth.js';
-    import { formatCurrency, formatDate, showError } from './global.js';
+  <div id="sessionTimeout" style="display: none;">
+    <p>Your session will expire in <span id="timeoutCountdown">5:00</span></p>
+    <button onclick="extendSession()">Extend Session</button>
+  </div>
 
-    // Load recent activity
-    async function loadRecentActivity() {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-
-        const snapshot = await db.collection('users')
-          .doc(user.uid)
-          .collection('activity')
-          .orderBy('timestamp', 'desc')
-          .limit(5)
-          .get();
-
-        const activityList = document.getElementById('activityList');
-        activityList.innerHTML = '';
-
-        snapshot.forEach(doc => {
-          const activity = doc.data();
-          const div = document.createElement('div');
-          div.className = 'activity-item';
-          div.innerHTML = `
-            <span class="activity-icon">${activity.icon || '📝'}</span>
-            <span class="activity-text">${activity.text}</span>
-            <span class="activity-time">${formatDate(activity.timestamp.toDate())}</span>
-          `;
-          activityList.appendChild(div);
-        });
-      } catch (error) {
-        showError('Failed to load recent activity');
-        console.error('Error loading activity:', error);
-      }
-    }
-
-    // Load dashboard data when auth state changes
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        loadRecentActivity();
-      }
-    });
-  </script>
-
+  <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="sync.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="global.js"></script>
+  <script src="app-updater.js"></script>
   <script>
     // Dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
@@ -196,6 +172,41 @@
     if (localStorage.getItem('theme') === 'dark') {
       document.body.classList.add('dark');
     }
+
+    // Initialize dashboard tiles
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        const userRef = db.collection('users').doc(user.uid);
+        const doc = await userRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          
+          // Update Credit Utilization
+          const utilTile = document.getElementById('creditUtilizationTile');
+          if (utilTile && data.creditUtilization !== undefined) {
+            utilTile.querySelector('p').textContent = `${data.creditUtilization}%`;
+          }
+
+          // Update Net Worth
+          const netWorthTile = document.getElementById('netWorthTile');
+          if (netWorthTile && data.netWorth !== undefined) {
+            netWorthTile.querySelector('p').textContent = `$${data.netWorth.toLocaleString()}`;
+          }
+
+          // Update Debt Summary
+          const debtTile = document.getElementById('debtSummaryTile');
+          if (debtTile && data.totalDebt !== undefined) {
+            debtTile.querySelector('p').textContent = `$${data.totalDebt.toLocaleString()}`;
+          }
+
+          // Update Savings Goals
+          const savingsTile = document.getElementById('savingsTile');
+          if (savingsTile && data.savingsProgress !== undefined) {
+            savingsTile.querySelector('p').textContent = `${data.savingsProgress}% of goals`;
+          }
+        }
+      }
+    });
   </script>
 </body>
 </html>
