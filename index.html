@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard | Bradley's Toolkit</title>
+  <title>Bradley's Financial Tools</title>
+  <link rel="stylesheet" href="theme.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Favicon and Manifest -->
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
@@ -29,116 +31,104 @@
   <script type="module" src="auth.js"></script>
   <script type="module" src="global.js"></script>
   <script src="app-updater.js"></script>
-
-  <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; margin: 0; padding: 0; text-align: center; }
-    header { background: #007bff; color: white; padding: 1em; position: relative; }
-    .logout, .profile-btn {
-      position: absolute; top: 15px; padding: 8px 12px; border-radius: 4px; border: none; color: white; cursor: pointer;
-    }
-    .logout { right: 20px; background: #dc3545; }
-    .profile-btn { left: 20px; background: #28a745; }
-    .tool-link {
-      display: block; margin: 10px auto; padding: 12px;
-      background: #007bff; color: white; width: 300px;
-      border-radius: 8px; text-decoration: none;
-    }
-    .dashboard-tile {
-      display: inline-block; margin: 10px; padding: 15px; background: white;
-      border-left: 5px solid #007bff; border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1); min-width: 180px; font-weight: bold;
-    }
-    .alert, #migrationBanner {
-      margin: 20px auto; padding: 10px; font-weight: 500;
-      max-width: 600px; border-radius: 8px; display: none;
-    }
-    .alert { background: #ffc107; color: #000; }
-    #migrationBanner { background: #d4edda; color: #155724; }
-    #profileBox {
-      display: none; background: #fff; border: 1px solid #ccc;
-      margin: 10px auto; padding: 15px; border-radius: 8px;
-      max-width: 400px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-  </style>
 </head>
 <body>
   <div class="dashboard">
     <header>
-      <h1>🚀 Bradley's Financial Tools</h1>
-      <p class="subtitle">Your complete financial management solution</p>
-      <button id="darkModeToggle">🌙 Toggle Dark Mode</button>
-      <div class="user-menu auth-required" style="display: none;"></div>
+      <div class="header-left">
+        <h1>🚀 Bradley's Financial Tools</h1>
+        <p class="subtitle">Your complete financial management solution</p>
+      </div>
+      <div class="header-controls">
+        <button id="darkModeToggle" class="control-btn">🌙 Dark Mode</button>
+        <div class="user-menu auth-required" style="display: none;">
+          <span class="user-email"></span>
+          <button id="logoutBtn" class="control-btn">Logout</button>
+        </div>
+      </div>
     </header>
 
-    <div class="dashboard-tiles">
-      <div id="creditUtilizationTile" class="dashboard-tile">
-        <h3>💳 Credit Utilization</h3>
-        <p>Loading...</p>
+    <div class="dashboard-stats">
+      <div id="creditUtilizationTile" class="stat-tile">
+        <div class="stat-icon">💳</div>
+        <div class="stat-content">
+          <h3>Credit Utilization</h3>
+          <p class="stat-value">Loading...</p>
+        </div>
       </div>
-      <div id="netWorthTile" class="dashboard-tile">
-        <h3>💎 Net Worth</h3>
-        <p>Loading...</p>
+      <div id="netWorthTile" class="stat-tile">
+        <div class="stat-icon">💎</div>
+        <div class="stat-content">
+          <h3>Net Worth</h3>
+          <p class="stat-value">Loading...</p>
+        </div>
       </div>
-      <div id="debtSummaryTile" class="dashboard-tile">
-        <h3>📊 Debt Summary</h3>
-        <p>Loading...</p>
+      <div id="debtSummaryTile" class="stat-tile">
+        <div class="stat-icon">📊</div>
+        <div class="stat-content">
+          <h3>Total Debt</h3>
+          <p class="stat-value">Loading...</p>
+        </div>
       </div>
-      <div id="savingsTile" class="dashboard-tile">
-        <h3>🎯 Savings Goals</h3>
-        <p>Loading...</p>
+      <div id="savingsTile" class="stat-tile">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-content">
+          <h3>Savings Progress</h3>
+          <p class="stat-value">Loading...</p>
+        </div>
       </div>
     </div>
 
-    <div class="tile-grid">
-      <a href="Debt_Tracker.html" class="tile">
-        <span class="tile-icon">📋</span>
-        <span class="tile-title">Debt Tracker</span>
-        <span class="tile-description">Track and manage your debts</span>
+    <div class="tools-grid">
+      <a href="Debt_Tracker.html" class="tool-card">
+        <div class="tool-icon">📋</div>
+        <h3>Debt Tracker</h3>
+        <p>Track and manage your debts</p>
       </a>
-      <a href="budget.html" class="tile">
-        <span class="tile-icon">💰</span>
-        <span class="tile-title">Budget Tracker</span>
-        <span class="tile-description">Manage your income and expenses</span>
+      <a href="budget.html" class="tool-card">
+        <div class="tool-icon">💰</div>
+        <h3>Budget Tracker</h3>
+        <p>Manage your income and expenses</p>
       </a>
-      <a href="Velocity_Calculator.html" class="tile">
-        <span class="tile-icon">⚡</span>
-        <span class="tile-title">Velocity Calculator</span>
-        <span class="tile-description">Optimize your debt payoff strategy</span>
+      <a href="Velocity_Calculator.html" class="tool-card">
+        <div class="tool-icon">⚡</div>
+        <h3>Velocity Calculator</h3>
+        <p>Optimize your debt payoff strategy</p>
       </a>
-      <a href="net_worth_tracker.html" class="tile">
-        <span class="tile-icon">💎</span>
-        <span class="tile-title">Net Worth Tracker</span>
-        <span class="tile-description">Monitor your financial growth</span>
+      <a href="net_worth_tracker.html" class="tool-card">
+        <div class="tool-icon">💎</div>
+        <h3>Net Worth Tracker</h3>
+        <p>Monitor your financial growth</p>
       </a>
-      <a href="Credit_Score_Estimator.html" class="tile">
-        <span class="tile-icon">💳</span>
-        <span class="tile-title">Credit Score Estimator</span>
-        <span class="tile-description">Estimate your credit score</span>
+      <a href="Credit_Score_Estimator.html" class="tool-card">
+        <div class="tool-icon">💳</div>
+        <h3>Credit Score Estimator</h3>
+        <p>Estimate your credit score</p>
       </a>
-      <a href="1099_calculator.html" class="tile">
-        <span class="tile-icon">📟</span>
-        <span class="tile-title">1099 Tax Estimator</span>
-        <span class="tile-description">Calculate your self-employed taxes</span>
+      <a href="1099_calculator.html" class="tool-card">
+        <div class="tool-icon">📟</div>
+        <h3>1099 Tax Estimator</h3>
+        <p>Calculate your self-employed taxes</p>
       </a>
-      <a href="savings_goal_tracker.html" class="tile">
-        <span class="tile-icon">🎯</span>
-        <span class="tile-title">Savings Goal Tracker</span>
-        <span class="tile-description">Track your savings progress</span>
+      <a href="savings_goal_tracker.html" class="tool-card">
+        <div class="tool-icon">🎯</div>
+        <h3>Savings Goal Tracker</h3>
+        <p>Track your savings progress</p>
       </a>
-      <a href="notifications.html" class="tile">
-        <span class="tile-icon">🔔</span>
-        <span class="tile-title">Notifications</span>
-        <span class="tile-description">Stay updated on your finances</span>
+      <a href="notifications.html" class="tool-card">
+        <div class="tool-icon">🔔</div>
+        <h3>Notifications</h3>
+        <p>Stay updated on your finances</p>
       </a>
-      <a href="activity_feed.html" class="tile">
-        <span class="tile-icon">🧾</span>
-        <span class="tile-title">Activity Feed</span>
-        <span class="tile-description">View your financial history</span>
+      <a href="activity_feed.html" class="tool-card">
+        <div class="tool-icon">🧾</div>
+        <h3>Activity Feed</h3>
+        <p>View your financial history</p>
       </a>
-      <a href="challenge_library.html" class="tile">
-        <span class="tile-icon">🏆</span>
-        <span class="tile-title">Challenge Library</span>
-        <span class="tile-description">Explore savings challenges</span>
+      <a href="challenge_library.html" class="tool-card">
+        <div class="tool-icon">🏆</div>
+        <h3>Challenge Library</h3>
+        <p>Explore savings challenges</p>
       </a>
     </div>
 
@@ -148,9 +138,11 @@
     </div>
   </div>
 
-  <div id="sessionTimeout" style="display: none;">
-    <p>Your session will expire in <span id="timeoutCountdown">5:00</span></p>
-    <button onclick="extendSession()">Extend Session</button>
+  <div id="sessionTimeout" class="session-timeout" style="display: none;">
+    <div class="timeout-content">
+      <p>Your session will expire in <span id="timeoutCountdown">5:00</span></p>
+      <button id="extendSessionBtn" class="control-btn">Extend Session</button>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
@@ -158,22 +150,28 @@
   <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore.js"></script>
   <script src="firebase-config.js"></script>
   <script src="sync.js"></script>
-  <script type="module" src="auth.js"></script>
-  <script type="module" src="global.js"></script>
-  <script src="app-updater.js"></script>
-  <script>
+  <script type="module">
+    import { auth, db, logout, extendSession } from './auth.js';
+    
+    // Make logout function globally available
+    window.logout = logout;
+    window.extendSession = extendSession;
+
     // Dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
     darkModeToggle.addEventListener('click', () => {
       document.body.classList.toggle('dark');
       localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      darkModeToggle.textContent = document.body.classList.contains('dark') ? '☀️ Light Mode' : '🌙 Dark Mode';
     });
+
     // Load theme from storage
     if (localStorage.getItem('theme') === 'dark') {
       document.body.classList.add('dark');
+      darkModeToggle.textContent = '☀️ Light Mode';
     }
 
-    // Initialize dashboard tiles
+    // Initialize dashboard data
     auth.onAuthStateChanged(async user => {
       if (user) {
         const userRef = db.collection('users').doc(user.uid);
@@ -184,25 +182,25 @@
           // Update Credit Utilization
           const utilTile = document.getElementById('creditUtilizationTile');
           if (utilTile && data.creditUtilization !== undefined) {
-            utilTile.querySelector('p').textContent = `${data.creditUtilization}%`;
+            utilTile.querySelector('.stat-value').textContent = `${data.creditUtilization}%`;
           }
 
           // Update Net Worth
           const netWorthTile = document.getElementById('netWorthTile');
           if (netWorthTile && data.netWorth !== undefined) {
-            netWorthTile.querySelector('p').textContent = `$${data.netWorth.toLocaleString()}`;
+            netWorthTile.querySelector('.stat-value').textContent = `$${data.netWorth.toLocaleString()}`;
           }
 
           // Update Debt Summary
           const debtTile = document.getElementById('debtSummaryTile');
           if (debtTile && data.totalDebt !== undefined) {
-            debtTile.querySelector('p').textContent = `$${data.totalDebt.toLocaleString()}`;
+            debtTile.querySelector('.stat-value').textContent = `$${data.totalDebt.toLocaleString()}`;
           }
 
           // Update Savings Goals
           const savingsTile = document.getElementById('savingsTile');
           if (savingsTile && data.savingsProgress !== undefined) {
-            savingsTile.querySelector('p').textContent = `${data.savingsProgress}% of goals`;
+            savingsTile.querySelector('.stat-value').textContent = `${data.savingsProgress}% of goals`;
           }
         }
       }
