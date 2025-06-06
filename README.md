@@ -41,6 +41,9 @@ A powerful, real-time personal finance dashboard built with Firebase and HTML/CS
 ├── service-worker.js        # Offline caching (optional)
 ├── .firebaserc              # Firebase project reference
 ├── firebase.json            # Firebase hosting config
+├── icons/
+│   ├── icon-192.png          # PWA app icon (192x192)
+│   └── icon-512.png          # PWA app icon (512x512)
 ```
 
 ---

@@ -41,9 +41,9 @@
       </div>
       <div class="header-controls">
         <button id="darkModeToggle" class="control-btn">🌙 Dark Mode</button>
-        <div class="user-menu auth-required" style="display: none;">
+        <div class="user-menu auth-required" style="display: none; cursor:pointer;">
           <span class="user-email"></span>
-          <button id="logoutBtn" class="control-btn">Logout</button>
+          <img src="icons/icon-192.png" alt="Profile" class="profile-avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;margin-left:0.5rem;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
         </div>
       </div>
     </header>
@@ -145,6 +145,38 @@
     </div>
   </div>
 
+  <!-- Profile Modal -->
+  <div id="profileModal" class="profile-modal" style="display:none;">
+    <div class="profile-modal-content">
+      <button class="close-profile-modal" id="closeProfileModal">&times;</button>
+      <div class="profile-header">
+        <img src="icons/icon-192.png" alt="Profile" class="profile-avatar-large">
+        <div>
+          <h2 id="profileName">User</h2>
+          <p id="profileEmail">Email</p>
+        </div>
+      </div>
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <span>Net Worth</span>
+          <strong id="profileNetWorth">-</strong>
+        </div>
+        <div class="profile-stat">
+          <span>Credit Utilization</span>
+          <strong id="profileCreditUtilization">-</strong>
+        </div>
+        <div class="profile-stat">
+          <span>Total Debt</span>
+          <strong id="profileTotalDebt">-</strong>
+        </div>
+        <div class="profile-stat">
+          <span>Savings Progress</span>
+          <strong id="profileSavings">-</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.x.x/firebase-firestore.js"></script>
@@ -209,10 +241,137 @@
         document.getElementById('savingsValue').textContent = 'No data yet';
       }
     });
+
+    // Profile Modal Logic
+    const userMenu = document.querySelector('.user-menu');
+    const profileModal = document.getElementById('profileModal');
+    const closeProfileModal = document.getElementById('closeProfileModal');
+    userMenu && userMenu.addEventListener('click', () => {
+      profileModal.style.display = 'flex';
+    });
+    closeProfileModal && closeProfileModal.addEventListener('click', () => {
+      profileModal.style.display = 'none';
+    });
+    window.addEventListener('click', (e) => {
+      if (e.target === profileModal) profileModal.style.display = 'none';
+    });
+
+    // Sync profile modal with Firebase
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        document.getElementById('profileName').textContent = user.displayName || 'User';
+        document.getElementById('profileEmail').textContent = user.email;
+        const userRef = db.collection('users').doc(user.uid);
+        userRef.onSnapshot(doc => {
+          const data = doc.data() || {};
+          document.getElementById('profileNetWorth').textContent =
+            data.netWorth !== undefined ? `$${Number(data.netWorth).toLocaleString()}` : '-';
+          document.getElementById('profileCreditUtilization').textContent =
+            data.creditUtilization !== undefined ? `${data.creditUtilization}%` : '-';
+          document.getElementById('profileTotalDebt').textContent =
+            data.totalDebt !== undefined ? `$${Number(data.totalDebt).toLocaleString()}` : '-';
+          document.getElementById('profileSavings').textContent =
+            data.savingsProgress !== undefined ? `${data.savingsProgress}%` : '-';
+        });
+      }
+    });
   </script>
   <style>
     @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
     .spinner { display:inline-block;width:1.2em;height:1.2em;border:2px solid #cbd5e1;border-top:2px solid #2563eb;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;}
+    /* Profile Modal Styles */
+    .profile-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(30,41,59,0.25);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .profile-modal-content {
+      background: #fff;
+      border-radius: 1.5rem;
+      box-shadow: 0 8px 32px rgba(37,99,235,0.12);
+      padding: 2.5rem 2.5rem 2rem 2.5rem;
+      min-width: 320px;
+      max-width: 95vw;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.2s;
+    }
+    body.dark .profile-modal-content {
+      background: #232946;
+      color: #f4f4f9;
+    }
+    .close-profile-modal {
+      position: absolute;
+      top: 1.2rem;
+      right: 1.2rem;
+      background: none;
+      border: none;
+      font-size: 2rem;
+      color: #64748b;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .close-profile-modal:hover { color: #ef4444; }
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    .profile-avatar-large {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+    }
+    .profile-header h2 {
+      margin: 0 0 0.2rem 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    .profile-header p {
+      margin: 0;
+      color: #64748b;
+      font-size: 1rem;
+    }
+    .profile-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    .profile-stat {
+      background: #f8fafc;
+      border-radius: 1rem;
+      padding: 1.1rem 1rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.06);
+      font-size: 1rem;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    body.dark .profile-stat {
+      background: #232946;
+      color: #f4f4f9;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.12);
+    }
+    @media (max-width: 600px) {
+      .profile-modal-content { padding: 1.2rem 0.5rem; }
+      .profile-header { flex-direction: column; gap: 0.7rem; }
+      .profile-stats { grid-template-columns: 1fr; gap: 0.7rem; }
+    }
   </style>
 </body>
 </html>
