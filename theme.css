@@ -65,8 +65,10 @@ img {
   --text-color: #1e293b;
   --background-color: #f8fafc;
   --card-background: #ffffff;
+  --text-muted: #64748b;
   --border-color: #e2e8f0;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --transition: all 0.3s ease;
 }
 
@@ -260,9 +262,9 @@ button:disabled {
 
 .tile-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin: 2rem auto;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin: 3rem auto;
   max-width: 1200px;
 }
 
@@ -273,15 +275,16 @@ button:disabled {
   justify-content: center;
   background: var(--card-background);
   color: var(--text-color);
-  border-radius: 12px;
+  border-radius: 16px;
   box-shadow: var(--shadow);
-  padding: 2rem;
+  padding: 2.5rem 2rem;
   text-decoration: none;
   font-weight: 500;
   transition: var(--transition);
   border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
+  min-height: 200px;
 }
 
 .tile::before {
@@ -292,64 +295,68 @@ button:disabled {
   width: 100%;
   height: 4px;
   background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  opacity: 0.8;
 }
 
 .tile:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-hover);
 }
 
 .tile-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+  font-size: 2.75rem;
+  margin-bottom: 1.25rem;
   display: block;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  line-height: 1;
 }
 
 .tile-title {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 600;
   text-align: center;
   color: var(--text-color);
+  margin-bottom: 0.5rem;
 }
 
 .tile-description {
-  font-size: 0.9rem;
-  color: var(--text-color);
-  opacity: 0.8;
+  font-size: 0.95rem;
+  color: var(--text-muted);
   text-align: center;
-  margin-top: 0.5rem;
+  line-height: 1.5;
 }
 
 .subtitle {
-  font-size: 1.1rem;
-  color: var(--text-color);
-  opacity: 0.8;
-  margin: 0.5rem 0 2rem;
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  margin: 1rem 0 2rem;
+  font-weight: 500;
 }
 
 header h1 {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 2.75rem;
+  font-weight: 800;
   margin: 0;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
 }
 
 .dashboard-tile h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.2rem;
+  margin: 0 0 0.75rem 0;
+  font-size: 1.35rem;
+  font-weight: 600;
   color: var(--text-color);
 }
 
 .dashboard-tile p {
   margin: 0;
   font-size: 1.1rem;
-  color: var(--text-color);
-  opacity: 0.8;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .recent-activity {
@@ -372,12 +379,12 @@ header h1 {
 .dashboard {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2.5rem;
 }
 
 header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 4rem;
   position: relative;
   padding: 2rem 0;
   border-bottom: 1px solid var(--border-color);
@@ -386,65 +393,57 @@ header {
 .dashboard-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin: 2rem 0;
+  gap: 2rem;
+  margin: 3rem 0;
 }
 
 .dashboard-tile {
   background: var(--card-background);
-  padding: 1.5rem;
-  border-radius: 12px;
+  padding: 2rem;
+  border-radius: 16px;
   box-shadow: var(--shadow);
   border: 1px solid var(--border-color);
-  font-weight: 500;
 }
 
 #darkModeToggle {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 1.5rem;
+  right: 1.5rem;
   background: var(--card-background);
   color: var(--text-color);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
   cursor: pointer;
   font-weight: 500;
   transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 #darkModeToggle:hover {
   background: var(--primary-color);
   color: white;
+  border-color: var(--primary-color);
 }
 
 body.dark {
   --background-color: #0f172a;
   --card-background: #1e293b;
   --text-color: #f8fafc;
+  --text-muted: #94a3b8;
   --border-color: #334155;
 }
 
 @media (max-width: 768px) {
   .dashboard {
-    padding: 1rem;
-  }
-  
-  .tile-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .tile {
     padding: 1.5rem;
   }
   
-  .tile-icon {
-    font-size: 2rem;
-  }
-  
-  .tile-title {
-    font-size: 1.1rem;
+  header {
+    margin-bottom: 2.5rem;
+    padding: 1.5rem 0;
   }
   
   header h1 {
@@ -452,10 +451,38 @@ body.dark {
   }
   
   .subtitle {
-    font-size: 1rem;
+    font-size: 1.1rem;
+    margin: 0.75rem 0 1.5rem;
+  }
+  
+  .tile-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin: 2rem auto;
+  }
+  
+  .tile {
+    padding: 2rem 1.5rem;
+    min-height: 180px;
+  }
+  
+  .tile-icon {
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .tile-title {
+    font-size: 1.25rem;
   }
   
   .tile-description {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
+  }
+  
+  #darkModeToggle {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin: 1rem auto;
   }
 }
