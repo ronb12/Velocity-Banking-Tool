@@ -630,7 +630,9 @@ window.onload = function () {
         console.log('Minimum Payment:', minimumPayment);
         console.log('Extra Payment:', extraPayment);
         console.log('Combined Payment (min + extra):', minimumPayment + extraPayment);
+        console.log('Base Interest Rate:', baseInterestRate);
         console.log('Minimum Strategy Total Interest:', minimumStrategy.totalInterest);
+        console.log('Minimum Strategy Months:', minimumStrategy.months);
         if (velocityStrategy) {
             console.log('Velocity Strategy Total Interest:', velocityStrategy.totalInterest);
             console.log('Velocity Savings:', velocitySavings);
@@ -639,7 +641,22 @@ window.onload = function () {
         }
         console.log('Extra Strategy Total Interest:', extraStrategy.totalInterest);
         console.log('Extra Strategy Months:', extraStrategy.months);
+        console.log('Extra Strategy Payment:', minimumPayment + extraPayment);
         console.log('Extra Savings:', extraSavings);
+        console.log('Extra Savings Calculation:', minimumStrategy.totalInterest, '-', extraStrategy.totalInterest, '=', minimumStrategy.totalInterest - extraStrategy.totalInterest);
+        
+        // Manual verification
+        const manualSavings = minimumStrategy.totalInterest - extraStrategy.totalInterest;
+        console.log('Manual Savings Check:', manualSavings);
+        console.log('Are they equal?', extraSavings === manualSavings);
+        
+        // Check if extra payment is actually making a difference
+        if (extraPayment > 0) {
+            console.log('Extra payment provided, checking if it makes a difference...');
+            console.log('Min strategy months:', minimumStrategy.months);
+            console.log('Extra strategy months:', extraStrategy.months);
+            console.log('Months difference:', minimumStrategy.months - extraStrategy.months);
+        }
 
         // Build strategies array, excluding null velocity strategy
         const strategies = [extraStrategy];
