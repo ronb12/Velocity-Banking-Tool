@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Savings Goal Tracker – Pro</title>
   <link rel="stylesheet" href="theme.css" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
@@ -552,19 +555,31 @@
 <script>
 const STORAGE_KEY = 'savings_goals';
 const ARCHIVE_KEY = 'archived_goals';
+const VERSION_KEY = 'savings_goals_version';
+const CURRENT_VERSION = '2.1.0';
 let progressChart = null;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+  // Check version and force refresh if needed
+  const storedVersion = localStorage.getItem(VERSION_KEY);
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceLoad = urlParams.get('load_samples') === 'true';
+  const clearCache = urlParams.get('clear_cache') === 'true';
+  
+  // Clear cache if requested or version mismatch
+  if (clearCache || storedVersion !== CURRENT_VERSION) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ARCHIVE_KEY);
+    localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+  }
+  
   // Check if this is a fresh load (no data) and add sample goals
   const existingGoals = localStorage.getItem(STORAGE_KEY);
   const existingArchives = localStorage.getItem(ARCHIVE_KEY);
   
-  // Check for URL parameter to force load samples
-  const urlParams = new URLSearchParams(window.location.search);
-  const forceLoad = urlParams.get('load_samples') === 'true';
-  
-  if (!existingGoals || JSON.parse(existingGoals).length === 0 || forceLoad) {
+  // Always load sample goals for demonstration
+  if (!existingGoals || JSON.parse(existingGoals).length === 0 || forceLoad || clearCache || storedVersion !== CURRENT_VERSION) {
     addSampleGoals();
   }
   
