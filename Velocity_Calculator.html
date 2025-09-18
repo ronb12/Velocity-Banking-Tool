@@ -541,6 +541,8 @@ window.onload = function () {
             <p>Yearly Income (with Extra): ${formatCurrency(totalYearlyIncome)}</p>
             <p>Available Cash Flow: ${formatCurrency(cashFlow)}</p>
             <p>Selected Line of Credit: ${locBehavior.description}</p>
+            <p>Extra Payment: ${formatCurrency(extraPayment)}</p>
+            <p>Combined Payment (Min + Extra): ${formatCurrency(minimumPayment + extraPayment)}</p>
         `;
 
         if (lineOfCredit === 'ploc') {
@@ -625,6 +627,9 @@ window.onload = function () {
         
         // Debug logging
         console.log('Debug - Interest Calculations:');
+        console.log('Minimum Payment:', minimumPayment);
+        console.log('Extra Payment:', extraPayment);
+        console.log('Combined Payment (min + extra):', minimumPayment + extraPayment);
         console.log('Minimum Strategy Total Interest:', minimumStrategy.totalInterest);
         if (velocityStrategy) {
             console.log('Velocity Strategy Total Interest:', velocityStrategy.totalInterest);
@@ -633,6 +638,7 @@ window.onload = function () {
             console.log('Velocity Strategy: Not calculated (no chunk payment)');
         }
         console.log('Extra Strategy Total Interest:', extraStrategy.totalInterest);
+        console.log('Extra Strategy Months:', extraStrategy.months);
         console.log('Extra Savings:', extraSavings);
 
         // Build strategies array, excluding null velocity strategy
