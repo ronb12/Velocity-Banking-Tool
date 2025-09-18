@@ -354,9 +354,9 @@ window.onload = function () {
             return { strategyName, totalInterest, months, debtFreeDate, yearsToPayoff, totalPrincipalPaid, payments };
         }
 
-        const minimumStrategy = calculateStrategy(debtBalance, interestRate, minimumPayment, "Minimum Payment", []);
+        const minimumStrategy = calculateStrategy(debtBalance, baseInterestRate, minimumPayment, "Minimum Payment", []);
         const velocityStrategy = calculateStrategy(debtBalance, interestRate, cashFlow, "Velocity Banking", chunkMonths);
-        const extraStrategy = calculateStrategy(debtBalance, interestRate, minimumPayment + extraPayment, "Minimum Payments with Extra Payment", []);
+        const extraStrategy = calculateStrategy(debtBalance, baseInterestRate, minimumPayment + extraPayment, "Minimum Payments with Extra Payment", []);
 
         function calculateSavings(baseStrategy, otherStrategy) {
             return baseStrategy.totalInterest - otherStrategy.totalInterest;
