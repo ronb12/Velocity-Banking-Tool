@@ -738,7 +738,7 @@ window.onload = function () {
             `;
         }
 
-        // Render strategies
+        // Render strategies - Velocity Banking first, then others
         console.log('Rendering strategies:');
         console.log('Minimum Strategy Name:', minimumStrategy.strategyName);
         console.log('Extra Strategy Name:', extraStrategy.strategyName);
@@ -746,19 +746,22 @@ window.onload = function () {
             console.log('Velocity Strategy Name:', velocityStrategy.strategyName);
         }
         
-        let resultsHTML = renderStrategy(minimumStrategy, 0);
+        let resultsHTML = '';
         
+        // Show Velocity Banking Strategy first (if calculated)
         if (velocityStrategy) {
             resultsHTML += renderStrategy(velocityStrategy, velocitySavings);
         } else {
             resultsHTML += `
                 <div class="strategy" style="border-top: 4px solid #6c757d;">
-                    <h3>Velocity Banking Strategy</h3>
+                    <h3>🚀 Velocity Banking Strategy</h3>
                     <p><em>Not calculated - No chunk payment provided. Enter a chunk payment amount and months to see velocity banking results.</em></p>
                 </div>
             `;
         }
         
+        // Then show other strategies
+        resultsHTML += renderStrategy(minimumStrategy, 0);
         resultsHTML += renderStrategy(extraStrategy, extraSavings);
         
         document.getElementById('results').innerHTML = resultsHTML;
