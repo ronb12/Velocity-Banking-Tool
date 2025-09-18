@@ -705,7 +705,10 @@ window.onload = function () {
 
             return `
                 <div class="strategy" style="border-top: 4px solid #4CAF50;">
-                    <h2>${strategy.strategyName.replace('Minimum Payments with Extra Payment', '🧮 Minimum Payments with Extra Payment')}</h2>
+                    <h2>${strategy.strategyName
+                        .replace('Minimum Payment', '💰 Minimum Payment Strategy')
+                        .replace('Velocity Banking', '🚀 Velocity Banking Strategy')
+                        .replace('Minimum Payments with Extra Payment', '🧮 Extra Payment Strategy')}</h2>
                     ${notice}
                     <p>Total Interest Paid: ${formatCurrency(strategy.totalInterest)}</p>
                     <p>Months to Payoff: ${strategy.months} (${strategy.yearsToPayoff} years)</p>
@@ -736,6 +739,13 @@ window.onload = function () {
         }
 
         // Render strategies
+        console.log('Rendering strategies:');
+        console.log('Minimum Strategy Name:', minimumStrategy.strategyName);
+        console.log('Extra Strategy Name:', extraStrategy.strategyName);
+        if (velocityStrategy) {
+            console.log('Velocity Strategy Name:', velocityStrategy.strategyName);
+        }
+        
         let resultsHTML = renderStrategy(minimumStrategy, 0);
         
         if (velocityStrategy) {
