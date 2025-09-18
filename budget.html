@@ -220,14 +220,15 @@
     /* Give more space to bill name column */
     #expenseTable th:nth-child(2),
     #expenseTable td:nth-child(2) {
-      min-width: 250px;
-      width: 35%;
+      min-width: 220px;
+      width: 30%;
     }
     
-    /* Make category column narrower */
+    /* Make category column wider to show full names */
     #expenseTable th:nth-child(1),
     #expenseTable td:nth-child(1) {
-      width: 15%;
+      width: 20%;
+      min-width: 140px;
     }
     
     /* Make number columns wider for dollar amounts */
@@ -407,12 +408,19 @@
         padding: 12px 8px;
       }
       
-    /* Make bill name column even wider on mobile */
-    #expenseTable th:nth-child(2),
-    #expenseTable td:nth-child(2) {
-      min-width: 200px;
-      width: 40%;
-    }
+      /* Make bill name column even wider on mobile */
+      #expenseTable th:nth-child(2),
+      #expenseTable td:nth-child(2) {
+        min-width: 180px;
+        width: 35%;
+      }
+      
+      /* Make category column wider on mobile too */
+      #expenseTable th:nth-child(1),
+      #expenseTable td:nth-child(1) {
+        width: 25%;
+        min-width: 120px;
+      }
       
     /* Make text inputs larger on mobile */
     input[type="text"] {
