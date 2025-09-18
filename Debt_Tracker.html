@@ -395,6 +395,9 @@ async function loadDebts() {
       document.querySelector("#debtTable tbody").innerHTML = "";
       data.debts.forEach(debt => {
         console.log('Adding debt:', debt);
+        console.log('Debt interest rate:', debt.interestRate, 'Type:', typeof debt.interestRate);
+        console.log('All debt fields:', Object.keys(debt));
+        console.log('Debt values:', Object.values(debt));
         addDebt(debt.name, debt.balance, debt.interestRate, debt.minPayment, debt.limit, debt.type || 'credit');
       });
       calculateSummary();
