@@ -215,10 +215,10 @@
       window.PerformanceUtils.lazyLoadImages();
     }
     
-    // Preload critical tools
-    if (window.LazyLoader && typeof window.LazyLoader.preloadAllTools === 'function') {
-      window.LazyLoader.preloadAllTools();
-    }
+    // Preload critical tools (disabled for now to avoid 404 errors)
+    // if (window.LazyLoader && typeof window.LazyLoader.preloadAllTools === 'function') {
+    //   window.LazyLoader.preloadAllTools();
+    // }
     
     // Load financial insights (only for authenticated users)
     auth.onAuthStateChanged(user => {
@@ -270,19 +270,25 @@
           const userRef = doc(db, 'users', user.uid);
           
           // First, ensure the user document exists
-          const userDoc = await getDoc(userRef);
-          if (!userDoc.exists()) {
-            // Create user document if it doesn't exist
-            await setDoc(userRef, {
-              email: user.email,
-              displayName: user.displayName || '',
-              joined: new Date().toISOString(),
-              lastLogin: new Date().toISOString(),
-              creditUtilization: 0,
-              netWorth: 0,
-              totalDebt: 0,
-              savingsProgress: 0
-            });
+          try {
+            const userDoc = await getDoc(userRef);
+            if (!userDoc.exists()) {
+              // Create user document if it doesn't exist
+              await setDoc(userRef, {
+                email: user.email,
+                displayName: user.displayName || '',
+                joined: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                creditUtilization: 0,
+                netWorth: 0,
+                totalDebt: 0,
+                savingsProgress: 0
+              });
+              console.log('User document created successfully');
+            }
+          } catch (error) {
+            console.error('Error creating user document:', error);
+            // Continue without the user document for now
           }
           
           onSnapshot(userRef, 
@@ -464,10 +470,10 @@
         let insights = [];
         let allInsights = { insights: [], recommendations: [], financialHealthScore: 0 };
         
-        if (window.FinancialInsights) {
+        if (window.FinancialInsights && typeof window.FinancialInsights.generateInsights === 'function') {
           try {
-            insights = await FinancialInsights.generateInsights(userData);
-            allInsights = FinancialInsights.getAllInsights();
+            insights = await window.FinancialInsights.generateInsights(userData);
+            allInsights = window.FinancialInsights.getAllInsights();
           } catch (error) {
             console.warn('Could not generate financial insights:', error);
           }
@@ -486,7 +492,7 @@
         // Track analytics
         if (window.Analytics && typeof window.Analytics.trackFeatureUsage === 'function') {
           try {
-            Analytics.trackFeatureUsage('financial_insights', {
+            window.Analytics.trackFeatureUsage('financial_insights', {
               insightsCount: allInsights.insights.length,
               recommendationsCount: allInsights.recommendations.length,
               financialHealthScore: allInsights.financialHealthScore

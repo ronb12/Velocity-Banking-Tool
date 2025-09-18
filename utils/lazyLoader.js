@@ -145,13 +145,17 @@ class LazyLoader {
   // Preload all tools for better performance
   preloadAllTools() {
     const tools = [
-      'debt-tracker', 'budget', 'velocity-calculator', 'net-worth',
-      'credit-score', 'tax-calculator', 'savings-goals', 'notifications',
-      'activity-feed', 'challenges'
+      'Debt_Tracker.html', 'budget.html', 'Velocity_Calculator.html', 'net_worth_tracker.html',
+      'Credit_Score_Estimator.html', '1099_calculator.html', 'savings_goal_tracker.html', 'notifications.html',
+      'activity_feed.html', 'challenge_library.html'
     ];
     
     tools.forEach(tool => {
-      this.preloadModule(`./${tool.replace('-', '_')}.html`);
+      // Preload as HTML files, not as modules
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = tool;
+      document.head.appendChild(link);
     });
   }
   
