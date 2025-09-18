@@ -500,12 +500,106 @@
     }
     
     @media (max-width: 480px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .header h1 {
+        font-size: 1.5rem;
+      }
+      
+      .header p {
+        font-size: 0.9rem;
+      }
+      
       .summary-cards {
         grid-template-columns: 1fr;
+        gap: 10px;
       }
       
       .summary-value {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
+      }
+      
+      .summary-label {
+        font-size: 0.8rem;
+      }
+      
+      .section {
+        padding: 15px;
+      }
+      
+      .section-title {
+        font-size: 1.1rem;
+      }
+      
+      table {
+        font-size: 0.75rem;
+      }
+      
+      th, td {
+        padding: 6px 4px;
+      }
+      
+      .btn {
+        font-size: 0.75rem;
+        padding: 8px 12px;
+      }
+      
+      .month-selector input[type="month"] {
+        min-width: 150px;
+        font-size: 0.9rem;
+      }
+      
+      .month-selector label {
+        font-size: 0.9rem;
+      }
+      
+      /* Ensure text doesn't overflow on very small screens */
+      .summary-card {
+        padding: 15px 10px;
+      }
+      
+      .back-link {
+        font-size: 0.9rem;
+        padding: 10px 15px;
+      }
+      
+      /* Make sure table headers fit */
+      th {
+        font-size: 0.7rem;
+        padding: 4px 2px;
+      }
+      
+      /* Optimize input fields for very small screens */
+      input, select, textarea {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+        min-height: 28px;
+      }
+    }
+    
+    /* Extra small screens (320px and below) */
+    @media (max-width: 320px) {
+      .header h1 {
+        font-size: 1.25rem;
+      }
+      
+      .summary-value {
+        font-size: 1rem;
+      }
+      
+      table {
+        font-size: 0.7rem;
+      }
+      
+      th, td {
+        padding: 4px 2px;
+      }
+      
+      .btn {
+        font-size: 0.7rem;
+        padding: 6px 8px;
       }
     }
   </style>
