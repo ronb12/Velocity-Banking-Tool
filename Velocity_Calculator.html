@@ -564,6 +564,7 @@ window.onload = function () {
             let balance = debtBalance, months = 0, totalInterest = 0, payments = [], totalPrincipalPaid = 0;
             
             console.log(`Debug - ${strategyName}: Starting with balance=${balance}, interestRate=${interestRate}, payment=${payment}`);
+            console.log(`Debug - ${strategyName}: Monthly interest rate: ${(interestRate * 100).toFixed(4)}%`);
 
             while (balance > 0 && months < 1500) {
                 const interest = balance * interestRate;
@@ -591,6 +592,16 @@ window.onload = function () {
                 // Debug first few iterations
                 if (months < 3) {
                     console.log(`Debug - ${strategyName} Month ${months + 1}: balance=${balance.toFixed(2)}, interest=${interest.toFixed(2)}, payment=${actualPayment.toFixed(2)}, totalInterest=${totalInterest.toFixed(2)}`);
+                    console.log(`  Before payment: balance=${balance.toFixed(2)}, interest=${interest.toFixed(2)}`);
+                    console.log(`  Payment: ${actualPayment.toFixed(2)}, principalPaid: ${principalPaid.toFixed(2)}`);
+                    console.log(`  After payment: balance=${balance.toFixed(2)}`);
+                }
+                
+                // Check for runaway balance
+                if (balance > debtBalance * 10) {
+                    console.error(`ERROR: Balance runaway detected in ${strategyName}!`);
+                    console.error(`Balance: ${balance}, Debt Balance: ${debtBalance}, Month: ${months + 1}`);
+                    break;
                 }
 
                 months++;
@@ -599,6 +610,8 @@ window.onload = function () {
             const debtFreeDate = new Date();
             debtFreeDate.setMonth(debtFreeDate.getMonth() + months);
             const yearsToPayoff = (months / 12).toFixed(2);
+
+            console.log(`Debug - ${strategyName}: Final results - Total Interest: ${totalInterest.toFixed(2)}, Months: ${months}, Total Principal: ${totalPrincipalPaid.toFixed(2)}`);
 
             return { strategyName, totalInterest, months, debtFreeDate, yearsToPayoff, totalPrincipalPaid, payments };
         }
