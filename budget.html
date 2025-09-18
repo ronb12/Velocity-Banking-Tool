@@ -867,6 +867,7 @@
         };
         
         console.log('Saving budget for document ID:', docId);
+        console.log('Budget data being saved:', budgetData);
         await db.collection("budgets").doc(docId).set(budgetData);
         
         if (window.ErrorHandler) {
@@ -923,8 +924,11 @@
           
           // Load expense data
           if (data.expenses && Array.isArray(data.expenses)) {
+            console.log('Loading expenses for month:', selectedMonth);
+            console.log('Expense data:', data.expenses);
             data.expenses.forEach(exp => {
               if (exp.category && exp.name) {
+                console.log('Loading expense:', exp.name, 'Spent:', exp.spent);
                 addExpense(exp.category, exp.name, exp.budgeted || 0, exp.due || '', exp.spent || 0, exp.paidFrom || '');
               }
             });
