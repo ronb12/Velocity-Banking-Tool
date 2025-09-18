@@ -176,12 +176,43 @@
     </div>
 
     <!-- Recommendations Section -->
-    <div class="recommendations auth-required" style="display: none;">
+    <div class="recommendations">
       <h2>🎯 Recommendations</h2>
       <div id="recommendationsContainer">
-        <div class="recommendations-loading">
-          <div class="spinner"></div>
-          <p>Generating personalized recommendations...</p>
+        <div class="recommendation-card">
+          <div class="recommendation-icon">💳</div>
+          <div class="recommendation-content">
+            <h3>Start with Debt Tracking</h3>
+            <p>Use our Debt Tracker to list all your debts with interest rates. This gives you a clear picture of what you owe and helps prioritize payments.</p>
+            <a href="Debt_Tracker.html" class="recommendation-link">Track Your Debts →</a>
+          </div>
+        </div>
+        
+        <div class="recommendation-card">
+          <div class="recommendation-icon">💰</div>
+          <div class="recommendation-content">
+            <h3>Create Your First Budget</h3>
+            <p>Set up a monthly budget to track income and expenses. This helps you understand where your money goes and identify savings opportunities.</p>
+            <a href="budget.html" class="recommendation-link">Build Your Budget →</a>
+          </div>
+        </div>
+        
+        <div class="recommendation-card">
+          <div class="recommendation-icon">🎯</div>
+          <div class="recommendation-content">
+            <h3>Set a Savings Goal</h3>
+            <p>Start with an emergency fund goal of $1,000, then work toward 3-6 months of expenses. Use our Savings Goal Tracker to stay motivated.</p>
+            <a href="savings_goal_tracker.html" class="recommendation-link">Set Your Goal →</a>
+          </div>
+        </div>
+        
+        <div class="recommendation-card">
+          <div class="recommendation-icon">⚡</div>
+          <div class="recommendation-content">
+            <h3>Try Velocity Banking</h3>
+            <p>If you have a line of credit, use our Velocity Calculator to see how you can pay off debts faster and save on interest.</p>
+            <a href="Velocity_Calculator.html" class="recommendation-link">Calculate Strategy →</a>
+          </div>
         </div>
       </div>
     </div>
@@ -996,6 +1027,70 @@
       font-size: 1.5rem;
       font-weight: 700;
       color: var(--text);
+      text-align: center;
+    }
+
+    .recommendation-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      transition: all 0.3s ease;
+      border-left: 4px solid #667eea;
+    }
+
+    .recommendation-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    .recommendation-icon {
+      font-size: 2rem;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .recommendation-content {
+      flex: 1;
+    }
+
+    .recommendation-content h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .recommendation-content p {
+      margin: 0 0 1rem 0;
+      color: #6b7280;
+      line-height: 1.6;
+    }
+
+    .recommendation-link {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .recommendation-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
     .insight-card, .recommendation-card {
@@ -1108,6 +1203,19 @@
 
     body.dark .recommendations {
       background: rgba(35, 41, 70, 0.65);
+    }
+
+    body.dark .recommendation-card {
+      background: #232946;
+      color: #f4f4f9;
+    }
+
+    body.dark .recommendation-content h3 {
+      color: #f4f4f9;
+    }
+
+    body.dark .recommendation-content p {
+      color: #b8bcc8;
     }
 
     body.dark .insight-card, 
