@@ -763,6 +763,7 @@
           <button class="btn btn-outline" onclick="calculateBudget()" title="Recalculate your budget">🧮 Recalculate</button>
           <button class="btn btn-success" onclick="saveBudget()" title="Save your budget data">💾 Save</button>
           <button class="btn btn-outline" onclick="loadBudget()" title="Load your saved budget">📥 Load Budget</button>
+          <button class="btn btn-primary" onclick="loadSampleBudget()" title="Load sample budget data for testing">🎯 Load Sample Budget</button>
           <button class="btn btn-outline" onclick="prefillSpent()" title="Prefill spent amounts">⚡ Prefill Spent</button>
           <button class="btn btn-outline" onclick="undoPrefill()" title="Undo prefill changes">↩️ Undo Prefill</button>
           <button class="btn btn-primary" onclick="zeroBasedBudget()" title="Check if your budget is zero-based">✅ Zero-Based Check</button>
@@ -862,6 +863,75 @@ if (window.Analytics) {
   window.Analytics.init();
   window.Analytics.trackPageView('/budget.html', 'Budget Tracker');
 }
+
+// Function to load sample budget data
+async function loadSampleBudget() {
+  const sampleUserId = 'RuZRK7a3BdQ25l3ioyJa9ulLMHe2';
+  const currentMonth = document.getElementById("month").value || '2024-01';
+  
+  const sampleBudgetData = {
+    month: currentMonth,
+    notes: 'Sample budget for testing purposes. This includes typical income and expense categories.',
+    income: [
+      { source: 'Primary Job', amount: 5000 },
+      { source: 'Freelance Work', amount: 1200 },
+      { source: 'Investment Returns', amount: 300 }
+    ],
+    expenses: [
+      { category: 'Housing', name: 'Rent/Mortgage', budgeted: 1500, spent: 1500, due: '1st', paidFrom: 'Primary Job' },
+      { category: 'Housing', name: 'Utilities', budgeted: 200, spent: 180, due: '15th', paidFrom: 'Primary Job' },
+      { category: 'Housing', name: 'Internet', budgeted: 80, spent: 80, due: '20th', paidFrom: 'Primary Job' },
+      { category: 'Transportation', name: 'Car Payment', budgeted: 400, spent: 400, due: '5th', paidFrom: 'Primary Job' },
+      { category: 'Transportation', name: 'Gas', budgeted: 200, spent: 180, due: 'Monthly', paidFrom: 'Primary Job' },
+      { category: 'Transportation', name: 'Car Insurance', budgeted: 120, spent: 120, due: '10th', paidFrom: 'Primary Job' },
+      { category: 'Food', name: 'Groceries', budgeted: 600, spent: 550, due: 'Weekly', paidFrom: 'Primary Job' },
+      { category: 'Food', name: 'Dining Out', budgeted: 200, spent: 180, due: 'Monthly', paidFrom: 'Primary Job' },
+      { category: 'Personal', name: 'Phone Bill', budgeted: 100, spent: 100, due: '15th', paidFrom: 'Primary Job' },
+      { category: 'Personal', name: 'Gym Membership', budgeted: 50, spent: 50, due: '1st', paidFrom: 'Primary Job' },
+      { category: 'Health', name: 'Health Insurance', budgeted: 300, spent: 300, due: '1st', paidFrom: 'Primary Job' },
+      { category: 'Health', name: 'Medical Expenses', budgeted: 150, spent: 75, due: 'As needed', paidFrom: 'Primary Job' },
+      { category: 'Debt', name: 'Credit Card Payment', budgeted: 500, spent: 500, due: '25th', paidFrom: 'Primary Job' },
+      { category: 'Debt', name: 'Student Loan', budgeted: 300, spent: 300, due: '15th', paidFrom: 'Primary Job' },
+      { category: 'Savings', name: 'Emergency Fund', budgeted: 500, spent: 500, due: '1st', paidFrom: 'Primary Job' },
+      { category: 'Savings', name: 'Retirement 401k', budgeted: 400, spent: 400, due: '1st', paidFrom: 'Primary Job' },
+      { category: 'Giving', name: 'Charitable Giving', budgeted: 200, spent: 200, due: 'Monthly', paidFrom: 'Primary Job' },
+      { category: 'Lifestyle', name: 'Entertainment', budgeted: 150, spent: 120, due: 'Monthly', paidFrom: 'Primary Job' },
+      { category: 'Lifestyle', name: 'Clothing', budgeted: 100, spent: 80, due: 'As needed', paidFrom: 'Primary Job' },
+      { category: 'Other', name: 'Miscellaneous', budgeted: 200, spent: 150, due: 'Monthly', paidFrom: 'Primary Job' }
+    ]
+  };
+  
+  try {
+    console.log('Loading sample budget data for user:', sampleUserId);
+    console.log('Sample budget data:', sampleBudgetData);
+    
+    // Save sample data to Firebase
+    const docId = sampleUserId + '_' + currentMonth;
+    await db.collection("budgets").doc(docId).set(sampleBudgetData);
+    console.log('Sample budget data saved successfully');
+    
+    // Show success message
+    if (window.ErrorHandler) {
+      window.ErrorHandler.showSuccess('Sample budget data loaded successfully!');
+    } else {
+      alert('Sample budget data loaded successfully!');
+    }
+    
+    // Reload the budget to display the sample data
+    loadBudget();
+    
+  } catch (error) {
+    console.error('Error loading sample budget:', error);
+    if (window.ErrorHandler) {
+      window.ErrorHandler.handleFirebaseError(error);
+    } else {
+      alert('Error loading sample budget: ' + error.message);
+    }
+  }
+}
+
+// Make the function globally available
+window.loadSampleBudget = loadSampleBudget;
 
 auth.onAuthStateChanged(user => {
   if (!user) return window.location.href = "login.html";
