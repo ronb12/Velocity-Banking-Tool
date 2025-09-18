@@ -199,7 +199,7 @@
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
         Sign in with Google
       </button>
-      <div id="loginAttempts" class="error"></div>
+      <div id="loginAttempts" class="error" style="display: none;"></div>
     </form>
     <a href="register.html">Create an account</a>
   </div>
@@ -215,6 +215,16 @@
     
     // Initialize error handling
     ErrorHandler.setupGlobalErrorHandling();
+
+    // Immediately clear any login attempts on page load
+    localStorage.removeItem('loginAttempts');
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginAttemptsElement = document.getElementById('loginAttempts');
+      if (loginAttemptsElement) {
+        loginAttemptsElement.textContent = '';
+        loginAttemptsElement.style.display = 'none';
+      }
+    });
 
     let loginAttempts = 0;
     const MAX_LOGIN_ATTEMPTS = 5;
@@ -318,9 +328,11 @@
 
     // Check for existing login attempts
     window.addEventListener('load', () => {
-      loginAttempts = parseInt(localStorage.getItem('loginAttempts')) || 0;
-      document.getElementById('loginAttempts').textContent = 
-        loginAttempts > 0 ? `${MAX_LOGIN_ATTEMPTS - loginAttempts} attempts remaining` : '';
+      // Clear any existing login attempts on page load
+      loginAttempts = 0;
+      localStorage.removeItem('loginAttempts');
+      document.getElementById('loginAttempts').textContent = '';
+      document.getElementById('loginAttempts').style.display = 'none';
     });
   </script>
 </body>
