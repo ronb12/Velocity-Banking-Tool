@@ -52,6 +52,7 @@
       </div>
     </header>
 
+
     <div class="dashboard-stats">
       <div id="creditUtilizationTile" class="stat-tile" data-type="warning">
         <div class="stat-icon">💳</div>
@@ -291,87 +292,105 @@
             // Continue without the user document for now
           }
           
-          onSnapshot(userRef, 
-            docSnap => {
-              try {
-                const data = docSnap.data() || {};
-                
-                // Update credit utilization with validation
-                const creditUtil = data.creditUtilization;
-                const creditElement = document.getElementById('creditUtilizationValue');
-                if (creditElement) {
-                  if (creditUtil !== undefined && !isNaN(creditUtil)) {
-                    creditElement.textContent = `${Number(creditUtil).toFixed(1)}%`;
-                    creditElement.style.color = creditUtil < 30 ? '#22c55e' : creditUtil < 50 ? '#f59e42' : '#ef4444';
-                  } else {
-                    creditElement.textContent = 'No data yet';
-                    creditElement.style.color = '#64748b';
+          // Try to set up Firestore listener with error handling
+          try {
+            onSnapshot(userRef, 
+              docSnap => {
+                try {
+                  const data = docSnap.data() || {};
+                  
+                  // Update credit utilization with validation
+                  const creditUtil = data.creditUtilization;
+                  const creditElement = document.getElementById('creditUtilizationValue');
+                  if (creditElement) {
+                    if (creditUtil !== undefined && !isNaN(creditUtil)) {
+                      creditElement.textContent = `${Number(creditUtil).toFixed(1)}%`;
+                      creditElement.style.color = creditUtil < 30 ? '#22c55e' : creditUtil < 50 ? '#f59e42' : '#ef4444';
+                    } else {
+                      creditElement.textContent = 'No data yet';
+                      creditElement.style.color = '#64748b';
+                    }
                   }
-                }
-                
-                // Update net worth with validation
-                const netWorth = data.netWorth;
-                const netWorthElement = document.getElementById('netWorthValue');
-                if (netWorthElement) {
-                  if (netWorth !== undefined && !isNaN(netWorth)) {
-                    const formatted = Number(netWorth).toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
-                    });
-                    netWorthElement.textContent = formatted;
-                    netWorthElement.style.color = netWorth >= 0 ? '#22c55e' : '#ef4444';
-                  } else {
-                    netWorthElement.textContent = 'No data yet';
-                    netWorthElement.style.color = '#64748b';
+                  
+                  // Update net worth with validation
+                  const netWorth = data.netWorth;
+                  const netWorthElement = document.getElementById('netWorthValue');
+                  if (netWorthElement) {
+                    if (netWorth !== undefined && !isNaN(netWorth)) {
+                      const formatted = Number(netWorth).toLocaleString('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      });
+                      netWorthElement.textContent = formatted;
+                      netWorthElement.style.color = netWorth >= 0 ? '#22c55e' : '#ef4444';
+                    } else {
+                      netWorthElement.textContent = 'No data yet';
+                      netWorthElement.style.color = '#64748b';
+                    }
                   }
-                }
-                
-                // Update total debt with validation
-                const totalDebt = data.totalDebt;
-                const debtElement = document.getElementById('debtSummaryValue');
-                if (debtElement) {
-                  if (totalDebt !== undefined && !isNaN(totalDebt)) {
-                    const formatted = Number(totalDebt).toLocaleString('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
-                    });
-                    debtElement.textContent = formatted;
-                    debtElement.style.color = totalDebt > 0 ? '#ef4444' : '#22c55e';
-                  } else {
-                    debtElement.textContent = 'No data yet';
-                    debtElement.style.color = '#64748b';
+                  
+                  // Update total debt with validation
+                  const totalDebt = data.totalDebt;
+                  const debtElement = document.getElementById('debtSummaryValue');
+                  if (debtElement) {
+                    if (totalDebt !== undefined && !isNaN(totalDebt)) {
+                      const formatted = Number(totalDebt).toLocaleString('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                      });
+                      debtElement.textContent = formatted;
+                      debtElement.style.color = totalDebt > 0 ? '#ef4444' : '#22c55e';
+                    } else {
+                      debtElement.textContent = 'No data yet';
+                      debtElement.style.color = '#64748b';
+                    }
                   }
-                }
-                
-                // Update savings progress with validation
-                const savings = data.savingsProgress;
-                const savingsElement = document.getElementById('savingsValue');
-                if (savingsElement) {
-                  if (savings !== undefined && !isNaN(savings)) {
-                    savingsElement.textContent = `${Number(savings).toFixed(1)}% of goals`;
-                    savingsElement.style.color = savings >= 100 ? '#22c55e' : savings >= 50 ? '#f59e42' : '#ef4444';
-                  } else {
-                    savingsElement.textContent = 'No data yet';
-                    savingsElement.style.color = '#64748b';
+                  
+                  // Update savings progress with validation
+                  const savings = data.savingsProgress;
+                  const savingsElement = document.getElementById('savingsValue');
+                  if (savingsElement) {
+                    if (savings !== undefined && !isNaN(savings)) {
+                      savingsElement.textContent = `${Number(savings).toFixed(1)}% of goals`;
+                      savingsElement.style.color = savings >= 100 ? '#22c55e' : savings >= 50 ? '#f59e42' : '#ef4444';
+                    } else {
+                      savingsElement.textContent = 'No data yet';
+                      savingsElement.style.color = '#64748b';
+                    }
                   }
+                } catch (error) {
+                  console.warn('Error updating dashboard data:', error);
                 }
-              } catch (error) {
-                ErrorHandler.handleFirebaseError(error);
+              },
+              error => {
+                console.warn('Firestore listener error (non-critical):', error.message);
+                // Set default values when Firestore fails
+                const elements = ['creditUtilizationValue', 'netWorthValue', 'debtSummaryValue', 'savingsValue'];
+                elements.forEach(id => {
+                  const element = document.getElementById(id);
+                  if (element) {
+                    element.textContent = 'No data yet';
+                    element.style.color = '#64748b';
+                  }
+                });
               }
-            },
-            error => {
-              console.error('Firestore snapshot error:', error);
-              if (error.code === 'permission-denied') {
-                ErrorHandler.showError('Permission denied. Please check your account access.');
-              } else {
-                ErrorHandler.handleFirebaseError(error);
+            );
+          } catch (error) {
+            console.warn('Could not set up Firestore listener:', error.message);
+            // Set default values
+            const elements = ['creditUtilizationValue', 'netWorthValue', 'debtSummaryValue', 'savingsValue'];
+            elements.forEach(id => {
+              const element = document.getElementById(id);
+              if (element) {
+                element.textContent = 'No data yet';
+                element.style.color = '#64748b';
               }
-            }
-          );
+            });
+          }
         } catch (error) {
           ErrorHandler.handleFirebaseError(error);
         }
@@ -447,36 +466,21 @@
           `;
         }
 
-        // Gather user data from Firestore
-        let userData = {};
-        try {
-          userData = await gatherUserData(user.uid);
-        } catch (error) {
-          console.error('Error gathering user data:', error);
-          
-          // Use fallback data instead of showing error
-          userData = {
-            debts: [],
-            budget: { expenses: [], incomes: [] },
-            netWorth: [],
-            savings: []
-          };
-          
-          // Show a gentle message instead of error
-          if (insightsContainer) {
-            insightsContainer.innerHTML = `
-              <div class="info-state">
-                <p>Welcome! Add some financial data to get personalized insights and recommendations.</p>
-              </div>
-            `;
-          }
-        }
+        // Try to get data from Firestore first, then fallback to local storage
+        let userData = await getFinancialData(user.uid);
         
         // Generate insights
         let insights = [];
         let allInsights = { insights: [], recommendations: [], financialHealthScore: 0 };
         
-        if (window.FinancialInsights && typeof window.FinancialInsights.generateInsights === 'function') {
+        // Check if we have any data to analyze
+        const hasData = userData.debts?.length > 0 || 
+                       userData.budget?.expenses?.length > 0 || 
+                       userData.budget?.incomes?.length > 0 ||
+                       userData.netWorth?.length > 0 ||
+                       userData.savings?.length > 0;
+        
+        if (hasData && window.FinancialInsights && typeof window.FinancialInsights.generateInsights === 'function') {
           try {
             insights = await window.FinancialInsights.generateInsights(userData);
             allInsights = window.FinancialInsights.getAllInsights();
@@ -521,6 +525,39 @@
           `;
         }
       }
+    }
+
+    // Get financial data with Firestore and local storage fallback
+    async function getFinancialData(userId) {
+      // Try Firestore first
+      try {
+        const firestoreData = await gatherUserData(userId);
+        if (firestoreData && Object.keys(firestoreData).length > 0) {
+          // Save to local storage as backup
+          localStorage.setItem(`financialData_${userId}`, JSON.stringify(firestoreData));
+          return firestoreData;
+        }
+      } catch (error) {
+        console.warn('Firestore access failed, trying local storage:', error.message);
+      }
+      
+      // Fallback to local storage
+      try {
+        const localData = localStorage.getItem(`financialData_${userId}`);
+        if (localData) {
+          return JSON.parse(localData);
+        }
+      } catch (error) {
+        console.warn('Local storage access failed:', error.message);
+      }
+      
+      // Return default empty data
+      return {
+        debts: [],
+        budget: { expenses: [], incomes: [] },
+        netWorth: [],
+        savings: []
+      };
     }
 
     // Gather user data from Firestore
@@ -583,7 +620,19 @@
     // Render insights
     function renderInsights(insights) {
       if (!insights || insights.length === 0) {
-        return '<p>No insights available. Add some financial data to get personalized insights.</p>';
+        return `
+          <div class="info-state">
+            <h3>💡 Get Started with Financial Insights</h3>
+            <p>Add some financial data using the tools above to get personalized insights and recommendations:</p>
+            <ul style="text-align: left; margin: 1rem 0;">
+              <li>📋 Use the <strong>Debt Tracker</strong> to add your debts</li>
+              <li>💰 Use the <strong>Budget Tracker</strong> to set up your budget</li>
+              <li>💎 Use the <strong>Net Worth Tracker</strong> to track your assets</li>
+              <li>🎯 Use the <strong>Savings Goal Tracker</strong> to set savings goals</li>
+            </ul>
+            <p>Once you add some data, we'll provide personalized insights and recommendations!</p>
+          </div>
+        `;
       }
       
       return insights.map(insight => `
@@ -604,7 +653,19 @@
     // Render recommendations
     function renderRecommendations(recommendations) {
       if (!recommendations || recommendations.length === 0) {
-        return '<p>No recommendations available. Keep using the app to get personalized recommendations.</p>';
+        return `
+          <div class="info-state">
+            <h3>🎯 Personalized Recommendations</h3>
+            <p>Once you start using the financial tools above, we'll analyze your data and provide personalized recommendations to help you:</p>
+            <ul style="text-align: left; margin: 1rem 0;">
+              <li>💳 Optimize your credit utilization</li>
+              <li>📊 Improve your debt payoff strategy</li>
+              <li>💰 Better manage your budget</li>
+              <li>🎯 Reach your savings goals faster</li>
+            </ul>
+            <p>Start by adding some financial data using the tools above!</p>
+          </div>
+        `;
       }
       
       return recommendations.map(rec => `
