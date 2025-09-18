@@ -558,7 +558,7 @@
 const STORAGE_KEY = 'savings_goals';
 const ARCHIVE_KEY = 'archived_goals';
 const VERSION_KEY = 'savings_goals_version';
-const CURRENT_VERSION = '2.1.0';
+const CURRENT_VERSION = '2.2.0';
 let progressChart = null;
 
 // Initialize the app
@@ -574,14 +574,15 @@ document.addEventListener('DOMContentLoaded', function() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(ARCHIVE_KEY);
     localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+    // Don't auto-load sample goals on version upgrade
   }
   
   // Check if this is a fresh load (no data) and add sample goals
   const existingGoals = localStorage.getItem(STORAGE_KEY);
   const existingArchives = localStorage.getItem(ARCHIVE_KEY);
   
-  // Always load sample goals for demonstration
-  if (!existingGoals || JSON.parse(existingGoals).length === 0 || forceLoad || clearCache || storedVersion !== CURRENT_VERSION) {
+  // Only load sample goals if explicitly requested
+  if (forceLoad || clearCache) {
     addSampleGoals();
   }
   
