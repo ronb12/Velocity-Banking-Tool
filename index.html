@@ -710,24 +710,32 @@
     }
 
     function toggleDarkModeSetting() {
+      console.log('toggleDarkModeSetting called');
       const darkModeToggle = document.getElementById('settingsDarkMode');
+      console.log('Dark mode toggle element:', darkModeToggle);
+      
+      if (!darkModeToggle) {
+        console.error('Dark mode toggle not found!');
+        return;
+      }
+      
       const isDarkMode = darkModeToggle.checked;
+      console.log('Dark mode state:', isDarkMode);
       
       if (isDarkMode) {
         document.body.classList.add('dark');
         localStorage.setItem('theme', 'dark');
         localStorage.setItem('darkMode', 'true');
+        console.log('Dark mode enabled - body classes:', document.body.className);
       } else {
         document.body.classList.remove('dark');
         localStorage.setItem('theme', 'light');
         localStorage.setItem('darkMode', 'false');
+        console.log('Dark mode disabled - body classes:', document.body.className);
       }
       
       // Show notification
       showNotification(`Dark mode ${isDarkMode ? 'enabled' : 'disabled'}`, 'success');
-      
-      console.log('Dark mode toggled:', isDarkMode);
-      console.log('Body classes:', document.body.className);
     }
 
     function toggleNotifications() {
@@ -766,6 +774,7 @@
     }
 
     function openAdvancedSettings() {
+      console.log('Opening Advanced Settings...');
       // Create advanced settings modal
       const modal = document.createElement('div');
       modal.className = 'advanced-settings-modal';
@@ -1362,6 +1371,29 @@ Keep this file secure as it contains sensitive financial information.
     // Make export functions globally available
     window.exportAllData = exportAllData;
 
+    // Debug function to check for duplicate elements
+    function checkForDuplicates() {
+      console.log('🔍 Checking for duplicate elements...');
+      
+      const logoutButtons = document.querySelectorAll('.logout-btn');
+      console.log('Logout buttons found:', logoutButtons.length);
+      logoutButtons.forEach((btn, index) => {
+        console.log(`Logout button ${index + 1}:`, btn);
+      });
+      
+      const profileModals = document.querySelectorAll('#profileModal');
+      console.log('Profile modals found:', profileModals.length);
+      
+      const advancedSettingsButtons = document.querySelectorAll('.settings-btn');
+      console.log('Advanced settings buttons found:', advancedSettingsButtons.length);
+      
+      const darkModeToggles = document.querySelectorAll('#settingsDarkMode');
+      console.log('Dark mode toggles found:', darkModeToggles.length);
+    }
+
+    // Make debug function globally available
+    window.checkForDuplicates = checkForDuplicates;
+
     // Get financial data with Firestore and local storage fallback
     async function getFinancialData(userId) {
       // Try Firestore first
@@ -1933,6 +1965,89 @@ Keep this file secure as it contains sensitive financial information.
     body.dark .logout-btn:hover {
       background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
       box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+    }
+
+    /* Comprehensive Dark Mode Styles */
+    body.dark {
+      background: #0f172a;
+      color: #f1f5f9;
+    }
+
+    body.dark .dashboard {
+      background: #0f172a;
+    }
+
+    body.dark .stat-tile {
+      background: #1e293b;
+      color: #f1f5f9;
+      border-color: #334155;
+    }
+
+    body.dark .tool-card {
+      background: #1e293b;
+      color: #f1f5f9;
+      border-color: #334155;
+    }
+
+    body.dark .tool-card:hover {
+      background: #334155;
+      transform: translateY(-2px);
+    }
+
+    body.dark .financial-education {
+      background: rgba(30, 41, 59, 0.8);
+      color: #f1f5f9;
+    }
+
+    body.dark .recommendations {
+      background: rgba(30, 41, 59, 0.8);
+      color: #f1f5f9;
+    }
+
+    body.dark .recommendation-card {
+      background: #1e293b;
+      color: #f1f5f9;
+      border-color: #334155;
+    }
+
+    body.dark .recommendation-content h3 {
+      color: #f1f5f9;
+    }
+
+    body.dark .recommendation-content p {
+      color: #cbd5e1;
+    }
+
+    body.dark .tip-card {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      color: #f1f5f9;
+    }
+
+    body.dark .tip-btn {
+      background: rgba(255,255,255,0.1);
+      color: #f1f5f9;
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    body.dark .tip-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    body.dark .tip-btn.primary {
+      background: rgba(255,255,255,0.9);
+      color: #1e293b;
+    }
+
+    body.dark .nav-dot {
+      background: rgba(255,255,255,0.3);
+    }
+
+    body.dark .nav-dot.active {
+      background: #f1f5f9;
+    }
+
+    body.dark .nav-dot:hover {
+      background: #f1f5f9;
     }
 
     @media (max-width: 600px) {
