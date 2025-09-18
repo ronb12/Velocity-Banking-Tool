@@ -241,11 +241,6 @@
           </button>
           <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
         </div>
-        <div class="avatar-upload-text">
-          <button class="avatar-upload-text-btn" onclick="document.getElementById('avatarInput').click()">
-            📷 Change Avatar
-          </button>
-        </div>
         <div>
           <h2 id="profileName">User</h2>
           <p id="profileEmail">Email</p>
@@ -302,7 +297,7 @@
       </div>
       
       <div class="profile-actions">
-        <button class="settings-btn" onclick="openAdvancedSettings()">
+        <button class="settings-btn" onclick="openAdvancedSettings()" id="advancedSettingsBtn">
           <span class="settings-icon">⚙️</span>
           <span class="settings-text">Advanced Settings</span>
         </button>
@@ -594,7 +589,6 @@
           setTimeout(() => {
             console.log('Avatar container:', document.querySelector('.avatar-container'));
             console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
-            console.log('Avatar upload text button:', document.querySelector('.avatar-upload-text-btn'));
             console.log('Profile modal visible:', profileModal.style.display);
             console.log('Profile modal computed style:', window.getComputedStyle(profileModal).display);
           }, 100);
@@ -758,6 +752,13 @@
 
     function openAdvancedSettings() {
       console.log('Opening Advanced Settings...');
+      
+      // Check if modal already exists and remove it
+      const existingModal = document.querySelector('.advanced-settings-modal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
       // Create advanced settings modal
       const modal = document.createElement('div');
       modal.className = 'advanced-settings-modal';
@@ -971,7 +972,6 @@
         setTimeout(() => {
           console.log('Avatar container:', document.querySelector('.avatar-container'));
           console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
-          console.log('Avatar upload text button:', document.querySelector('.avatar-upload-text-btn'));
         }, 100);
       } else {
         console.error('Profile modal not found!');
@@ -1059,6 +1059,22 @@
     window.openProfileModal = openProfileModal;
     window.updateProfileStats = updateProfileStats;
 
+    // Add event listener for advanced settings button as backup
+    document.addEventListener('DOMContentLoaded', function() {
+      const advancedSettingsBtn = document.getElementById('advancedSettingsBtn');
+      if (advancedSettingsBtn) {
+        console.log('Advanced Settings button found, adding event listener');
+        advancedSettingsBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Advanced Settings button clicked via event listener');
+          openAdvancedSettings();
+        });
+      } else {
+        console.log('Advanced Settings button not found on DOMContentLoaded');
+      }
+    });
+
     // Test all profile settings features
     function testProfileSettings() {
       console.log('🧪 Testing Profile Settings Features...');
@@ -1108,14 +1124,12 @@
       const avatarInput = document.getElementById('avatarInput');
       const avatarImg = document.getElementById('profileAvatar');
       const avatarUploadBtn = document.querySelector('.avatar-upload-btn');
-      const avatarUploadTextBtn = document.querySelector('.avatar-upload-text-btn');
       
-      if (avatarInput && avatarImg && avatarUploadBtn && avatarUploadTextBtn) {
+      if (avatarInput && avatarImg && avatarUploadBtn) {
         console.log('✅ Avatar upload elements found');
         console.log('Avatar input:', avatarInput);
         console.log('Avatar image:', avatarImg);
         console.log('Upload button:', avatarUploadBtn);
-        console.log('Upload text button:', avatarUploadTextBtn);
       } else {
         console.log('❌ Some avatar upload elements missing');
       }
@@ -1456,6 +1470,23 @@ Keep this file secure as it contains sensitive financial information.
     // Make debug function globally available
     window.checkForDuplicates = checkForDuplicates;
 
+    // Simple test function for advanced settings
+    function testAdvancedSettings() {
+      console.log('🧪 Testing Advanced Settings...');
+      console.log('openAdvancedSettings function:', typeof openAdvancedSettings);
+      console.log('Advanced Settings button:', document.getElementById('advancedSettingsBtn'));
+      
+      try {
+        openAdvancedSettings();
+        console.log('✅ Advanced Settings function executed successfully');
+      } catch (error) {
+        console.error('❌ Error executing Advanced Settings:', error);
+      }
+    }
+
+    // Make test function globally available
+    window.testAdvancedSettings = testAdvancedSettings;
+
     // Get financial data with Firestore and local storage fallback
     async function getFinancialData(userId) {
       // Try Firestore first
@@ -1749,29 +1780,6 @@ Keep this file secure as it contains sensitive financial information.
       font-size: 18px;
     }
 
-    .avatar-upload-text {
-      margin-top: 0.75rem;
-      text-align: center;
-    }
-
-    .avatar-upload-text-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-    }
-
-    .avatar-upload-text-btn:hover {
-      background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
 
     .profile-settings {
       margin: 2rem 0;
