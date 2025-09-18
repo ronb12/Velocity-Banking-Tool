@@ -56,6 +56,7 @@ class FinancialInsights {
     }));
     
     console.log('Processed debts with numeric values:', processedDebts);
+    console.log('Raw interest rates before processing:', debts.map(d => ({ name: d.name, interestRate: d.interestRate, raw: d.interestRate })));
     
     const totalDebt = processedDebts.reduce((sum, debt) => sum + debt.balance, 0);
     const totalInterest = processedDebts.reduce((sum, debt) => {

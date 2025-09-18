@@ -575,6 +575,7 @@
             userData.debts = debtsSnap.data().debts || [];
             console.log('Fetched debts from Firestore:', userData.debts);
             console.log('Sample debt interest rates:', userData.debts.map(d => ({ name: d.name, interestRate: d.interestRate, type: typeof d.interestRate })));
+            console.log('First debt full object:', userData.debts[0]);
           } else {
             console.log('No debts document found for user:', userId);
           }
