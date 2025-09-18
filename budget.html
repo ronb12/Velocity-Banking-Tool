@@ -905,13 +905,13 @@
         console.log('Loading budget for document ID:', docId);
         const doc = await db.collection("budgets").doc(docId).get();
         
+        // Always clear existing data first
+        document.querySelector("#incomeTable tbody").innerHTML = "";
+        document.querySelector("#expenseTable tbody").innerHTML = "";
+        document.getElementById("monthlyNotes").value = "";
+        
         if (doc.exists) {
           const data = doc.data();
-          
-          // Clear existing data
-          document.querySelector("#incomeTable tbody").innerHTML = "";
-          document.querySelector("#expenseTable tbody").innerHTML = "";
-          document.getElementById("monthlyNotes").value = "";
           
           // Load income data
           if (data.income && Array.isArray(data.income)) {
@@ -945,6 +945,9 @@
             window.ErrorHandler.showSuccess('Budget loaded successfully!');
           }
         } else {
+          console.log('No data found for month:', selectedMonth);
+          // Recalculate budget with empty data
+          calculateBudget();
           if (window.ErrorHandler) {
             window.ErrorHandler.showWarning('No budget data found. Start by adding income and expenses.');
           }
