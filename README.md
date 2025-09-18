@@ -199,14 +199,25 @@ The app is pre-configured to work with the existing Firebase project:
 
 ## 📸 Screenshots
 
-### 🔷 Dashboard View
-![Dashboard](screenshots/dashboard.png)
+### 🏠 **Main Dashboard**
+![Dashboard with Sample Data](screenshots/dashboard_with_data.png)
+*Comprehensive financial overview with AI-powered insights, debt summary, and personalized recommendations*
 
-### 🔶 Debt Tracker
-![Debt Tracker](screenshots/debt_tracker.png)
+### 💳 **Debt Tracker**
+![Debt Tracker with Sample Data](screenshots/debt_tracker_with_data.png)
+*Real-time debt management with avalanche/snowball strategies, payment tracking, and progress visualization*
 
-### 💰 Budget Tracker
-![Budget Tracker](screenshots/budget_tracker.png)
+### 💰 **Budget Tracker**
+![Budget Tracker with Sample Data](screenshots/budget_tracker_with_data.png)
+*Zero-based budgeting system with category management, spending tracking, and variance analysis*
+
+### 🚀 **Velocity Banking Calculator**
+![Velocity Calculator with Sample Data](screenshots/velocity_calculator_with_data.png)
+*Advanced debt payoff calculator with interactive tutorial, example scenarios, and strategy comparison*
+
+### 📊 **Net Worth Tracker**
+![Net Worth Tracker with Sample Data](screenshots/net_worth_tracker_with_data.png)
+*Comprehensive asset and liability tracking with trend analysis and goal monitoring*
 
 ---
 

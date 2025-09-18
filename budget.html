@@ -606,7 +606,7 @@
 </head>
 
 <body>
-  <div class="container">
+<div class="container">
     <a href="index.html" class="back-link">
       ← Back to Dashboard
     </a>
@@ -619,8 +619,8 @@
         <input type="month" id="monthSelect" onchange="onMonthChange()" />
         <button class="btn btn-outline" onclick="goToCurrentMonth()">📅 Current Month</button>
       </div>
-    </div>
-    
+      </div>
+
     <div class="summary-cards">
       <div class="summary-card income">
         <div class="summary-value" id="tileIncome">$0</div>
@@ -678,17 +678,17 @@
         </thead>
         <tbody></tbody>
       </table>
-    </div>
-    
+      </div>
+
     <div class="section">
       <div class="section-header">
         <h3 class="section-title">📝 Monthly Notes</h3>
       </div>
       <div class="notes-section">
         <textarea id="monthlyNotes" placeholder="Write your financial goals, notes, and reminders here..."></textarea>
-      </div>
     </div>
-    
+      </div>
+
     <div class="section">
       <div class="section-header">
         <h3 class="section-title">🛠️ Actions</h3>
@@ -700,34 +700,34 @@
         <button class="btn btn-outline" onclick="zeroBasedBudget()">✅ Zero-Based Check</button>
         <button class="btn btn-outline" onclick="exportBudgetToCSV()">📊 Export CSV</button>
         <button class="btn btn-outline" onclick="exportToPDF()">📄 Export PDF</button>
-      </div>
     </div>
-    
-    <div class="success-msg" id="zeroBasedMessage">
-      🎉 Congratulations! You've created a Zero-Based Budget!
-    </div>
-  </div>
-  
-  <div id="loadingIndicator" class="loading" style="display: none !important;">
-    <div class="spinner"></div>
-    <p>Loading...</p>
   </div>
 
-  <script>
+    <div class="success-msg" id="zeroBasedMessage">
+      🎉 Congratulations! You've created a Zero-Based Budget!
+  </div>
+</div>
+
+  <div id="loadingIndicator" class="loading" style="display: none !important;">
+    <div class="spinner"></div>
+  <p>Loading...</p>
+</div>
+
+<script>
     // Firebase configuration
     const firebaseConfig = window.CONFIG?.firebase || {
-      apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
-      authDomain: "mobile-debt-tracker.firebaseapp.com",
+  apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
+  authDomain: "mobile-debt-tracker.firebaseapp.com",
       projectId: "mobile-debt-tracker",
       storageBucket: "mobile-debt-tracker.appspot.com",
       messagingSenderId: "153601029964",
       appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
-    };
+};
     
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    let userId = "";
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let userId = "";
     
     // Initialize utility functions
     if (window.ErrorHandler) {
@@ -749,35 +749,35 @@
     }
     
     // Authentication
-    auth.onAuthStateChanged(user => {
+auth.onAuthStateChanged(user => {
       if (!user) {
         window.location.href = "login.html";
         return;
       }
-      userId = user.uid;
+  userId = user.uid;
       console.log('User authenticated, loading budget data...');
       
       // Set current month as default
       const currentMonth = new Date().toISOString().slice(0, 7);
       document.getElementById('monthSelect').value = currentMonth;
       
-      loadBudget();
-    });
-    
+  loadBudget();
+});
+
     // Month change handler
-    function onMonthChange() {
+function onMonthChange() {
       const selectedMonth = document.getElementById('monthSelect').value;
       console.log('Month changed to:', selectedMonth);
       
       // Clear current data
-      document.querySelector("#incomeTable tbody").innerHTML = "";
-      document.querySelector("#expenseTable tbody").innerHTML = "";
-      document.getElementById("monthlyNotes").value = "";
+  document.querySelector("#incomeTable tbody").innerHTML = "";
+  document.querySelector("#expenseTable tbody").innerHTML = "";
+  document.getElementById("monthlyNotes").value = "";
       
       // Load budget for selected month
-      loadBudget();
-    }
-    
+  loadBudget();
+}
+
     // Go to current month
     function goToCurrentMonth() {
       const currentMonth = new Date().toISOString().slice(0, 7);
@@ -786,41 +786,41 @@
     }
     
     // Add Income function
-    function addIncome(source = "", amount = 0) {
+function addIncome(source = "", amount = 0) {
       const tbody = document.querySelector("#incomeTable tbody");
       const row = tbody.insertRow();
       
-      row.innerHTML = `
+  row.innerHTML = `
         <td><input type="text" value="${source}" placeholder="Income source" onchange="calculateBudget()"></td>
         <td><input type="number" value="${amount}" placeholder="0.00" onchange="calculateBudget()"></td>
-        <td class="remaining-cell">$0.00</td>
+    <td class="remaining-cell">$0.00</td>
         <td><button class="btn btn-outline" onclick="this.closest('tr').remove(); calculateBudget()">🗑️ Remove</button></td>
-      `;
+  `;
       
       calculateBudget();
-      updatePaidFromDropdowns();
-    }
-    
+  updatePaidFromDropdowns();
+}
+
     // Add Expense function
     function addExpense(category = '', name = '', budgeted = 0, dueDate = '', spent = 0, paidFrom = '') {
-      const tbody = document.querySelector("#expenseTable tbody");
-      const row = tbody.insertRow();
-      
+  const tbody = document.querySelector("#expenseTable tbody");
+  const row = tbody.insertRow();
+  
       row.innerHTML = `
         <td>
           <select onchange="calculateBudget()">
-            <option value="">Select Category</option>
+      <option value="">Select Category</option>
             <option value="Housing" ${category === 'Housing' ? 'selected' : ''}>Housing</option>
-            <option value="Transportation" ${category === 'Transportation' ? 'selected' : ''}>Transportation</option>
-            <option value="Food" ${category === 'Food' ? 'selected' : ''}>Food</option>
+      <option value="Transportation" ${category === 'Transportation' ? 'selected' : ''}>Transportation</option>
+      <option value="Food" ${category === 'Food' ? 'selected' : ''}>Food</option>
             <option value="Utilities" ${category === 'Utilities' ? 'selected' : ''}>Utilities</option>
             <option value="Health" ${category === 'Health' ? 'selected' : ''}>Health</option>
-            <option value="Personal" ${category === 'Personal' ? 'selected' : ''}>Personal</option>
-            <option value="Lifestyle" ${category === 'Lifestyle' ? 'selected' : ''}>Lifestyle</option>
+      <option value="Personal" ${category === 'Personal' ? 'selected' : ''}>Personal</option>
+      <option value="Lifestyle" ${category === 'Lifestyle' ? 'selected' : ''}>Lifestyle</option>
             <option value="Savings" ${category === 'Savings' ? 'selected' : ''}>Savings</option>
-            <option value="Debt" ${category === 'Debt' ? 'selected' : ''}>Debt</option>
-            <option value="Other" ${category === 'Other' ? 'selected' : ''}>Other</option>
-          </select>
+      <option value="Debt" ${category === 'Debt' ? 'selected' : ''}>Debt</option>
+      <option value="Other" ${category === 'Other' ? 'selected' : ''}>Other</option>
+    </select>
         </td>
         <td><input type="text" value="${name}" placeholder="Bill name" onchange="calculateBudget()"></td>
         <td><input type="number" value="${budgeted}" placeholder="0.00" onchange="calculateBudget()"></td>
@@ -835,19 +835,19 @@
         </td>
         <td><button class="btn btn-outline" onclick="this.closest('tr').remove(); calculateBudget()">🗑️ Remove</button></td>
       `;
-      
-      calculateBudget();
+  
+  calculateBudget();
       updatePaidFromDropdowns();
-    }
-    
+}
+
     // Update Paid From dropdowns with current income sources
-    function updatePaidFromDropdowns() {
+function updatePaidFromDropdowns() {
       const incomeSources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
-        row => row.cells[0].querySelector("input").value.trim()
-      ).filter(Boolean);
-      
-      document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-        const select = row.cells[6].querySelector("select");
+    row => row.cells[0].querySelector("input").value.trim()
+  ).filter(Boolean);
+
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    const select = row.cells[6].querySelector("select");
         const currentValue = select.value;
         
         select.innerHTML = '<option value="">Select Income Source</option>' +
@@ -858,39 +858,39 @@
     }
     
     // Calculate Budget function
-    function calculateBudget() {
+function calculateBudget() {
       let incomeTotal = 0;
       let budgetedTotal = 0;
       let spentTotal = 0;
       
       // Create income map to track allocation
-      const incomeMap = {};
-      
+  const incomeMap = {};
+
       // Calculate income and initialize income map
       document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
         const source = row.cells[0].querySelector("input").value.trim();
-        const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
-        incomeTotal += amount;
+    const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+    incomeTotal += amount;
         if (source) {
           incomeMap[source] = { amount: amount, allocated: 0 };
         }
-      });
-      
+  });
+
       // Calculate expenses and track allocation
-      document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-        const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-        const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
-        const remaining = budgeted - spent;
+  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+    const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
+    const remaining = budgeted - spent;
         const paidFrom = row.cells[6].querySelector("select").value;
-        
-        budgetedTotal += budgeted;
-        spentTotal += spent;
-        
+
+    budgetedTotal += budgeted;
+    spentTotal += spent;
+
         // Update remaining cell
         row.cells[4].querySelector("input").value = remaining.toFixed(2);
         
         // Allocate to specific income source if selected
-        if (paidFrom && incomeMap[paidFrom]) {
+    if (paidFrom && incomeMap[paidFrom]) {
           incomeMap[paidFrom].allocated += budgeted;
         }
       });
@@ -908,9 +908,9 @@
           const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
           row.cells[2].textContent = `$${amount.toFixed(2)}`;
         }
-      });
-      
-      const remaining = incomeTotal - budgetedTotal;
+  });
+
+  const remaining = incomeTotal - budgetedTotal;
       
       // Update summary cards
       document.getElementById("tileIncome").textContent = `$${incomeTotal.toFixed(2)}`;
@@ -919,18 +919,18 @@
       document.getElementById("tileRemaining").textContent = `$${remaining.toFixed(2)}`;
       
       // Update remaining color
-      const remainingElement = document.getElementById("tileRemaining");
+  const remainingElement = document.getElementById("tileRemaining");
       remainingElement.style.color = remaining < 0 ? "#dc3545" : remaining > 0 ? "#28a745" : "#2c3e50";
-      
+
       // Show zero-based message
       document.getElementById("zeroBasedMessage").style.display = 
         (incomeTotal > 0 && Math.abs(remaining) < 0.01) ? "block" : "none";
-    }
-    
+}
+
     // Save Budget function
-    async function saveBudget() {
-      const loadingIndicator = document.getElementById("loadingIndicator");
-      loadingIndicator.style.display = "block";
+async function saveBudget() {
+  const loadingIndicator = document.getElementById("loadingIndicator");
+  loadingIndicator.style.display = "block";
       
       console.log('Save Budget button clicked');
       
@@ -944,20 +944,20 @@
           docId = userId + '_' + selectedMonth;
         }
         
-        const budgetData = {
-          income: Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(row => ({
-            source: row.cells[0].querySelector("input").value,
-            amount: parseFloat(row.cells[1].querySelector("input").value) || 0
-          })),
-          expenses: Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row => ({
+    const budgetData = {
+      income: Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(row => ({
+        source: row.cells[0].querySelector("input").value,
+        amount: parseFloat(row.cells[1].querySelector("input").value) || 0
+      })),
+      expenses: Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row => ({
             category: row.cells[0].querySelector("select").value,
             name: row.cells[1].querySelector("input").value,
-            budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
-            spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
-            due: row.cells[5].querySelector("input").value,
+        budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
+        spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
+        due: row.cells[5].querySelector("input").value,
             paidFrom: row.cells[6].querySelector("select").value
-          })),
-          notes: document.getElementById("monthlyNotes").value,
+      })),
+      notes: document.getElementById("monthlyNotes").value,
           month: selectedMonth || new Date().toISOString().slice(0, 7) // YYYY-MM format
         };
         
@@ -970,22 +970,22 @@
         } else {
           alert(`Budget saved successfully for ${selectedMonth || 'current month'}!`);
         }
-      } catch (error) {
+  } catch (error) {
         console.error('Error saving budget:', error);
         if (window.ErrorHandler) {
           window.ErrorHandler.handleFirebaseError(error);
         } else {
           alert('Error saving budget: ' + error.message);
         }
-      } finally {
-        loadingIndicator.style.display = "none";
-      }
-    }
-    
+  } finally {
+    loadingIndicator.style.display = "none";
+  }
+}
+
     // Load Budget function
-    async function loadBudget() {
-      const loadingIndicator = document.getElementById("loadingIndicator");
-      loadingIndicator.style.display = "block";
+async function loadBudget() {
+  const loadingIndicator = document.getElementById("loadingIndicator");
+  loadingIndicator.style.display = "block";
       
       console.log('Load Budget button clicked');
       
@@ -1003,8 +1003,8 @@
         const doc = await db.collection("budgets").doc(docId).get();
         
         // Always clear existing data first
-        document.querySelector("#incomeTable tbody").innerHTML = "";
-        document.querySelector("#expenseTable tbody").innerHTML = "";
+      document.querySelector("#incomeTable tbody").innerHTML = "";
+      document.querySelector("#expenseTable tbody").innerHTML = "";
         document.getElementById("monthlyNotes").value = "";
         
         if (doc.exists) {
@@ -1036,7 +1036,7 @@
             document.getElementById("monthlyNotes").value = data.notes;
           }
           
-          calculateBudget();
+  calculateBudget();
           
           if (window.ErrorHandler) {
             window.ErrorHandler.showSuccess(`Budget loaded successfully for ${selectedMonth || 'current month'}!`);
@@ -1063,61 +1063,61 @@
     
     
     // Zero-Based Budget Check function
-    function zeroBasedBudget() {
-      calculateBudget();
+function zeroBasedBudget() {
+  calculateBudget();
       const incomeTotal = parseFloat(document.getElementById("tileIncome").textContent.replace(/[^0-9.-]+/g, ""));
       const budgetedTotal = parseFloat(document.getElementById("tileBudgeted").textContent.replace(/[^0-9.-]+/g, ""));
-      const remaining = incomeTotal - budgetedTotal;
-      
-      if (incomeTotal === 0) {
-        alert("⚠️ Please add some income first!");
-        return;
-      }
-      
+  const remaining = incomeTotal - budgetedTotal;
+
+  if (incomeTotal === 0) {
+    alert("⚠️ Please add some income first!");
+    return;
+  }
+
       if (Math.abs(remaining) < 0.01) {
         alert("✅ Perfect! Your budget is zero-based!");
-        return;
-      }
-      
-      if (remaining > 0) {
-        alert(`You have $${remaining.toFixed(2)} remaining to allocate to your budget.`);
-      } else {
-        alert(`You are over budget by $${Math.abs(remaining).toFixed(2)}.`);
-      }
-    }
-    
+    return;
+  }
+
+  if (remaining > 0) {
+    alert(`You have $${remaining.toFixed(2)} remaining to allocate to your budget.`);
+  } else {
+    alert(`You are over budget by $${Math.abs(remaining).toFixed(2)}.`);
+  }
+}
+
     // Export to CSV function
-    function exportBudgetToCSV() {
-      const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
-      const expenseRows = document.querySelectorAll("#expenseTable tbody tr");
-      let csvContent = "data:text/csv;charset=utf-8,";
+function exportBudgetToCSV() {
+  const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
+  const expenseRows = document.querySelectorAll("#expenseTable tbody tr");
+  let csvContent = "data:text/csv;charset=utf-8,";
       
-      csvContent += "Income Source,Amount\n";
-      incomeRows.forEach(row => {
-        const source = row.cells[0].querySelector("input").value;
-        const amount = row.cells[1].querySelector("input").value;
-        csvContent += `${source},${amount}\n`;
-      });
+  csvContent += "Income Source,Amount\n";
+  incomeRows.forEach(row => {
+    const source = row.cells[0].querySelector("input").value;
+    const amount = row.cells[1].querySelector("input").value;
+    csvContent += `${source},${amount}\n`;
+  });
       
       csvContent += "\nExpense Category,Bill Name,Budgeted,Spent,Due Date\n";
-      expenseRows.forEach(row => {
+  expenseRows.forEach(row => {
         const category = row.cells[0].querySelector("select").value;
         const name = row.cells[1].querySelector("input").value;
-        const budgeted = row.cells[2].querySelector("input").value;
-        const spent = row.cells[3].querySelector("input").value;
-        const due = row.cells[5].querySelector("input").value;
+    const budgeted = row.cells[2].querySelector("input").value;
+    const spent = row.cells[3].querySelector("input").value;
+    const due = row.cells[5].querySelector("input").value;
         csvContent += `${category},${name},${budgeted},${spent},${due}\n`;
-      });
+  });
       
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "budget_data.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-    
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "budget_data.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
     // Export to PDF function
     function exportToPDF() {
       // Get current budget data
@@ -1132,14 +1132,14 @@
       
       // Get income data
       const incomeRows = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(row => ({
-        source: row.cells[0].querySelector("input").value,
+      source: row.cells[0].querySelector("input").value,
         amount: row.cells[1].querySelector("input").value
       })).filter(inc => inc.source && inc.amount);
       
       // Get expense data
       const expenseRows = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row => ({
         category: row.cells[0].querySelector("select").value,
-        name: row.cells[1].querySelector("input").value,
+      name: row.cells[1].querySelector("input").value,
         budgeted: row.cells[2].querySelector("input").value,
         spent: row.cells[3].querySelector("input").value,
         remaining: row.cells[4].querySelector("input").value,
@@ -1270,15 +1270,19 @@
       
       if (window.ErrorHandler) {
         window.ErrorHandler.showSuccess('Budget exported to PDF successfully!');
-      } else {
+  } else {
         alert('Budget exported to PDF successfully!');
       }
     }
     
     // Initialize page
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
       calculateBudget();
-    });
-  </script>
+});
+</script>
+
+<footer style="text-align: center; margin-top: 40px; padding: 20px; font-weight: bold; font-size: 14px; color: #555; border-top: 1px solid #e5e7eb;">
+  This is a product of Bradley Virtual Solutions, LLC
+</footer>
 </body>
 </html>

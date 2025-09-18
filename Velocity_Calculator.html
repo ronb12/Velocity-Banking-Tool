@@ -364,6 +364,78 @@ body.dark-mode .example-card p {
   color: #ccc;
 }
 
+/* Warning Box Styles */
+.warning-box {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+.warning-box h4 {
+  color: #856404;
+  margin-bottom: 10px;
+}
+
+.warning-box p {
+  color: #856404;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Dark Mode Warning Box */
+body.dark-mode .warning-box {
+  background: #3d2f00;
+  border-color: #ffc107;
+}
+
+body.dark-mode .warning-box h4 {
+  color: #ffc107;
+}
+
+body.dark-mode .warning-box p {
+  color: #ffc107;
+}
+
+/* Help Section Improvements */
+.help-section h3 {
+  color: #007bff;
+  margin-top: 25px;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.help-section h3:first-child {
+  margin-top: 0;
+}
+
+.help-section ul, .help-section ol {
+  margin-left: 20px;
+  margin-bottom: 20px;
+}
+
+.help-section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.help-section strong {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Dark Mode Help Section */
+body.dark-mode .help-section h3 {
+  color: #4a9eff;
+  border-bottom-color: #555;
+}
+
+body.dark-mode .help-section strong {
+  color: #e0e0e0;
+}
+
 /* Suggestion Box Styles */
 .suggestion-box {
   background: #e3f2fd;
@@ -404,7 +476,7 @@ body.dark-mode .suggestion-box p {
         <a href="index.html" class="back-link">
             ← Back to Dashboard
         </a>
-        <h1>Debt Crusher – Velocity Banking Tool</h1>
+<h1>Debt Crusher – Velocity Banking Tool</h1>
         <div class="help-section">
             <button id="helpToggle" class="btn btn-outline" onclick="toggleHelp()">❓ Help & Tutorial</button>
             <button id="examplesToggle" class="btn btn-outline" onclick="toggleExamples()">📋 Examples</button>
@@ -458,7 +530,7 @@ body.dark-mode .suggestion-box p {
 <div id="pdfLoadingIndicator" style="display: none; text-align: center; margin: 20px 0;">
   <p>Generating PDF...</p>
 </div>
-<footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">Created by Ronell Bradley</footer></div>
+<footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">This is a product of Bradley Virtual Solutions, LLC</footer></div>
 
 <!-- Help Modal -->
 <div id="helpModal" class="modal" style="display: none;">
@@ -486,6 +558,71 @@ body.dark-mode .suggestion-box p {
                 <li>✅ Flexible payment timing</li>
             </ul>
             
+            <h3>⚠️ Important Risk Warnings:</h3>
+            <ul>
+                <li><strong>Credit Score Impact:</strong> High credit utilization can lower your score temporarily</li>
+                <li><strong>Interest Rate Risks:</strong> Variable rates on lines of credit can increase</li>
+                <li><strong>Discipline Required:</strong> Must maintain strict payment schedule or risk financial disaster</li>
+                <li><strong>Emergency Fund:</strong> Never use emergency savings for chunk payments</li>
+                <li><strong>Job Security:</strong> Requires stable, reliable income source</li>
+            </ul>
+            
+            <h3>✅ Prerequisites & Requirements:</h3>
+            <ul>
+                <li><strong>Credit Score:</strong> Minimum 680+ for best rates (720+ preferred)</li>
+                <li><strong>Income Stability:</strong> Consistent, verifiable income for 2+ years</li>
+                <li><strong>Debt-to-Income:</strong> Maximum 43% DTI ratio for approval</li>
+                <li><strong>Emergency Fund:</strong> 3-6 months expenses saved first</li>
+                <li><strong>Documentation:</strong> Tax returns, pay stubs, bank statements</li>
+            </ul>
+            
+            <h3>📋 Pre-Velocity Checklist:</h3>
+            <ol>
+                <li>✅ Build emergency fund (3-6 months expenses)</li>
+                <li>✅ Improve credit score to 680+</li>
+                <li>✅ Calculate all monthly obligations</li>
+                <li>✅ Get pre-approved for line of credit</li>
+                <li>✅ Create detailed budget and stick to it</li>
+                <li>✅ Have backup plan if income changes</li>
+            </ol>
+            
+            <h3>📅 Monthly Implementation Workflow:</h3>
+            <ol>
+                <li><strong>Week 1:</strong> Make minimum payment on debt</li>
+                <li><strong>Week 2:</strong> Save money for chunk payment</li>
+                <li><strong>Week 3:</strong> Continue saving, monitor progress</li>
+                <li><strong>Week 4:</strong> Make chunk payment (if scheduled month)</li>
+                <li><strong>Ongoing:</strong> Pay off line of credit monthly</li>
+            </ol>
+            
+            <h3>❌ Common Mistakes to Avoid:</h3>
+            <ul>
+                <li><strong>Overextending Credit:</strong> Don't max out your line of credit</li>
+                <li><strong>Missing Payments:</strong> Late payments can destroy your credit</li>
+                <li><strong>Poor Timing:</strong> Don't start during job uncertainty or major expenses</li>
+                <li><strong>Ignoring Fees:</strong> Watch for annual fees, balance transfer fees</li>
+                <li><strong>Not Tracking:</strong> Monitor progress monthly and adjust as needed</li>
+                <li><strong>Emotional Decisions:</strong> Stick to the plan, don't deviate</li>
+            </ul>
+            
+            <h3>🎯 Advanced Strategies:</h3>
+            <ul>
+                <li><strong>Debt Prioritization:</strong> Target highest interest debts first</li>
+                <li><strong>Seasonal Bonuses:</strong> Use tax refunds, bonuses for extra chunks</li>
+                <li><strong>Scaling Up:</strong> Increase chunk amounts as debt decreases</li>
+                <li><strong>Multiple Debts:</strong> Focus on one debt at a time for maximum impact</li>
+                <li><strong>Goal Setting:</strong> Set realistic 12-24 month payoff targets</li>
+            </ul>
+            
+            <h3>📱 Recommended Tools & Resources:</h3>
+            <ul>
+                <li><strong>Budgeting Apps:</strong> YNAB, Mint, or EveryDollar</li>
+                <li><strong>Credit Monitoring:</strong> Credit Karma, Experian</li>
+                <li><strong>Debt Tracking:</strong> Undebt.it, Debt Payoff Planner</li>
+                <li><strong>Education:</strong> Dave Ramsey, The Money Guy Show</li>
+                <li><strong>Community:</strong> Reddit r/personalfinance, Facebook groups</li>
+            </ul>
+            
             <h3>Input Guidelines:</h3>
             <ul>
                 <li><strong>Minimum Payment:</strong> Must be at least equal to monthly interest</li>
@@ -499,6 +636,11 @@ body.dark-mode .suggestion-box p {
             Monthly Payment: $1,500<br>
             Chunk Payment: $3,000 every 3 months<br>
             Result: Pay off 2-3 years faster!</p>
+            
+            <div class="warning-box">
+                <h4>⚠️ Legal Disclaimer:</h4>
+                <p>This calculator is for educational purposes only. Always consult with a qualified financial advisor before making major financial decisions. Results are estimates and actual outcomes may vary based on individual circumstances.</p>
+            </div>
         </div>
     </div>
 </div>
@@ -1007,7 +1149,7 @@ window.onload = function () {
             
             // Footer
             doc.setFontSize(8);
-            doc.text("Generated by Bradley's Financial Tools - Velocity Banking Calculator", 14, 285);
+            doc.text("Generated by Bradley's Financial Tools - A product of Bradley Virtual Solutions, LLC", 14, 285);
             
             // Save the PDF
             const fileName = `velocity-banking-strategy-${userName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`;
@@ -1176,7 +1318,7 @@ window.onload = function () {
         }
         
         const extraSavings = calculateSavings(minimumStrategy, extraStrategy);
-        
+
         // Debug logging
         console.log('Debug - Interest Calculations:');
         console.log('Minimum Payment:', minimumPayment);
