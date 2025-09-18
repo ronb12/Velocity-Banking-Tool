@@ -234,6 +234,26 @@
       font-size: 12px;
     }
     
+    .table-input {
+      border: 2px solid #e0e0e0 !important;
+      background: white !important;
+      padding: 8px !important;
+      border-radius: 6px !important;
+      width: 100% !important;
+      font-size: 14px !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .table-input:focus {
+      outline: none !important;
+      border-color: #667eea !important;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    .table-input:hover {
+      border-color: #667eea !important;
+    }
+    
     .modal {
       display: none;
       position: fixed;
@@ -395,6 +415,8 @@
     <button class="btn btn-primary" onclick="openAddGoalModal()">+ Add New Goal</button>
     <button class="btn btn-secondary" onclick="exportGoals()">📤 Export</button>
     <button class="btn btn-secondary" onclick="printGoals()">🖨️ Print</button>
+    <button class="btn btn-secondary" onclick="addSampleGoals()">📋 Load Sample Goals</button>
+    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
   </div>
 
   <!-- Goals Table -->
@@ -511,11 +533,86 @@ let progressChart = null;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
+  // Add sample goals if none exist
+  if (localStorage.getItem(STORAGE_KEY) === null || JSON.parse(localStorage.getItem(STORAGE_KEY)).length === 0) {
+    addSampleGoals();
+  }
+  
   renderGoals();
   renderArchivedGoals();
   updateStats();
   initializeChart();
 });
+
+// Add sample goals for demonstration
+function addSampleGoals() {
+  const sampleGoals = [
+    {
+      name: "Emergency Fund",
+      category: "Emergency Fund",
+      target: 10000,
+      saved: 3500,
+      targetDate: "2024-12-31",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Hawaii Vacation",
+      category: "Vacation",
+      target: 5000,
+      saved: 2200,
+      targetDate: "2024-08-15",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "New Laptop",
+      category: "Other",
+      target: 2000,
+      saved: 1800,
+      targetDate: "2024-06-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Home Down Payment",
+      category: "Home",
+      target: 50000,
+      saved: 12500,
+      targetDate: "2025-06-30",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Wedding Fund",
+      category: "Wedding",
+      target: 15000,
+      saved: 8500,
+      targetDate: "2024-10-15",
+      createdDate: new Date().toISOString()
+    }
+  ];
+  
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleGoals));
+  
+  // Add some sample completed goals
+  const sampleCompletedGoals = [
+    {
+      name: "iPhone 15 Pro",
+      category: "Other",
+      target: 1200,
+      saved: 1200,
+      completedDate: "2024-01-15T00:00:00.000Z",
+      daysToComplete: 45
+    },
+    {
+      name: "Weekend Getaway",
+      category: "Vacation",
+      target: 800,
+      saved: 800,
+      completedDate: "2024-02-20T00:00:00.000Z",
+      daysToComplete: 30
+    }
+  ];
+  
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(sampleCompletedGoals));
+}
 
 // Goal management functions
 function openAddGoalModal() {
@@ -639,11 +736,11 @@ function renderGoals() {
       <td>
         <input type="text" value="${goal.name}" 
                onchange="editGoal(${index}, 'name', this.value)"
-               style="border: none; background: transparent; font-weight: 600;">
+               class="table-input" style="font-weight: 600;">
       </td>
       <td>
         <select onchange="editGoal(${index}, 'category', this.value)"
-                style="border: none; background: transparent;">
+                class="table-input">
           <option value="Emergency Fund" ${goal.category === 'Emergency Fund' ? 'selected' : ''}>Emergency Fund</option>
           <option value="Vacation" ${goal.category === 'Vacation' ? 'selected' : ''}>Vacation</option>
           <option value="Education" ${goal.category === 'Education' ? 'selected' : ''}>Education</option>
@@ -657,12 +754,12 @@ function renderGoals() {
       <td>
         <input type="number" value="${goal.target}" min="0" step="0.01"
                onchange="editGoal(${index}, 'target', parseFloat(this.value))"
-               style="border: none; background: transparent; text-align: right;">
+               class="table-input" style="text-align: right;">
       </td>
       <td>
         <input type="number" value="${goal.saved}" min="0" step="0.01"
                onchange="editGoal(${index}, 'saved', parseFloat(this.value))"
-               style="border: none; background: transparent; text-align: right;">
+               class="table-input" style="text-align: right;">
       </td>
       <td>
         <div class="progress-container">
@@ -880,6 +977,19 @@ function exportGoals() {
 
 function printGoals() {
   window.print();
+}
+
+// Clear all data function
+function clearAllData() {
+  if (confirm('Are you sure you want to clear all goals and completed goals? This action cannot be undone.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ARCHIVE_KEY);
+    renderGoals();
+    renderArchivedGoals();
+    updateStats();
+    updateChart();
+    showNotification('All data cleared successfully!', 'success');
+  }
 }
 
 // Close modal when clicking outside
