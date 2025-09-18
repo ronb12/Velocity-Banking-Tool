@@ -508,13 +508,14 @@ window.onload = function () {
             return;
         }
         
-        if (chunkPayment <= 0) {
-            feedback.innerHTML = `<p class="feedback high">Error: Velocity banking chunk payment must be greater than $0. Please enter a valid chunk payment amount.</p>`;
+        // Only validate chunk payment and months if user wants to use velocity banking
+        if (chunkPayment > 0 && chunkMonths.length === 0) {
+            feedback.innerHTML = `<p class="feedback high">Warning: You entered a chunk payment but no months. Please enter valid months for chunk payments (e.g., 3,6,12) or set chunk payment to $0.</p>`;
             return;
         }
         
-        if (chunkMonths.length === 0) {
-            feedback.innerHTML = `<p class="feedback high">Error: Please enter valid months for chunk payments (e.g., 3,6,12).</p>`;
+        if (chunkPayment <= 0 && chunkMonths.length > 0) {
+            feedback.innerHTML = `<p class="feedback high">Warning: You entered chunk months but no chunk payment. Please enter a chunk payment amount or clear the months field.</p>`;
             return;
         }
         
@@ -593,25 +594,44 @@ window.onload = function () {
         }
 
         const minimumStrategy = calculateStrategy(debtBalance, baseInterestRate, minimumPayment, "Minimum Payment", []);
-        const velocityStrategy = calculateStrategy(debtBalance, interestRate, cashFlow, "Velocity Banking", chunkMonths);
+        
+        // Only calculate velocity strategy if chunk payment is provided
+        let velocityStrategy = null;
+        if (chunkPayment > 0 && chunkMonths.length > 0) {
+            velocityStrategy = calculateStrategy(debtBalance, interestRate, cashFlow, "Velocity Banking", chunkMonths);
+        }
+        
         const extraStrategy = calculateStrategy(debtBalance, baseInterestRate, minimumPayment + extraPayment, "Minimum Payments with Extra Payment", []);
 
         function calculateSavings(baseStrategy, otherStrategy) {
             return baseStrategy.totalInterest - otherStrategy.totalInterest;
         }
 
-        const velocitySavings = calculateSavings(minimumStrategy, velocityStrategy);
+        // Calculate savings only for strategies that exist
+        let velocitySavings = 0;
+        if (velocityStrategy) {
+            velocitySavings = calculateSavings(minimumStrategy, velocityStrategy);
+        }
+        
         const extraSavings = calculateSavings(minimumStrategy, extraStrategy);
         
         // Debug logging
         console.log('Debug - Interest Calculations:');
         console.log('Minimum Strategy Total Interest:', minimumStrategy.totalInterest);
-        console.log('Velocity Strategy Total Interest:', velocityStrategy.totalInterest);
+        if (velocityStrategy) {
+            console.log('Velocity Strategy Total Interest:', velocityStrategy.totalInterest);
+            console.log('Velocity Savings:', velocitySavings);
+        } else {
+            console.log('Velocity Strategy: Not calculated (no chunk payment)');
+        }
         console.log('Extra Strategy Total Interest:', extraStrategy.totalInterest);
-        console.log('Velocity Savings:', velocitySavings);
         console.log('Extra Savings:', extraSavings);
 
-        const strategies = [velocityStrategy, extraStrategy];
+        // Build strategies array, excluding null velocity strategy
+        const strategies = [extraStrategy];
+        if (velocityStrategy) {
+            strategies.unshift(velocityStrategy); // Add velocity strategy first if it exists
+        }
         const bestStrategy = strategies.reduce((best, current) => current.totalInterest < best.totalInterest ? current : best, minimumStrategy);
 
         const avgMonthlySavings = (minimumStrategy.totalInterest - bestStrategy.totalInterest) / bestStrategy.months;
@@ -662,10 +682,23 @@ window.onload = function () {
             `;
         }
 
-        document.getElementById('results').innerHTML = `
-            ${renderStrategy(velocityStrategy, velocitySavings)}
-            ${renderStrategy(extraStrategy, extraSavings)}
-        `;
+        // Render strategies
+        let resultsHTML = renderStrategy(minimumStrategy, 0);
+        
+        if (velocityStrategy) {
+            resultsHTML += renderStrategy(velocityStrategy, velocitySavings);
+        } else {
+            resultsHTML += `
+                <div class="strategy" style="border-top: 4px solid #6c757d;">
+                    <h3>Velocity Banking Strategy</h3>
+                    <p><em>Not calculated - No chunk payment provided. Enter a chunk payment amount and months to see velocity banking results.</em></p>
+                </div>
+            `;
+        }
+        
+        resultsHTML += renderStrategy(extraStrategy, extraSavings);
+        
+        document.getElementById('results').innerHTML = resultsHTML;
 
         const recommendedHtml = `
             <p><em>✅ Recommended because it saves the most interest while maintaining a fast payoff timeline.</em></p>
