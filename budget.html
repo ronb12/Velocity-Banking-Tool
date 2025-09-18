@@ -749,14 +749,28 @@
         
         // Update remaining cell
         row.cells[4].querySelector("input").value = remaining.toFixed(2);
-        
-        // For now, we'll assume all expenses are allocated from the first income source
-        // In a more advanced version, you could add a "Paid From" column
-        if (Object.keys(incomeMap).length > 0) {
-          const firstIncomeSource = Object.keys(incomeMap)[0];
-          incomeMap[firstIncomeSource].allocated += budgeted;
-        }
       });
+      
+      // Distribute budgeted expenses proportionally across income sources
+      if (budgetedTotal > 0 && incomeTotal > 0) {
+        const incomeSources = Object.keys(incomeMap);
+        let remainingToAllocate = budgetedTotal;
+        
+        // Allocate expenses proportionally to each income source
+        incomeSources.forEach((source, index) => {
+          const incomeAmount = incomeMap[source].amount;
+          const proportion = incomeAmount / incomeTotal;
+          const allocatedAmount = Math.min(proportion * budgetedTotal, incomeAmount, remainingToAllocate);
+          
+          incomeMap[source].allocated = allocatedAmount;
+          remainingToAllocate -= allocatedAmount;
+        });
+        
+        // If there's still remaining allocation, distribute it to the first income source
+        if (remainingToAllocate > 0 && incomeSources.length > 0) {
+          incomeMap[incomeSources[0]].allocated += remainingToAllocate;
+        }
+      }
       
       // Update income remaining to allocate
       document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
