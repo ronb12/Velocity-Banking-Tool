@@ -11,6 +11,11 @@ class FinancialInsights {
   async generateInsights(userData) {
     this.insights = [];
     
+    // Set monthly income first if budget data is available
+    if (userData.budget && userData.budget.incomes) {
+      this.monthlyIncome = userData.budget.incomes.reduce((sum, income) => sum + (income.amount || 0), 0);
+    }
+    
     // Analyze debt situation
     if (userData.debts && userData.debts.length > 0) {
       this.analyzeDebtSituation(userData.debts);

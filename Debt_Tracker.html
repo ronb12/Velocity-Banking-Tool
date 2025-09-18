@@ -373,6 +373,8 @@ async function saveDebts() {
       interestRate: parseFloat(row.cells[4].querySelector("input").value) || 0,
       minPayment: parseFloat(row.cells[5].querySelector("input").value) || 0
     }));
+    
+    console.log('Saving debts to Firestore:', debts);
     await db.collection("debts").doc(auth.currentUser.uid).set({ debts });
     alert("Debts saved successfully!");
   } catch (error) {
@@ -389,8 +391,12 @@ async function loadDebts() {
     const doc = await db.collection("debts").doc(auth.currentUser.uid).get();
     if (doc.exists) {
       const data = doc.data();
+      console.log('Loading debts from Firestore:', data.debts);
       document.querySelector("#debtTable tbody").innerHTML = "";
-      data.debts.forEach(debt => addDebt(debt.name, debt.balance, debt.interestRate, debt.minPayment, debt.limit, debt.type || 'credit'));
+      data.debts.forEach(debt => {
+        console.log('Adding debt:', debt);
+        addDebt(debt.name, debt.balance, debt.interestRate, debt.minPayment, debt.limit, debt.type || 'credit');
+      });
       calculateSummary();
     }
   } catch (error) {
