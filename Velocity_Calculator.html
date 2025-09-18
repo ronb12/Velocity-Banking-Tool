@@ -332,7 +332,7 @@ window.onload = function () {
                 }
 
                 actualPayment = Math.min(actualPayment, balance + interest);
-                balance += interest - actualPayment;
+                balance = balance + interest - actualPayment;
 
                 const principalPaid = actualPayment - interest;
                 totalPrincipalPaid += principalPaid;
