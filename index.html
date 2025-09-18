@@ -23,6 +23,15 @@
   <!-- Theme Color for Android + iOS -->
   <meta name="theme-color" content="#007bff">
 
+  <script src="config.js"></script>
+  <script src="utils/validation.js"></script>
+  <script src="utils/errorHandler.js"></script>
+  <script src="utils/performance.js"></script>
+  <script src="utils/lazyLoader.js"></script>
+  <script src="utils/mobileOptimizer.js"></script>
+  <script src="utils/accessibility.js"></script>
+  <script src="utils/analytics.js"></script>
+  <script src="utils/financialInsights.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="sync.js"></script>
   <script src="app-updater.js"></script>
@@ -131,6 +140,28 @@
       <h2>Recent Activity</h2>
       <div id="activityList"></div>
     </div>
+
+    <!-- Financial Insights Section -->
+    <div class="financial-insights auth-required" style="display: none;">
+      <h2>💡 Financial Insights</h2>
+      <div id="insightsContainer">
+        <div class="insights-loading">
+          <div class="spinner"></div>
+          <p>Analyzing your financial data...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommendations Section -->
+    <div class="recommendations auth-required" style="display: none;">
+      <h2>🎯 Recommendations</h2>
+      <div id="recommendationsContainer">
+        <div class="recommendations-loading">
+          <div class="spinner"></div>
+          <p>Generating personalized recommendations...</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="sessionTimeout" class="session-timeout" style="display: none;">
@@ -173,12 +204,26 @@
   </div>
 
   <script type="module">
-    import { auth, db, logout, extendSession } from './auth.js';
+    import { auth, db, logout, extendSession, login, register } from './auth.js';
     import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
     
-    // Make logout function globally available
+    // Initialize error handling
+    ErrorHandler.setupGlobalErrorHandling();
+    
+    // Initialize performance optimizations
+    PerformanceUtils.lazyLoadImages();
+    
+    // Preload critical tools
+    LazyLoader.preloadAllTools();
+    
+    // Load financial insights
+    loadFinancialInsights();
+    
+    // Make functions globally available
     window.logout = logout;
     window.extendSession = extendSession;
+    window.login = login;
+    window.register = register;
 
     // Dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
@@ -210,26 +255,100 @@
     setFallback('debtSummaryValue', 'No data yet');
     setFallback('savingsValue', 'No data yet');
 
-    // Live data from Firestore
+    // Enhanced data loading with error handling
     auth.onAuthStateChanged(async user => {
       if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        onSnapshot(userRef, docSnap => {
-          const data = docSnap.data() || {};
-          document.getElementById('creditUtilizationValue').textContent =
-            data.creditUtilization !== undefined ? `${data.creditUtilization}%` : 'No data yet';
-          document.getElementById('netWorthValue').textContent =
-            data.netWorth !== undefined ? `$${Number(data.netWorth).toLocaleString()}` : 'No data yet';
-          document.getElementById('debtSummaryValue').textContent =
-            data.totalDebt !== undefined ? `$${Number(data.totalDebt).toLocaleString()}` : 'No data yet';
-          document.getElementById('savingsValue').textContent =
-            data.savingsProgress !== undefined ? `${data.savingsProgress}% of goals` : 'No data yet';
-        });
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          onSnapshot(userRef, 
+            docSnap => {
+              try {
+                const data = docSnap.data() || {};
+                
+                // Update credit utilization with validation
+                const creditUtil = data.creditUtilization;
+                const creditElement = document.getElementById('creditUtilizationValue');
+                if (creditElement) {
+                  if (creditUtil !== undefined && !isNaN(creditUtil)) {
+                    creditElement.textContent = `${Number(creditUtil).toFixed(1)}%`;
+                    creditElement.style.color = creditUtil < 30 ? '#22c55e' : creditUtil < 50 ? '#f59e42' : '#ef4444';
+                  } else {
+                    creditElement.textContent = 'No data yet';
+                    creditElement.style.color = '#64748b';
+                  }
+                }
+                
+                // Update net worth with validation
+                const netWorth = data.netWorth;
+                const netWorthElement = document.getElementById('netWorthValue');
+                if (netWorthElement) {
+                  if (netWorth !== undefined && !isNaN(netWorth)) {
+                    const formatted = Number(netWorth).toLocaleString('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0
+                    });
+                    netWorthElement.textContent = formatted;
+                    netWorthElement.style.color = netWorth >= 0 ? '#22c55e' : '#ef4444';
+                  } else {
+                    netWorthElement.textContent = 'No data yet';
+                    netWorthElement.style.color = '#64748b';
+                  }
+                }
+                
+                // Update total debt with validation
+                const totalDebt = data.totalDebt;
+                const debtElement = document.getElementById('debtSummaryValue');
+                if (debtElement) {
+                  if (totalDebt !== undefined && !isNaN(totalDebt)) {
+                    const formatted = Number(totalDebt).toLocaleString('en-US', {
+                      style: 'currency',
+                      currency: 'USD',
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0
+                    });
+                    debtElement.textContent = formatted;
+                    debtElement.style.color = totalDebt > 0 ? '#ef4444' : '#22c55e';
+                  } else {
+                    debtElement.textContent = 'No data yet';
+                    debtElement.style.color = '#64748b';
+                  }
+                }
+                
+                // Update savings progress with validation
+                const savings = data.savingsProgress;
+                const savingsElement = document.getElementById('savingsValue');
+                if (savingsElement) {
+                  if (savings !== undefined && !isNaN(savings)) {
+                    savingsElement.textContent = `${Number(savings).toFixed(1)}% of goals`;
+                    savingsElement.style.color = savings >= 100 ? '#22c55e' : savings >= 50 ? '#f59e42' : '#ef4444';
+                  } else {
+                    savingsElement.textContent = 'No data yet';
+                    savingsElement.style.color = '#64748b';
+                  }
+                }
+              } catch (error) {
+                ErrorHandler.handleFirebaseError(error);
+              }
+            },
+            error => {
+              ErrorHandler.handleFirebaseError(error);
+            }
+          );
+        } catch (error) {
+          ErrorHandler.handleFirebaseError(error);
+        }
       } else {
-        document.getElementById('creditUtilizationValue').textContent = 'No data yet';
-        document.getElementById('netWorthValue').textContent = 'No data yet';
-        document.getElementById('debtSummaryValue').textContent = 'No data yet';
-        document.getElementById('savingsValue').textContent = 'No data yet';
+        // Reset to default state
+        const elements = ['creditUtilizationValue', 'netWorthValue', 'debtSummaryValue', 'savingsValue'];
+        elements.forEach(id => {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = 'No data yet';
+            element.style.color = '#64748b';
+          }
+        });
       }
     });
 
@@ -266,6 +385,159 @@
         });
       }
     });
+
+    // Load financial insights and recommendations
+    async function loadFinancialInsights() {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        // Show loading state
+        const insightsContainer = document.getElementById('insightsContainer');
+        const recommendationsContainer = document.getElementById('recommendationsContainer');
+        
+        if (insightsContainer) {
+          insightsContainer.innerHTML = `
+            <div class="insights-loading">
+              <div class="spinner"></div>
+              <p>Analyzing your financial data...</p>
+            </div>
+          `;
+        }
+
+        // Gather user data from Firestore
+        const userData = await gatherUserData(user.uid);
+        
+        // Generate insights
+        const insights = await FinancialInsights.generateInsights(userData);
+        const allInsights = FinancialInsights.getAllInsights();
+        
+        // Display insights
+        if (insightsContainer) {
+          insightsContainer.innerHTML = renderInsights(allInsights.insights);
+        }
+        
+        // Display recommendations
+        if (recommendationsContainer) {
+          recommendationsContainer.innerHTML = renderRecommendations(allInsights.recommendations);
+        }
+        
+        // Track analytics
+        Analytics.trackFeatureUsage('financial_insights', {
+          insightsCount: allInsights.insights.length,
+          recommendationsCount: allInsights.recommendations.length,
+          financialHealthScore: allInsights.financialHealthScore
+        });
+        
+      } catch (error) {
+        ErrorHandler.handleFirebaseError(error);
+        
+        // Show error state
+        const insightsContainer = document.getElementById('insightsContainer');
+        if (insightsContainer) {
+          insightsContainer.innerHTML = `
+            <div class="error-state">
+              <p>Unable to load financial insights. Please try again later.</p>
+            </div>
+          `;
+        }
+      }
+    }
+
+    // Gather user data from Firestore
+    async function gatherUserData(userId) {
+      const userData = {};
+      
+      try {
+        // Get debts
+        const debtsRef = doc(db, 'debts', userId);
+        const debtsSnap = await getDoc(debtsRef);
+        if (debtsSnap.exists()) {
+          userData.debts = debtsSnap.data().debts || [];
+        }
+        
+        // Get budget
+        const budgetRef = doc(db, 'budgets', userId + '_' + new Date().toISOString().slice(0,7));
+        const budgetSnap = await getDoc(budgetRef);
+        if (budgetSnap.exists()) {
+          userData.budget = budgetSnap.data();
+        }
+        
+        // Get net worth
+        const netWorthRef = doc(db, 'networth', userId);
+        const netWorthSnap = await getDoc(netWorthRef);
+        if (netWorthSnap.exists()) {
+          userData.netWorth = netWorthSnap.data().history || [];
+        }
+        
+        // Get savings
+        const savingsRef = doc(db, 'savings', userId);
+        const savingsSnap = await getDoc(savingsRef);
+        if (savingsSnap.exists()) {
+          userData.savings = savingsSnap.data().goals || [];
+        }
+        
+      } catch (error) {
+        console.error('Error gathering user data:', error);
+      }
+      
+      return userData;
+    }
+
+    // Render insights
+    function renderInsights(insights) {
+      if (!insights || insights.length === 0) {
+        return '<p>No insights available. Add some financial data to get personalized insights.</p>';
+      }
+      
+      return insights.map(insight => `
+        <div class="insight-card">
+          <h3>${insight.title}</h3>
+          <div class="insight-data">
+            ${Object.entries(insight.data).map(([key, value]) => `
+              <div class="data-point">
+                <span class="data-label">${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</span>
+                <span class="data-value">${formatValue(value)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render recommendations
+    function renderRecommendations(recommendations) {
+      if (!recommendations || recommendations.length === 0) {
+        return '<p>No recommendations available. Keep using the app to get personalized recommendations.</p>';
+      }
+      
+      return recommendations.map(rec => `
+        <div class="recommendation-card priority-${rec.priority}">
+          <div class="recommendation-header">
+            <h3>${rec.title}</h3>
+            <span class="priority-badge">Priority ${rec.priority}</span>
+          </div>
+          <p class="recommendation-description">${rec.description}</p>
+          <div class="recommendation-action">
+            <strong>Action:</strong> ${rec.action}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Format values for display
+    function formatValue(value) {
+      if (typeof value === 'number') {
+        if (value > 1000) {
+          return `$${value.toLocaleString()}`;
+        } else if (value < 1) {
+          return `${(value * 100).toFixed(1)}%`;
+        } else {
+          return value.toFixed(2);
+        }
+      }
+      return value;
+    }
   </script>
   <style>
     @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
@@ -362,6 +634,137 @@
       .profile-modal-content { padding: 1.2rem 0.5rem; }
       .profile-header { flex-direction: column; gap: 0.7rem; }
       .profile-stats { grid-template-columns: 1fr; gap: 0.7rem; }
+    }
+
+    /* Financial Insights Styles */
+    .financial-insights, .recommendations {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.65);
+      border-radius: 1.25rem;
+      box-shadow: 0 4px 24px rgba(37,99,235,0.08);
+      backdrop-filter: blur(4px);
+    }
+
+    .financial-insights h2, .recommendations h2 {
+      margin: 0 0 1.5rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .insight-card, .recommendation-card {
+      background: white;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border-left: 4px solid var(--primary);
+    }
+
+    .insight-card h3, .recommendation-card h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .insight-data {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .data-point {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .data-label {
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    .data-value {
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .recommendation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .priority-badge {
+      background: var(--primary);
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .recommendation-card.priority-5 .priority-badge { background: #ef4444; }
+    .recommendation-card.priority-4 .priority-badge { background: #f59e0b; }
+    .recommendation-card.priority-3 .priority-badge { background: #3b82f6; }
+    .recommendation-card.priority-2 .priority-badge { background: #10b981; }
+    .recommendation-card.priority-1 .priority-badge { background: #6b7280; }
+
+    .recommendation-description {
+      margin: 0 0 1rem 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .recommendation-action {
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border-left: 3px solid var(--primary);
+    }
+
+    .insights-loading, .recommendations-loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+    }
+
+    .insights-loading .spinner, .recommendations-loading .spinner {
+      margin-bottom: 1rem;
+    }
+
+    .error-state {
+      text-align: center;
+      padding: 2rem;
+      color: #ef4444;
+      background: #fef2f2;
+      border-radius: 0.5rem;
+      border: 1px solid #fecaca;
+    }
+
+    /* Dark mode adjustments */
+    body.dark .financial-insights, 
+    body.dark .recommendations {
+      background: rgba(35, 41, 70, 0.65);
+    }
+
+    body.dark .insight-card, 
+    body.dark .recommendation-card {
+      background: #232946;
+      color: #f4f4f9;
+    }
+
+    body.dark .data-point {
+      border-bottom-color: #334155;
+    }
+
+    body.dark .recommendation-action {
+      background: #1e293b;
     }
   </style>
 </body>

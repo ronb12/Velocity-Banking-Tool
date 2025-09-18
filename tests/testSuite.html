@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Suite - Bradley's Financial Tools</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: #2563eb;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    
+    .content {
+      padding: 20px;
+    }
+    
+    .test-section {
+      margin-bottom: 30px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .test-section-header {
+      background: #f1f5f9;
+      padding: 15px 20px;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .test-section-content {
+      padding: 20px;
+    }
+    
+    .run-button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    
+    .run-button:hover {
+      background: #1d4ed8;
+    }
+    
+    .run-button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    
+    .test-results {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .test-results.success {
+      background: #f0fdf4;
+      border-left: 4px solid #22c55e;
+    }
+    
+    .test-results.error {
+      background: #fef2f2;
+      border-left: 4px solid #ef4444;
+    }
+    
+    .test-results.running {
+      background: #fefce8;
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .overall-results {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .overall-results h3 {
+      margin: 0 0 10px 0;
+      color: #1e293b;
+    }
+    
+    .overall-results.success {
+      background: #f0fdf4;
+      color: #166534;
+    }
+    
+    .overall-results.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+    
+    .run-all-button {
+      background: #059669;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .run-all-button:hover {
+      background: #047857;
+    }
+    
+    .run-all-button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #2563eb;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧪 Test Suite</h1>
+      <p>Bradley's Financial Tools - Comprehensive Testing</p>
+    </div>
+    
+    <div class="content">
+      <button id="runAllTests" class="run-all-button">Run All Tests</button>
+      
+      <div class="test-section">
+        <div class="test-section-header">
+          <span>Validation Tests</span>
+          <button id="runValidationTests" class="run-button">Run Tests</button>
+        </div>
+        <div class="test-section-content">
+          <p>Tests for input validation, data sanitization, and form validation logic.</p>
+          <div id="validationResults" class="test-results" style="display: none;"></div>
+        </div>
+      </div>
+      
+      <div class="test-section">
+        <div class="test-section-header">
+          <span>Performance Tests</span>
+          <button id="runPerformanceTests" class="run-button">Run Tests</button>
+        </div>
+        <div class="test-section-content">
+          <p>Tests for performance optimizations, caching, and memory management.</p>
+          <div id="performanceResults" class="test-results" style="display: none;"></div>
+        </div>
+      </div>
+      
+      <div class="test-section">
+        <div class="test-section-header">
+          <span>Error Handling Tests</span>
+          <button id="runErrorTests" class="run-button">Run Tests</button>
+        </div>
+        <div class="test-section-content">
+          <p>Tests for error handling, user notifications, and graceful degradation.</p>
+          <div id="errorResults" class="test-results" style="display: none;"></div>
+        </div>
+      </div>
+      
+      <div class="overall-results" id="overallResults" style="display: none;">
+        <h3>Overall Test Results</h3>
+        <div id="overallSummary"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load test dependencies -->
+  <script src="../config.js"></script>
+  <script src="../utils/validation.js"></script>
+  <script src="../utils/errorHandler.js"></script>
+  <script src="../utils/performance.js"></script>
+  <script src="testRunner.js"></script>
+  <script src="validationTests.js"></script>
+  <script src="performanceTests.js"></script>
+  
+  <script>
+    // Test Suite Controller
+    class TestSuiteController {
+      constructor() {
+        this.testSections = [
+          { id: 'validation', name: 'Validation Tests', testClass: window.ValidationTests },
+          { id: 'performance', name: 'Performance Tests', testClass: window.PerformanceTests },
+          { id: 'error', name: 'Error Handling Tests', testClass: null } // TODO: Implement error tests
+        ];
+        
+        this.results = {};
+        this.isRunning = false;
+        
+        this.setupEventListeners();
+      }
+      
+      setupEventListeners() {
+        document.getElementById('runAllTests').addEventListener('click', () => {
+          this.runAllTests();
+        });
+        
+        document.getElementById('runValidationTests').addEventListener('click', () => {
+          this.runTestSection('validation');
+        });
+        
+        document.getElementById('runPerformanceTests').addEventListener('click', () => {
+          this.runTestSection('performance');
+        });
+        
+        document.getElementById('runErrorTests').addEventListener('click', () => {
+          this.runTestSection('error');
+        });
+      }
+      
+      async runAllTests() {
+        if (this.isRunning) return;
+        
+        this.isRunning = true;
+        this.updateRunAllButton(true);
+        
+        try {
+          for (const section of this.testSections) {
+            if (section.testClass) {
+              await this.runTestSection(section.id);
+            }
+          }
+          
+          this.updateOverallResults();
+        } finally {
+          this.isRunning = false;
+          this.updateRunAllButton(false);
+        }
+      }
+      
+      async runTestSection(sectionId) {
+        const section = this.testSections.find(s => s.id === sectionId);
+        if (!section || !section.testClass) return;
+        
+        const button = document.getElementById(`run${sectionId.charAt(0).toUpperCase() + sectionId.slice(1)}Tests`);
+        const resultsDiv = document.getElementById(`${sectionId}Results`);
+        
+        button.disabled = true;
+        button.innerHTML = '<span class="loading"></span> Running...';
+        resultsDiv.style.display = 'block';
+        resultsDiv.className = 'test-results running';
+        resultsDiv.textContent = 'Running tests...';
+        
+        try {
+          const results = await section.testClass.runAll();
+          this.results[sectionId] = results;
+          
+          const passed = results.filter(r => r.status === 'PASS').length;
+          const failed = results.filter(r => r.status === 'FAIL').length;
+          const total = results.length;
+          
+          resultsDiv.className = `test-results ${failed === 0 ? 'success' : 'error'}`;
+          resultsDiv.textContent = this.formatResults(results);
+          
+        } catch (error) {
+          resultsDiv.className = 'test-results error';
+          resultsDiv.textContent = `Error running tests: ${error.message}`;
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Run Tests';
+        }
+      }
+      
+      formatResults(results) {
+        let output = '';
+        
+        results.forEach(result => {
+          const status = result.status === 'PASS' ? '✅' : '❌';
+          output += `${status} ${result.name}`;
+          if (result.error) {
+            output += `\n   Error: ${result.error}`;
+          }
+          output += '\n';
+        });
+        
+        const passed = results.filter(r => r.status === 'PASS').length;
+        const failed = results.filter(r => r.status === 'FAIL').length;
+        const total = results.length;
+        
+        output += `\n📊 Summary: ${passed}/${total} passed, ${failed} failed`;
+        
+        return output;
+      }
+      
+      updateOverallResults() {
+        const overallDiv = document.getElementById('overallResults');
+        const summaryDiv = document.getElementById('overallSummary');
+        
+        let totalPassed = 0;
+        let totalFailed = 0;
+        let totalTests = 0;
+        
+        Object.values(this.results).forEach(results => {
+          totalPassed += results.filter(r => r.status === 'PASS').length;
+          totalFailed += results.filter(r => r.status === 'FAIL').length;
+          totalTests += results.length;
+        });
+        
+        const allPassed = totalFailed === 0;
+        
+        overallDiv.className = `overall-results ${allPassed ? 'success' : 'error'}`;
+        overallDiv.style.display = 'block';
+        
+        summaryDiv.innerHTML = `
+          <div style="font-size: 18px; margin-bottom: 10px;">
+            ${allPassed ? '🎉 All Tests Passed!' : '❌ Some Tests Failed'}
+          </div>
+          <div>
+            <strong>Total:</strong> ${totalPassed}/${totalTests} passed, ${totalFailed} failed
+          </div>
+        `;
+      }
+      
+      updateRunAllButton(running) {
+        const button = document.getElementById('runAllTests');
+        button.disabled = running;
+        
+        if (running) {
+          button.innerHTML = '<span class="loading"></span> Running All Tests...';
+        } else {
+          button.textContent = 'Run All Tests';
+        }
+      }
+    }
+    
+    // Initialize test suite when page loads
+    document.addEventListener('DOMContentLoaded', () => {
+      new TestSuiteController();
+    });
+  </script>
+</body>
+</html>

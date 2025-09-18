@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="theme.css">
   <link rel="stylesheet" href="login-styles.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="config.js"></script>
+  <script src="utils/validation.js"></script>
+  <script src="utils/errorHandler.js"></script>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -176,13 +179,22 @@
     </div>
     <div id="error" class="error"></div>
     <form id="loginForm" onsubmit="return false;">
-      <input type="email" id="email" placeholder="Email address" required />
-      <input type="password" id="password" placeholder="Password" required />
+      <div class="form-group">
+        <input type="email" id="email" placeholder="Email address" required autocomplete="email" />
+        <div class="field-error" id="emailError"></div>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" placeholder="Password" required autocomplete="current-password" />
+        <div class="field-error" id="passwordError"></div>
+      </div>
       <div class="remember-me">
         <input type="checkbox" id="rememberMe" />
         <label for="rememberMe">Remember me</label>
       </div>
-      <button type="submit" class="login-btn">Sign In</button>
+      <button type="submit" class="login-btn" id="loginBtn">
+        <span class="btn-text">Sign In</span>
+        <span class="btn-spinner" style="display: none;">⏳</span>
+      </button>
       <button type="button" id="googleLoginBtn" class="google-btn">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
         Sign in with Google
@@ -198,8 +210,11 @@
   </div>
 
   <script type="module">
-    import { auth } from './firebase-config.js';
+    import { auth, login, register } from './auth.js';
     import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+    
+    // Initialize error handling
+    ErrorHandler.setupGlobalErrorHandling();
 
     let loginAttempts = 0;
     const MAX_LOGIN_ATTEMPTS = 5;
@@ -208,39 +223,76 @@
     document.getElementById('loginForm').onsubmit = login;
     document.getElementById('googleLoginBtn').onclick = googleLogin;
 
-    function login() {
-      if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-        const lockoutEnd = localStorage.getItem('lockoutEnd');
-        if (lockoutEnd && Date.now() < parseInt(lockoutEnd)) {
-          const remainingTime = Math.ceil((parseInt(lockoutEnd) - Date.now()) / 60000);
-          document.getElementById('error').innerText = `Too many attempts. Please try again in ${remainingTime} minutes.`;
+    async function login() {
+      const emailInput = document.getElementById('email');
+      const passwordInput = document.getElementById('password');
+      const rememberMe = document.getElementById('rememberMe').checked;
+      const loginBtn = document.getElementById('loginBtn');
+      const btnText = loginBtn.querySelector('.btn-text');
+      const btnSpinner = loginBtn.querySelector('.btn-spinner');
+      
+      // Clear previous errors
+      clearFieldErrors();
+      
+      try {
+        // Validate inputs
+        const email = ValidationUtils.validateEmail(emailInput.value);
+        const password = passwordInput.value;
+        
+        if (!password) {
+          showFieldError('passwordError', 'Password is required');
           return;
-        } else {
-          loginAttempts = 0;
-          localStorage.removeItem('lockoutEnd');
         }
+        
+        // Show loading state
+        loginBtn.disabled = true;
+        btnText.style.display = 'none';
+        btnSpinner.style.display = 'inline';
+        
+        // Set persistence based on remember me
+        await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+        
+        // Use enhanced login function
+        const user = await login(email, password);
+        
+        if (user) {
+          ErrorHandler.showSuccess('Login successful! Redirecting...');
+          setTimeout(() => {
+            window.location.href = 'index.html';
+          }, 1000);
+        }
+        
+      } catch (error) {
+        if (error.message.includes('email')) {
+          showFieldError('emailError', error.message);
+        } else if (error.message.includes('password')) {
+          showFieldError('passwordError', error.message);
+        } else {
+          ErrorHandler.handleValidationError(error);
+        }
+      } finally {
+        // Reset button state
+        loginBtn.disabled = false;
+        btnText.style.display = 'inline';
+        btnSpinner.style.display = 'none';
       }
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const rememberMe = document.getElementById("rememberMe").checked;
-      setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence)
-        .then(() => signInWithEmailAndPassword(auth, email, password))
-        .then(() => {
-          loginAttempts = 0;
-          localStorage.removeItem('loginAttempts');
-          window.location.href = "index.html";
-        })
-        .catch(error => {
-          loginAttempts++;
-          localStorage.setItem('loginAttempts', loginAttempts);
-          if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-            const lockoutEnd = Date.now() + LOCKOUT_DURATION;
-            localStorage.setItem('lockoutEnd', lockoutEnd);
-            document.getElementById('error').innerText = `Too many attempts. Please try again in 15 minutes.`;
-          } else {
-            document.getElementById('error').innerText = error.message;
-          }
-        });
+    }
+    
+    // Helper functions
+    function clearFieldErrors() {
+      document.getElementById('emailError').textContent = '';
+      document.getElementById('passwordError').textContent = '';
+      document.getElementById('error').textContent = '';
+    }
+    
+    function showFieldError(fieldId, message) {
+      const errorElement = document.getElementById(fieldId);
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.color = '#ef4444';
+        errorElement.style.fontSize = '0.875rem';
+        errorElement.style.marginTop = '0.25rem';
+      }
     }
 
     function googleLogin() {

@@ -5,7 +5,13 @@ import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from 'https://
 // Session management
 let currentUser = null;
 let sessionTimer = null;
-const SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+let loginAttempts = 0;
+let lockoutUntil = null;
+
+// Load configuration
+const SESSION_TIMEOUT = window.CONFIG?.app?.sessionTimeout || 30 * 60 * 1000; // 30 minutes
+const MAX_LOGIN_ATTEMPTS = window.CONFIG?.security?.maxLoginAttempts || 5;
+const LOCKOUT_DURATION = window.CONFIG?.security?.lockoutDuration || 15 * 60 * 1000; // 15 minutes
 
 // Start session timer
 function startSessionTimer() {
@@ -40,13 +46,84 @@ function extendSession() {
   startSessionTimer();
 }
 
-// Logout function
+// Enhanced logout function
 function logout() {
+  clearTimeout(sessionTimer);
+  currentUser = null;
+  loginAttempts = 0;
+  lockoutUntil = null;
+  
   auth.signOut().then(() => {
+    // Clear any stored data
+    localStorage.removeItem('userSession');
+    sessionStorage.clear();
     window.location.href = "login.html";
   }).catch((error) => {
-    console.error("Error signing out:", error);
+    ErrorHandler.handleFirebaseError(error);
   });
+}
+
+// Check if user is locked out
+function isLockedOut() {
+  if (lockoutUntil && Date.now() < lockoutUntil) {
+    const remainingTime = Math.ceil((lockoutUntil - Date.now()) / 1000 / 60);
+    ErrorHandler.showError(`Account locked. Try again in ${remainingTime} minutes.`);
+    return true;
+  }
+  return false;
+}
+
+// Handle failed login attempt
+function handleFailedLogin() {
+  loginAttempts++;
+  if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+    lockoutUntil = Date.now() + LOCKOUT_DURATION;
+    ErrorHandler.showError(`Too many failed attempts. Account locked for ${LOCKOUT_DURATION / 1000 / 60} minutes.`);
+  } else {
+    const remainingAttempts = MAX_LOGIN_ATTEMPTS - loginAttempts;
+    ErrorHandler.showWarning(`${remainingAttempts} login attempts remaining.`);
+  }
+}
+
+// Reset login attempts on successful login
+function resetLoginAttempts() {
+  loginAttempts = 0;
+  lockoutUntil = null;
+}
+
+// Enhanced login function
+async function login(email, password) {
+  if (isLockedOut()) {
+    return false;
+  }
+  
+  try {
+    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    resetLoginAttempts();
+    return userCredential.user;
+  } catch (error) {
+    if (error.code === 'auth/user-not-found' || 
+        error.code === 'auth/wrong-password' || 
+        error.code === 'auth/invalid-email') {
+      handleFailedLogin();
+    }
+    ErrorHandler.handleFirebaseError(error);
+    return null;
+  }
+}
+
+// Enhanced registration function
+async function register(email, password, displayName = '') {
+  try {
+    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    if (displayName) {
+      await userCredential.user.updateProfile({ displayName });
+    }
+    return userCredential.user;
+  } catch (error) {
+    ErrorHandler.handleFirebaseError(error);
+    return null;
+  }
 }
 
 // Update UI for logged-in user
@@ -124,5 +201,9 @@ export {
   startSessionTimer,
   extendSession,
   logout,
-  updateUIForLoggedInUser
+  updateUIForLoggedInUser,
+  login,
+  register,
+  isLockedOut,
+  resetLoginAttempts
 }; 
