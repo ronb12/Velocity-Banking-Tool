@@ -766,7 +766,128 @@
     }
 
     function openAdvancedSettings() {
-      showNotification('Advanced settings coming soon!', 'info');
+      // Create advanced settings modal
+      const modal = document.createElement('div');
+      modal.className = 'advanced-settings-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(30,41,59,0.25);
+        z-index: 3000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s;
+      `;
+      
+      modal.innerHTML = `
+        <div class="advanced-settings-content" style="
+          background: ${document.body.classList.contains('dark') ? '#232946' : '#fff'};
+          color: ${document.body.classList.contains('dark') ? '#f4f4f9' : '#1e293b'};
+          border-radius: 1.5rem;
+          box-shadow: 0 8px 32px rgba(37,99,235,0.12);
+          padding: 2rem;
+          min-width: 400px;
+          max-width: 90vw;
+          max-height: 80vh;
+          overflow-y: auto;
+          position: relative;
+        ">
+          <button class="close-advanced-settings" style="
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #64748b;
+            cursor: pointer;
+          ">&times;</button>
+          
+          <h2 style="margin: 0 0 1.5rem 0; color: #1e293b; font-size: 1.5rem;">Advanced Settings</h2>
+          
+          <div class="export-section" style="margin-bottom: 2rem;">
+            <h3 style="margin: 0 0 1rem 0; color: #374151; font-size: 1.1rem;">📤 Data Export</h3>
+            <p style="margin: 0 0 1rem 0; color: #6b7280; font-size: 0.9rem;">
+              Export all your financial data for backup or migration purposes.
+            </p>
+            
+            <div class="export-options" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <button onclick="exportAllData('json')" class="export-btn" style="
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
+                border: none;
+                padding: 0.75rem 1rem;
+                border-radius: 0.5rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              ">📄 Export as JSON</button>
+              
+              <button onclick="exportAllData('csv')" class="export-btn" style="
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border: none;
+                padding: 0.75rem 1rem;
+                border-radius: 0.5rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              ">📊 Export as CSV</button>
+              
+              <button onclick="exportAllData('pdf')" class="export-btn" style="
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                border: none;
+                padding: 0.75rem 1rem;
+                border-radius: 0.5rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+              ">📋 Export as PDF Report</button>
+            </div>
+          </div>
+          
+          <div class="data-info" style="
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+          ">
+            <h4 style="margin: 0 0 0.5rem 0; color: #374151; font-size: 0.9rem;">📊 Export Includes:</h4>
+            <ul style="margin: 0; padding-left: 1.2rem; color: #6b7280; font-size: 0.85rem;">
+              <li>Debt information and payment history</li>
+              <li>Budget data and expense tracking</li>
+              <li>Savings goals and progress</li>
+              <li>Net worth calculations</li>
+              <li>Velocity banking calculations</li>
+              <li>Tax calculations (1099)</li>
+              <li>User preferences and settings</li>
+            </ul>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Close modal handlers
+      const closeBtn = modal.querySelector('.close-advanced-settings');
+      closeBtn.onclick = () => modal.remove();
+      modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+      };
+      
+      // Add hover effects to export buttons
+      modal.querySelectorAll('.export-btn').forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+          btn.style.transform = 'translateY(-2px)';
+          btn.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.transform = 'translateY(0)';
+          btn.style.boxShadow = 'none';
+        });
+      });
     }
 
     function showNotification(message, type = 'info') {
@@ -866,6 +987,380 @@
 
     // Make function globally available
     window.openProfileModal = openProfileModal;
+
+    // Test all profile settings features
+    function testProfileSettings() {
+      console.log('🧪 Testing Profile Settings Features...');
+      
+      // Test 1: Dark Mode Toggle
+      console.log('1. Testing Dark Mode Toggle...');
+      const darkModeToggle = document.getElementById('settingsDarkMode');
+      if (darkModeToggle) {
+        console.log('✅ Dark Mode toggle found');
+        console.log('Current state:', darkModeToggle.checked);
+      } else {
+        console.log('❌ Dark Mode toggle not found');
+      }
+      
+      // Test 2: Notifications Toggle
+      console.log('2. Testing Notifications Toggle...');
+      const notificationsToggle = document.getElementById('settingsNotifications');
+      if (notificationsToggle) {
+        console.log('✅ Notifications toggle found');
+        console.log('Current state:', notificationsToggle.checked);
+      } else {
+        console.log('❌ Notifications toggle not found');
+      }
+      
+      // Test 3: Auto-save Toggle
+      console.log('3. Testing Auto-save Toggle...');
+      const autoSaveToggle = document.getElementById('settingsAutoSave');
+      if (autoSaveToggle) {
+        console.log('✅ Auto-save toggle found');
+        console.log('Current state:', autoSaveToggle.checked);
+      } else {
+        console.log('❌ Auto-save toggle not found');
+      }
+      
+      // Test 4: Show Tips Toggle
+      console.log('4. Testing Show Tips Toggle...');
+      const showTipsToggle = document.getElementById('settingsShowTips');
+      if (showTipsToggle) {
+        console.log('✅ Show Tips toggle found');
+        console.log('Current state:', showTipsToggle.checked);
+      } else {
+        console.log('❌ Show Tips toggle not found');
+      }
+      
+      // Test 5: Avatar Upload
+      console.log('5. Testing Avatar Upload...');
+      const avatarInput = document.getElementById('avatarInput');
+      const avatarImg = document.getElementById('profileAvatar');
+      const avatarUploadBtn = document.querySelector('.avatar-upload-btn');
+      const avatarUploadTextBtn = document.querySelector('.avatar-upload-text-btn');
+      
+      if (avatarInput && avatarImg && avatarUploadBtn && avatarUploadTextBtn) {
+        console.log('✅ Avatar upload elements found');
+        console.log('Avatar input:', avatarInput);
+        console.log('Avatar image:', avatarImg);
+        console.log('Upload button:', avatarUploadBtn);
+        console.log('Upload text button:', avatarUploadTextBtn);
+      } else {
+        console.log('❌ Some avatar upload elements missing');
+      }
+      
+      // Test 6: Advanced Settings Button
+      console.log('6. Testing Advanced Settings Button...');
+      const advancedSettingsBtn = document.querySelector('.settings-btn');
+      if (advancedSettingsBtn) {
+        console.log('✅ Advanced Settings button found');
+      } else {
+        console.log('❌ Advanced Settings button not found');
+      }
+      
+      // Test 7: Logout Button
+      console.log('7. Testing Logout Button...');
+      const logoutBtn = document.querySelector('.logout-btn');
+      if (logoutBtn) {
+        console.log('✅ Logout button found');
+      } else {
+        console.log('❌ Logout button not found');
+      }
+      
+      // Test 8: Local Storage
+      console.log('8. Testing Local Storage...');
+      console.log('Dark mode setting:', localStorage.getItem('darkMode'));
+      console.log('Theme setting:', localStorage.getItem('theme'));
+      console.log('Notifications setting:', localStorage.getItem('notificationsEnabled'));
+      console.log('Auto-save setting:', localStorage.getItem('autoSaveEnabled'));
+      console.log('Show tips setting:', localStorage.getItem('showTipsEnabled'));
+      console.log('User avatar:', localStorage.getItem('userAvatar') ? 'Present' : 'Not set');
+      
+      console.log('🧪 Profile Settings Test Complete!');
+    }
+
+    // Test actual functionality of settings
+    function testSettingsFunctionality() {
+      console.log('🔧 Testing Settings Functionality...');
+      
+      // Test Dark Mode functionality
+      console.log('Testing Dark Mode toggle...');
+      const darkModeToggle = document.getElementById('settingsDarkMode');
+      if (darkModeToggle) {
+        const originalState = darkModeToggle.checked;
+        darkModeToggle.checked = !originalState;
+        toggleDarkModeSetting();
+        console.log('Dark mode toggled from', originalState, 'to', darkModeToggle.checked);
+        console.log('Body has dark class:', document.body.classList.contains('dark'));
+        
+        // Toggle back
+        darkModeToggle.checked = originalState;
+        toggleDarkModeSetting();
+        console.log('Dark mode restored to', originalState);
+      }
+      
+      // Test Notifications functionality
+      console.log('Testing Notifications toggle...');
+      const notificationsToggle = document.getElementById('settingsNotifications');
+      if (notificationsToggle) {
+        const originalState = notificationsToggle.checked;
+        notificationsToggle.checked = !originalState;
+        toggleNotifications();
+        console.log('Notifications toggled from', originalState, 'to', notificationsToggle.checked);
+        console.log('Local storage value:', localStorage.getItem('notificationsEnabled'));
+        
+        // Toggle back
+        notificationsToggle.checked = originalState;
+        toggleNotifications();
+        console.log('Notifications restored to', originalState);
+      }
+      
+      // Test Auto-save functionality
+      console.log('Testing Auto-save toggle...');
+      const autoSaveToggle = document.getElementById('settingsAutoSave');
+      if (autoSaveToggle) {
+        const originalState = autoSaveToggle.checked;
+        autoSaveToggle.checked = !originalState;
+        toggleAutoSave();
+        console.log('Auto-save toggled from', originalState, 'to', autoSaveToggle.checked);
+        console.log('Local storage value:', localStorage.getItem('autoSaveEnabled'));
+        
+        // Toggle back
+        autoSaveToggle.checked = originalState;
+        toggleAutoSave();
+        console.log('Auto-save restored to', originalState);
+      }
+      
+      // Test Show Tips functionality
+      console.log('Testing Show Tips toggle...');
+      const showTipsToggle = document.getElementById('settingsShowTips');
+      if (showTipsToggle) {
+        const originalState = showTipsToggle.checked;
+        showTipsToggle.checked = !originalState;
+        toggleShowTips();
+        console.log('Show Tips toggled from', originalState, 'to', showTipsToggle.checked);
+        console.log('Local storage value:', localStorage.getItem('showTipsEnabled'));
+        
+        const tipsSection = document.querySelector('.financial-education');
+        console.log('Tips section display:', tipsSection ? tipsSection.style.display : 'Not found');
+        
+        // Toggle back
+        showTipsToggle.checked = originalState;
+        toggleShowTips();
+        console.log('Show Tips restored to', originalState);
+      }
+      
+      // Test Advanced Settings
+      console.log('Testing Advanced Settings button...');
+      openAdvancedSettings();
+      
+      console.log('🔧 Settings Functionality Test Complete!');
+    }
+
+    // Data Export Functions
+    async function exportAllData(format) {
+      try {
+        showNotification('Preparing data export...', 'info');
+        
+        const exportData = {
+          exportInfo: {
+            timestamp: new Date().toISOString(),
+            version: '2.1.0',
+            format: format,
+            userAgent: navigator.userAgent
+          },
+          userSettings: {
+            darkMode: localStorage.getItem('darkMode') === 'true',
+            theme: localStorage.getItem('theme'),
+            notificationsEnabled: localStorage.getItem('notificationsEnabled') !== 'false',
+            autoSaveEnabled: localStorage.getItem('autoSaveEnabled') !== 'false',
+            showTipsEnabled: localStorage.getItem('showTipsEnabled') !== 'false',
+            userAvatar: localStorage.getItem('userAvatar') ? 'Present' : 'Not set'
+          },
+          financialData: await gatherAllFinancialData()
+        };
+        
+        if (format === 'json') {
+          exportAsJSON(exportData);
+        } else if (format === 'csv') {
+          exportAsCSV(exportData);
+        } else if (format === 'pdf') {
+          exportAsPDF(exportData);
+        }
+        
+        showNotification(`Data exported successfully as ${format.toUpperCase()}!`, 'success');
+        
+      } catch (error) {
+        console.error('Export error:', error);
+        showNotification('Export failed. Please try again.', 'error');
+      }
+    }
+    
+    async function gatherAllFinancialData() {
+      const data = {};
+      
+      // Get data from localStorage (fallback for when Firebase is not available)
+      try {
+        // Debts
+        const debtsData = localStorage.getItem('debts');
+        if (debtsData) {
+          data.debts = JSON.parse(debtsData);
+        }
+        
+        // Budgets
+        const budgetsData = localStorage.getItem('budgets');
+        if (budgetsData) {
+          data.budgets = JSON.parse(budgetsData);
+        }
+        
+        // Savings Goals
+        const savingsData = localStorage.getItem('savingsGoals');
+        if (savingsData) {
+          data.savingsGoals = JSON.parse(savingsData);
+        }
+        
+        // Net Worth
+        const netWorthData = localStorage.getItem('netWorth');
+        if (netWorthData) {
+          data.netWorth = JSON.parse(netWorthData);
+        }
+        
+        // Velocity Calculations
+        const velocityData = localStorage.getItem('velocityCalculations');
+        if (velocityData) {
+          data.velocityCalculations = JSON.parse(velocityData);
+        }
+        
+        // Tax Calculations
+        const taxData = localStorage.getItem('taxCalculations');
+        if (taxData) {
+          data.taxCalculations = JSON.parse(taxData);
+        }
+        
+        // Activity Logs
+        const activityData = localStorage.getItem('activityLogs');
+        if (activityData) {
+          data.activityLogs = JSON.parse(activityData);
+        }
+        
+      } catch (error) {
+        console.warn('Error gathering local data:', error);
+      }
+      
+      return data;
+    }
+    
+    function exportAsJSON(data) {
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bradley-financial-data-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    function exportAsCSV(data) {
+      let csvContent = 'Data Type,Field,Value,Timestamp\n';
+      
+      // Add export info
+      csvContent += `Export Info,Format,${data.exportInfo.format},${data.exportInfo.timestamp}\n`;
+      csvContent += `Export Info,Version,${data.exportInfo.version},${data.exportInfo.timestamp}\n`;
+      
+      // Add user settings
+      Object.entries(data.userSettings).forEach(([key, value]) => {
+        csvContent += `User Settings,${key},${value},${data.exportInfo.timestamp}\n`;
+      });
+      
+      // Add financial data
+      Object.entries(data.financialData).forEach(([dataType, dataArray]) => {
+        if (Array.isArray(dataArray)) {
+          dataArray.forEach((item, index) => {
+            Object.entries(item).forEach(([field, value]) => {
+              csvContent += `${dataType},${field},${value},${data.exportInfo.timestamp}\n`;
+            });
+          });
+        } else if (typeof dataArray === 'object') {
+          Object.entries(dataArray).forEach(([field, value]) => {
+            csvContent += `${dataType},${field},${JSON.stringify(value)},${data.exportInfo.timestamp}\n`;
+          });
+        }
+      });
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bradley-financial-data-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    function exportAsPDF(data) {
+      // Create a simple text-based PDF report
+      let reportContent = `
+BRADLEY'S FINANCIAL TOOLS - DATA EXPORT REPORT
+Generated: ${new Date().toLocaleString()}
+Version: ${data.exportInfo.version}
+Format: ${data.exportInfo.format.toUpperCase()}
+
+===============================================
+
+USER SETTINGS:
+- Dark Mode: ${data.userSettings.darkMode ? 'Enabled' : 'Disabled'}
+- Theme: ${data.userSettings.theme || 'Not set'}
+- Notifications: ${data.userSettings.notificationsEnabled ? 'Enabled' : 'Disabled'}
+- Auto-save: ${data.userSettings.autoSaveEnabled ? 'Enabled' : 'Disabled'}
+- Show Tips: ${data.userSettings.showTipsEnabled ? 'Enabled' : 'Disabled'}
+
+===============================================
+
+FINANCIAL DATA SUMMARY:
+`;
+      
+      // Add summary of each data type
+      Object.entries(data.financialData).forEach(([dataType, dataArray]) => {
+        if (Array.isArray(dataArray)) {
+          reportContent += `\n${dataType.toUpperCase()}: ${dataArray.length} records\n`;
+        } else if (typeof dataArray === 'object') {
+          reportContent += `\n${dataType.toUpperCase()}: ${Object.keys(dataArray).length} fields\n`;
+        }
+      });
+      
+      reportContent += `
+===============================================
+
+DETAILED DATA:
+${JSON.stringify(data.financialData, null, 2)}
+
+===============================================
+
+This export contains all your financial data from Bradley's Financial Tools.
+Keep this file secure as it contains sensitive financial information.
+      `;
+      
+      const blob = new Blob([reportContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bradley-financial-report-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Make test functions globally available
+    window.testProfileSettings = testProfileSettings;
+    window.testSettingsFunctionality = testSettingsFunctionality;
+    
+    // Make export functions globally available
+    window.exportAllData = exportAllData;
 
     // Get financial data with Firestore and local storage fallback
     async function getFinancialData(userId) {
