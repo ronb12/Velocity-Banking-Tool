@@ -320,6 +320,8 @@ window.onload = function () {
 
         function calculateStrategy(debtBalance, interestRate, payment, strategyName, chunkMonths) {
             let balance = debtBalance, months = 0, totalInterest = 0, payments = [], totalPrincipalPaid = 0;
+            
+            console.log(`Debug - ${strategyName}: Starting with balance=${balance}, interestRate=${interestRate}, payment=${payment}`);
 
             while (balance > 0 && months < 1500) {
                 const interest = balance * interestRate;
@@ -343,6 +345,11 @@ window.onload = function () {
                     balance: balance.toFixed(2),
                     principalPaid: principalPaid.toFixed(2)
                 });
+                
+                // Debug first few iterations
+                if (months < 3) {
+                    console.log(`Debug - ${strategyName} Month ${months + 1}: balance=${balance.toFixed(2)}, interest=${interest.toFixed(2)}, payment=${actualPayment.toFixed(2)}, totalInterest=${totalInterest.toFixed(2)}`);
+                }
 
                 months++;
             }
@@ -364,6 +371,14 @@ window.onload = function () {
 
         const velocitySavings = calculateSavings(minimumStrategy, velocityStrategy);
         const extraSavings = calculateSavings(minimumStrategy, extraStrategy);
+        
+        // Debug logging
+        console.log('Debug - Interest Calculations:');
+        console.log('Minimum Strategy Total Interest:', minimumStrategy.totalInterest);
+        console.log('Velocity Strategy Total Interest:', velocityStrategy.totalInterest);
+        console.log('Extra Strategy Total Interest:', extraStrategy.totalInterest);
+        console.log('Velocity Savings:', velocitySavings);
+        console.log('Extra Savings:', extraSavings);
 
         const strategies = [velocityStrategy, extraStrategy];
         const bestStrategy = strategies.reduce((best, current) => current.totalInterest < best.totalInterest ? current : best, minimumStrategy);
