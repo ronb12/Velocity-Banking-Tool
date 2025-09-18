@@ -231,13 +231,14 @@
     
     input, select, textarea { 
       width: 100%; 
-      padding: 8px 12px; 
+      padding: 12px 16px; 
       box-sizing: border-box;
       border: 1px solid #ced4da;
       border-radius: 4px;
-      font-size: 0.9rem;
+      font-size: 1rem;
       transition: all 0.2s ease;
       background: white;
+      min-height: 44px; /* Ensure minimum touch target size */
     }
     
     input:focus, select:focus, textarea:focus {
@@ -248,6 +249,15 @@
     
     input[type="number"] {
       text-align: right;
+    }
+    
+    /* Mobile-specific input improvements */
+    @media (max-width: 768px) {
+      input, select, textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+        padding: 14px 16px;
+        min-height: 48px; /* Larger touch targets for mobile */
+      }
     }
     
     .controls { 
@@ -590,6 +600,13 @@
         padding: 8px 6px;
       }
       
+      /* Ensure table inputs are properly sized on mobile */
+      table input, table select {
+        font-size: 14px;
+        padding: 8px 10px;
+        min-height: 40px;
+      }
+      
       .btn {
         font-size: 0.8rem;
         padding: 6px 12px;
@@ -903,8 +920,38 @@ async function loadSampleBudget() {
       alert('Sample budget data loaded successfully!');
     }
     
-    // Reload the budget to display the sample data
-    loadBudget();
+    // Clear existing data and reload the budget to display the sample data
+    document.querySelector("#incomeTable tbody").innerHTML = "";
+    document.querySelector("#expenseTable tbody").innerHTML = "";
+    document.getElementById("monthlyNotes").value = "";
+    
+    // Set the month value
+    document.getElementById("month").value = currentMonth;
+    
+    // Load the sample data directly
+    if (sampleBudgetData.income && Array.isArray(sampleBudgetData.income)) {
+      console.log('Loading sample income data:', sampleBudgetData.income);
+      sampleBudgetData.income.forEach(inc => {
+        if (inc.source && inc.amount) {
+          addIncome(inc.source, inc.amount);
+        }
+      });
+    }
+    
+    if (sampleBudgetData.expenses && Array.isArray(sampleBudgetData.expenses)) {
+      console.log('Loading sample expense data:', sampleBudgetData.expenses);
+      sampleBudgetData.expenses.forEach(exp => {
+        if (exp.category && exp.name) {
+          addExpense(exp.category, exp.name, exp.budgeted || 0, exp.due || '');
+        }
+      });
+    }
+    
+    // Set notes
+    document.getElementById("monthlyNotes").value = sampleBudgetData.notes || "";
+    
+    // Recalculate budget
+    calculateBudget();
     
   } catch (error) {
     console.error('Error loading sample budget:', error);
@@ -1115,7 +1162,7 @@ async function loadBudget() {
     let docId = userId;
     
     if (currentMonth) {
-      // Try month-based document ID format
+      // Try month-based document ID format first
       docId = userId + '_' + currentMonth;
       console.log('Trying month-based document ID:', docId);
     }
@@ -1125,7 +1172,8 @@ async function loadBudget() {
     // If month-based document doesn't exist, try user-only document
     if (!doc.exists && currentMonth) {
       console.log('Month-based document not found, trying user-only document');
-      doc = await db.collection("budgets").doc(userId).get();
+      docId = userId;
+      doc = await db.collection("budgets").doc(docId).get();
     }
     
     console.log('Document exists:', doc.exists);
