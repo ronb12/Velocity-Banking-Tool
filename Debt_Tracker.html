@@ -390,7 +390,7 @@ async function loadDebts() {
     if (doc.exists) {
       const data = doc.data();
       document.querySelector("#debtTable tbody").innerHTML = "";
-      data.debts.forEach(debt => addDebt(debt.name, debt.balance, debt.rate, debt.payment, debt.limit, debt.type || 'credit'));
+      data.debts.forEach(debt => addDebt(debt.name, debt.balance, debt.interestRate, debt.minPayment, debt.limit, debt.type || 'credit'));
       calculateSummary();
     }
   } catch (error) {

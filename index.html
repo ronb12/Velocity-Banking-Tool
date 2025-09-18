@@ -482,8 +482,10 @@
         
         if (hasData && window.FinancialInsights && typeof window.FinancialInsights.generateInsights === 'function') {
           try {
+            console.log('User data for insights:', userData);
             insights = await window.FinancialInsights.generateInsights(userData);
             allInsights = window.FinancialInsights.getAllInsights();
+            console.log('Generated insights:', allInsights);
           } catch (error) {
             console.warn('Could not generate financial insights:', error);
           }
@@ -571,6 +573,9 @@
           const debtsSnap = await getDoc(debtsRef);
           if (debtsSnap.exists()) {
             userData.debts = debtsSnap.data().debts || [];
+            console.log('Fetched debts from Firestore:', userData.debts);
+          } else {
+            console.log('No debts document found for user:', userId);
           }
         } catch (error) {
           console.warn('Could not fetch debts:', error.message);

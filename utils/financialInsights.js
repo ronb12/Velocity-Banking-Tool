@@ -39,6 +39,8 @@ class FinancialInsights {
   
   // Analyze debt situation
   analyzeDebtSituation(debts) {
+    console.log('Analyzing debt situation with debts:', debts);
+    
     const totalDebt = debts.reduce((sum, debt) => sum + (debt.balance || 0), 0);
     const totalInterest = debts.reduce((sum, debt) => {
       const monthlyInterest = (debt.balance || 0) * (debt.interestRate || 0) / 100 / 12;
@@ -49,6 +51,13 @@ class FinancialInsights {
     const highestInterestDebt = debts.reduce((max, debt) => 
       (debt.interestRate || 0) > (max.interestRate || 0) ? debt : max
     );
+    
+    console.log('Debt analysis results:', {
+      totalDebt,
+      totalInterest,
+      avgInterestRate,
+      highestInterestDebt
+    });
     
     // Debt-to-income ratio (if income data available)
     const monthlyIncome = this.getMonthlyIncome();
@@ -73,6 +82,9 @@ class FinancialInsights {
     const totalBudgeted = budget.expenses?.reduce((sum, expense) => sum + (expense.budgeted || 0), 0) || 0;
     const totalSpent = budget.expenses?.reduce((sum, expense) => sum + (expense.actual || 0), 0) || 0;
     const totalIncome = budget.incomes?.reduce((sum, income) => sum + (income.amount || 0), 0) || 0;
+    
+    // Set monthly income for debt analysis
+    this.monthlyIncome = totalIncome;
     
     const budgetVariance = totalBudgeted > 0 ? ((totalSpent - totalBudgeted) / totalBudgeted) * 100 : 0;
     const savingsRate = totalIncome > 0 ? ((totalIncome - totalSpent) / totalIncome) * 100 : 0;
@@ -344,10 +356,10 @@ class FinancialInsights {
     return Math.max(0, 1 - coefficientOfVariation);
   }
   
-  // Get monthly income (placeholder - would come from budget data)
+  // Get monthly income from budget data
   getMonthlyIncome() {
-    // This would typically come from budget data
-    return 0;
+    // This will be set when analyzing budget data
+    return this.monthlyIncome || 0;
   }
   
   // Generate financial health score
