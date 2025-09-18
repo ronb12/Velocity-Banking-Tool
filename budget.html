@@ -256,9 +256,16 @@
       min-width: 120px;
     }
     
-    /* Make actions column narrower and ensure buttons fit */
+    /* Make paid from column */
     #expenseTable th:nth-child(7),
     #expenseTable td:nth-child(7) {
+      width: 15%;
+      min-width: 120px;
+    }
+    
+    /* Make actions column narrower and ensure buttons fit */
+    #expenseTable th:nth-child(8),
+    #expenseTable td:nth-child(8) {
       width: 8%;
       min-width: 80px;
       text-align: center;
@@ -467,9 +474,16 @@
         min-width: 100px;
       }
       
-      /* Make actions column even smaller on mobile */
+      /* Make paid from column on mobile */
       #expenseTable th:nth-child(7),
       #expenseTable td:nth-child(7) {
+        width: 12%;
+        min-width: 100px;
+      }
+      
+      /* Make actions column even smaller on mobile */
+      #expenseTable th:nth-child(8),
+      #expenseTable td:nth-child(8) {
         width: 6%;
         min-width: 60px;
       }
@@ -560,6 +574,7 @@
             <th>Spent</th>
             <th>Remaining</th>
             <th>Due Date</th>
+            <th>Paid From</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -685,6 +700,7 @@
       `;
       
       calculateBudget();
+      updatePaidFromDropdowns();
     }
     
     // Add Expense function
@@ -713,10 +729,33 @@
         <td><input type="number" placeholder="0.00" onchange="calculateBudget()"></td>
         <td><input type="number" readonly></td>
         <td><input type="date" value="${dueDate}" onchange="calculateBudget()"></td>
+        <td>
+          <select onchange="calculateBudget()">
+            <option value="">Select Income Source</option>
+          </select>
+        </td>
         <td><button class="btn btn-outline" onclick="this.closest('tr').remove(); calculateBudget()">🗑️ Remove</button></td>
       `;
       
       calculateBudget();
+      updatePaidFromDropdowns();
+    }
+    
+    // Update Paid From dropdowns with current income sources
+    function updatePaidFromDropdowns() {
+      const incomeSources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
+        row => row.cells[0].querySelector("input").value.trim()
+      ).filter(Boolean);
+      
+      document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+        const select = row.cells[6].querySelector("select");
+        const currentValue = select.value;
+        
+        select.innerHTML = '<option value="">Select Income Source</option>' +
+          incomeSources.map(source => 
+            `<option value="${source}" ${source === currentValue ? 'selected' : ''}>${source}</option>`
+          ).join('');
+      });
     }
     
     // Calculate Budget function
@@ -743,33 +782,36 @@
         const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
         const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
         const remaining = budgeted - spent;
+        const paidFrom = row.cells[6].querySelector("select").value;
         
         budgetedTotal += budgeted;
         spentTotal += spent;
         
         // Update remaining cell
         row.cells[4].querySelector("input").value = remaining.toFixed(2);
+        
+        // Allocate to specific income source if selected
+        if (paidFrom && incomeMap[paidFrom]) {
+          incomeMap[paidFrom].allocated += budgeted;
+        }
       });
       
-      // Distribute budgeted expenses proportionally across income sources
-      if (budgetedTotal > 0 && incomeTotal > 0) {
+      // Distribute unallocated expenses proportionally across remaining income sources
+      const unallocatedExpenses = budgetedTotal - Object.values(incomeMap).reduce((sum, source) => sum + source.allocated, 0);
+      
+      if (unallocatedExpenses > 0 && incomeTotal > 0) {
         const incomeSources = Object.keys(incomeMap);
-        let remainingToAllocate = budgetedTotal;
+        let remainingToAllocate = unallocatedExpenses;
         
-        // Allocate expenses proportionally to each income source
+        // Allocate remaining expenses proportionally to each income source
         incomeSources.forEach((source, index) => {
           const incomeAmount = incomeMap[source].amount;
           const proportion = incomeAmount / incomeTotal;
-          const allocatedAmount = Math.min(proportion * budgetedTotal, incomeAmount, remainingToAllocate);
+          const allocatedAmount = Math.min(proportion * unallocatedExpenses, incomeAmount - incomeMap[source].allocated, remainingToAllocate);
           
-          incomeMap[source].allocated = allocatedAmount;
+          incomeMap[source].allocated += allocatedAmount;
           remainingToAllocate -= allocatedAmount;
         });
-        
-        // If there's still remaining allocation, distribute it to the first income source
-        if (remainingToAllocate > 0 && incomeSources.length > 0) {
-          incomeMap[incomeSources[0]].allocated += remainingToAllocate;
-        }
       }
       
       // Update income remaining to allocate
