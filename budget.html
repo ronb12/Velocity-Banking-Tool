@@ -26,119 +26,131 @@
     
     body { 
       font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; 
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #f8f9fa;
       min-height: 100vh;
       padding: 0;
       margin: 0;
-      color: #2d3748;
+      color: #2c3e50;
+      line-height: 1.6;
     }
     
     .container { 
-      max-width: 1400px; 
+      max-width: 1200px; 
       margin: 0 auto; 
-      padding: 20px;
+      padding: 0;
       min-height: 100vh;
     }
     
     .header {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 30px;
-      margin-bottom: 30px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #ffffff;
+      border-bottom: 1px solid #e9ecef;
+      padding: 20px 0;
+      margin-bottom: 0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     
     h1 { 
-      color: #2d3748;
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: #007bff;
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     
     .subtitle {
-      color: #718096;
-      font-size: 1.1rem;
-      margin-bottom: 20px;
+      color: #6c757d;
+      font-size: 1rem;
+      margin: 0;
+    }
+    
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 15px;
     }
     
     .month-selector {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 15px;
-      margin-bottom: 20px;
+      gap: 10px;
     }
     
     .month-selector label {
-      font-weight: 600;
-      color: #4a5568;
+      font-weight: 500;
+      color: #495057;
+      font-size: 0.9rem;
     }
     
     .month-selector input {
-      padding: 12px 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
-      font-size: 1rem;
+      padding: 8px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 0.9rem;
       background: white;
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
     }
     
     .month-selector input:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
     }
     
-    .grid-container { 
-      display: grid; 
-      grid-template-columns: 2fr 1fr; 
-      gap: 30px; 
-      margin-top: 30px;
+    .main-layout {
+      display: flex;
+      gap: 0;
+      min-height: calc(100vh - 80px);
     }
     
     .main-content { 
-      grid-column: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 30px;
+      flex: 1;
+      background: #ffffff;
+      padding: 30px;
     }
     
     .sidebar { 
-      grid-column: 2;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    
-    .card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
+      width: 350px;
+      background: #f8f9fa;
+      border-left: 1px solid #e9ecef;
       padding: 30px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s ease;
     }
     
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    .section {
+      margin-bottom: 40px;
     }
     
-    .card h3 {
-      color: #2d3748;
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 20px;
+    .section-header {
       display: flex;
       align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e9ecef;
+    }
+    
+    .section-title {
+      color: #2c3e50;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .section-actions {
+      display: flex;
       gap: 10px;
     }
     
@@ -186,47 +198,54 @@
     table { 
       width: 100%; 
       border-collapse: collapse; 
-      margin-top: 20px; 
       background: white; 
-      border-radius: 16px;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
       overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
     
     th, td { 
-      padding: 16px 12px; 
+      padding: 12px 16px; 
       text-align: left;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid #e9ecef;
     }
     
     th { 
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
+      background: #f8f9fa;
+      color: #495057;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.875rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     
     tr:hover {
-      background: #f8fafc;
+      background: #f8f9fa;
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
     }
     
     input, select, textarea { 
       width: 100%; 
-      padding: 12px 16px; 
+      padding: 8px 12px; 
       box-sizing: border-box;
-      border: 2px solid #e2e8f0;
-      border-radius: 12px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
       background: white;
     }
     
     input:focus, select:focus, textarea:focus {
       outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    }
+    
+    input[type="number"] {
+      text-align: right;
     }
     
     .controls { 
@@ -269,65 +288,57 @@
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 20px;
     }
-    .dashboard-tile {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      transition: all 0.3s ease;
+    .budget-summary {
+      background: #ffffff;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    
+    .summary-item {
       text-align: center;
-      position: relative;
-      overflow: hidden;
+      padding: 15px;
+      border-radius: 4px;
+      background: #f8f9fa;
     }
     
-    .dashboard-tile::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--tile-color), var(--tile-color-light));
+    .summary-item.income {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
     }
     
-    .dashboard-tile:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    .summary-item.budgeted {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
     }
     
-    .dashboard-total-income { 
-      --tile-color: #10b981;
-      --tile-color-light: #34d399;
-    }
-    .dashboard-total-budgeted { 
-      --tile-color: #f59e0b;
-      --tile-color-light: #fbbf24;
-    }
-    .dashboard-total-spent { 
-      --tile-color: #ef4444;
-      --tile-color-light: #f87171;
-    }
-    .dashboard-total-remaining { 
-      --tile-color: #3b82f6;
-      --tile-color-light: #60a5fa;
-    }
-    .dashboard-total-paid { 
-      --tile-color: #8b5cf6;
-      --tile-color-light: #a78bfa;
+    .summary-item.spent {
+      background: #f8d7da;
+      border-left: 4px solid #dc3545;
     }
     
-    .tile-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--tile-color);
-      margin-bottom: 8px;
+    .summary-item.remaining {
+      background: #d1ecf1;
+      border-left: 4px solid #17a2b8;
     }
     
-    .tile-label {
-      font-size: 0.9rem;
-      color: #6b7280;
+    .summary-value {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    
+    .summary-label {
+      font-size: 0.875rem;
+      color: #6c757d;
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -406,26 +417,56 @@
     .keyboard-shortcuts.show {
       display: block;
     }
-    .add-btn {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      padding: 12px 24px;
-      font-size: 1rem;
-      font-weight: 600;
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-      display: flex;
+      transition: all 0.2s ease;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
-      margin: 20px 0;
+      gap: 6px;
+      text-decoration: none;
     }
     
-    .add-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    .btn-primary {
+      background: #007bff;
+      color: white;
+      border-color: #007bff;
+    }
+    
+    .btn-primary:hover {
+      background: #0056b3;
+      border-color: #0056b3;
+    }
+    
+    .btn-success {
+      background: #28a745;
+      color: white;
+      border-color: #28a745;
+    }
+    
+    .btn-success:hover {
+      background: #1e7e34;
+      border-color: #1e7e34;
+    }
+    
+    .btn-outline {
+      background: transparent;
+      color: #007bff;
+      border-color: #007bff;
+    }
+    
+    .btn-outline:hover {
+      background: #007bff;
+      color: white;
+    }
+    
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.8rem;
     }
     
     .notes-section {
@@ -515,78 +556,95 @@
     
     @media (max-width: 768px) {
       .container {
-        padding: 15px;
+        padding: 0;
       }
       
-      .header {
+      .header-content {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+      }
+      
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+      
+      .main-layout {
+        flex-direction: column;
+      }
+      
+      .main-content {
         padding: 20px;
-        margin-bottom: 20px;
-      }
-      
-      h1 {
-        font-size: 2rem;
-      }
-      
-      .grid-container {
-        grid-template-columns: 1fr;
-        gap: 20px;
       }
       
       .sidebar {
-        grid-column: 1;
-      }
-      
-      .controls {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      
-      .controls button {
         width: 100%;
-        justify-content: center;
+        border-left: none;
+        border-top: 1px solid #e9ecef;
+        padding: 20px;
       }
       
-      .summary {
-        grid-template-columns: 1fr;
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
       
-      .category-filters {
+      .section-header {
         flex-direction: column;
-        align-items: stretch;
+        align-items: flex-start;
+        gap: 10px;
       }
       
-      .category-filters select {
-        min-width: auto;
+      .section-actions {
+        width: 100%;
+        justify-content: flex-start;
       }
       
       table {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
       }
       
       th, td {
-        padding: 12px 8px;
+        padding: 8px 6px;
+      }
+      
+      .btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
       }
     }
     
     @media (max-width: 480px) {
       .header {
-        padding: 15px;
+        padding: 15px 0;
       }
       
       h1 {
-        font-size: 1.8rem;
-      }
-      
-      .card {
-        padding: 20px;
-      }
-      
-      .dashboard-tile {
-        padding: 20px;
-      }
-      
-      .tile-value {
         font-size: 1.5rem;
+      }
+      
+      .main-content {
+        padding: 15px;
+      }
+      
+      .sidebar {
+        padding: 15px;
+      }
+      
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .summary-value {
+        font-size: 1.25rem;
+      }
+      
+      table {
+        font-size: 0.75rem;
+      }
+      
+      th, td {
+        padding: 6px 4px;
       }
     }
   </style>
@@ -599,50 +657,80 @@
   </a>
   
   <div class="header">
-    <h1>💸 Bradley's Budget Tracker</h1>
-    <p class="subtitle">Take control of your finances with our zero-based budgeting system</p>
-    
-    <div class="month-selector">
-      <label for="month">Select Month:</label>
-      <input type="month" id="month" onchange="onMonthChange()" />
+    <div class="header-content">
+      <div>
+        <h1>💸 Bradley's Budget Tracker</h1>
+        <p class="subtitle">Take control of your finances with our zero-based budgeting system</p>
+      </div>
+      <div class="header-actions">
+        <div class="month-selector">
+          <label for="month">Month:</label>
+          <input type="month" id="month" onchange="onMonthChange()" />
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="toggleDarkMode()">🌙</button>
+      </div>
     </div>
   </div>
 
-  <div class="grid-container">
+  <div class="main-layout">
     <div class="main-content">
-      <div class="card">
-        <div class="category-filters">
-          <select id="categoryFilter" onchange="filterByCategory()">
-            <option value="">All Categories</option>
-            <option value="Giving">Giving (10%)</option>
-            <option value="Savings">Savings</option>
-            <option value="Housing">Housing (25%)</option>
-            <option value="Utilities">Utilities</option>
-            <option value="Transportation">Transportation</option>
-            <option value="Food">Food</option>
-            <option value="Personal">Personal</option>
-            <option value="Lifestyle">Lifestyle</option>
-            <option value="Health">Health</option>
-            <option value="Insurance">Insurance</option>
-            <option value="Debt">Debt</option>
-            <option value="Sinking Funds">Sinking Funds</option>
-            <option value="Other">Other</option>
-          </select>
-          <button class="keyboard-btn" onclick="toggleKeyboardShortcuts()" title="Show Keyboard Shortcuts">⌨️</button>
+      <div class="budget-summary">
+        <div class="summary-grid">
+          <div class="summary-item income" id="tileIncome">
+            <div class="summary-value">$0</div>
+            <div class="summary-label">Total Income</div>
+          </div>
+          <div class="summary-item budgeted" id="tileBudgeted">
+            <div class="summary-value">$0</div>
+            <div class="summary-label">Budgeted</div>
+          </div>
+          <div class="summary-item spent" id="tileSpent">
+            <div class="summary-value">$0</div>
+            <div class="summary-label">Spent</div>
+          </div>
+          <div class="summary-item remaining" id="tileRemaining">
+            <div class="summary-value">$0</div>
+            <div class="summary-label">Remaining</div>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h3>💰 Income Sources</h3>
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title">💰 Income</h3>
+          <div class="section-actions">
+            <select id="categoryFilter" onchange="filterByCategory()" style="width: auto; margin-right: 10px;">
+              <option value="">All Categories</option>
+              <option value="Giving">Giving (10%)</option>
+              <option value="Savings">Savings</option>
+              <option value="Housing">Housing (25%)</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Food">Food</option>
+              <option value="Personal">Personal</option>
+              <option value="Lifestyle">Lifestyle</option>
+              <option value="Health">Health</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Debt">Debt</option>
+              <option value="Sinking Funds">Sinking Funds</option>
+              <option value="Other">Other</option>
+            </select>
+            <button class="btn btn-primary btn-sm" onclick="addIncome()">+ Add Income</button>
+          </div>
+        </div>
         <table id="incomeTable">
           <thead><tr><th>Source</th><th>Amount ($)</th><th>Remaining to Allocate</th><th>Remove</th></tr></thead>
           <tbody></tbody>
         </table>
-        <button class="add-btn" onclick="addIncome()">+ Add Income</button>
       </div>
 
-      <div class="card">
-        <h3>💳 Expenses</h3>
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title">💳 Expenses</h3>
+          <div class="section-actions">
+            <button class="btn btn-primary btn-sm" onclick="addExpense()">+ Add Expense</button>
+          </div>
+        </div>
         <table id="expenseTable">
           <thead>
             <tr>
@@ -658,70 +746,59 @@
           </thead>
           <tbody></tbody>
         </table>
-        <button class="add-btn" onclick="addExpense()">+ Add Expense</button>
       </div>
 
-      <div class="card notes-section">
-        <h3>📝 Monthly Notes</h3>
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title">📝 Monthly Notes</h3>
+        </div>
         <textarea id="monthlyNotes" rows="4" placeholder="Write financial goals, notes, reminders..."></textarea>
       </div>
 
-      <div class="controls">
-        <button onclick="calculateBudget()" title="Recalculate your budget">🧮 Recalculate</button>
-        <button onclick="saveBudget()" title="Save your budget data">💾 Save</button>
-        <button onclick="loadBudget()" title="Load your saved budget">📥 Load Budget</button>
-        <button onclick="prefillSpent()" title="Prefill spent amounts">⚡ Prefill Spent</button>
-        <button onclick="undoPrefill()" title="Undo prefill changes">↩️ Undo Prefill</button>
-        <button onclick="zeroBasedBudget()" title="Check if your budget is zero-based">✅ Zero-Based Check</button>
-        <button onclick="exportBudgetToCSV()" title="Export budget data to CSV">📊 Export to CSV</button>
-        <button onclick="importBudgetFromCSV()" title="Import budget data from CSV">📥 Import from CSV</button>
-        <button onclick="saveAsTemplate()" title="Save current budget as a template">📋 Save as Template</button>
-        <button onclick="loadTemplate()" title="Load a saved budget template">📋 Load Template</button>
-        <button onclick="exportToPDF()" title="Export budget to PDF">📄 Export to PDF</button>
-      </div>
-
-      <div class="summary">
-        <div class="dashboard-tile dashboard-total-income" id="tileIncome">
-          <div class="tile-value">$0</div>
-          <div class="tile-label">Total Income</div>
+      <div class="section">
+        <div class="section-header">
+          <h3 class="section-title">🛠️ Actions</h3>
         </div>
-        <div class="dashboard-tile dashboard-total-budgeted" id="tileBudgeted">
-          <div class="tile-value">$0</div>
-          <div class="tile-label">Budgeted</div>
-        </div>
-        <div class="dashboard-tile dashboard-total-spent" id="tileSpent">
-          <div class="tile-value">$0</div>
-          <div class="tile-label">Spent</div>
-        </div>
-        <div class="dashboard-tile dashboard-total-remaining" id="tileRemaining">
-          <div class="tile-value">$0</div>
-          <div class="tile-label">Remaining</div>
-        </div>
-        <div class="dashboard-tile dashboard-total-paid" id="tilePaid">
-          <div class="tile-value">$0</div>
-          <div class="tile-label">Paid</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <button class="btn btn-outline" onclick="calculateBudget()" title="Recalculate your budget">🧮 Recalculate</button>
+          <button class="btn btn-success" onclick="saveBudget()" title="Save your budget data">💾 Save</button>
+          <button class="btn btn-outline" onclick="loadBudget()" title="Load your saved budget">📥 Load Budget</button>
+          <button class="btn btn-outline" onclick="prefillSpent()" title="Prefill spent amounts">⚡ Prefill Spent</button>
+          <button class="btn btn-outline" onclick="undoPrefill()" title="Undo prefill changes">↩️ Undo Prefill</button>
+          <button class="btn btn-primary" onclick="zeroBasedBudget()" title="Check if your budget is zero-based">✅ Zero-Based Check</button>
+          <button class="btn btn-outline" onclick="exportBudgetToCSV()" title="Export budget data to CSV">📊 Export to CSV</button>
+          <button class="btn btn-outline" onclick="importBudgetFromCSV()" title="Import budget data from CSV">📥 Import from CSV</button>
+          <button class="btn btn-outline" onclick="saveAsTemplate()" title="Save current budget as a template">📋 Save as Template</button>
+          <button class="btn btn-outline" onclick="loadTemplate()" title="Load a saved budget template">📋 Load Template</button>
+          <button class="btn btn-outline" onclick="exportToPDF()" title="Export budget to PDF">📄 Export to PDF</button>
         </div>
       </div>
     </div>
 
     <div class="sidebar">
-      <div class="card chart-container">
-        <h3>📊 Budget Overview</h3>
-        <canvas id="budgetChart"></canvas>
+      <div class="section">
+        <h3 class="section-title">📊 Budget Overview</h3>
+        <div class="chart-container">
+          <canvas id="budgetChart"></canvas>
+        </div>
       </div>
 
-      <div class="card chart-container">
-        <h3>📈 Expense Categories</h3>
-        <canvas id="categoryChart"></canvas>
+      <div class="section">
+        <h3 class="section-title">📈 Expense Categories</h3>
+        <div class="chart-container">
+          <canvas id="categoryChart"></canvas>
+        </div>
       </div>
 
-      <div class="card chart-container">
-        <h3>📅 Monthly Comparison</h3>
-        <canvas id="monthlyChart"></canvas>
+      <div class="section">
+        <h3 class="section-title">📅 Monthly Comparison</h3>
+        <div class="chart-container">
+          <canvas id="monthlyChart"></canvas>
+        </div>
       </div>
 
-      <div class="card">
-        <h3>🤖 Smart Features</h3>
+      <div class="section">
+        <h3 class="section-title">🤖 Smart Features</h3>
         <div id="budgetRecommendations"></div>
         <div id="dueDateReminders"></div>
         <div id="recurringExpenses"></div>
@@ -994,7 +1071,7 @@ async function loadBudget() {
     if (window.ErrorHandler) {
       window.ErrorHandler.handleFirebaseError(error);
     } else {
-      alert("Error loading budget: " + error.message);
+    alert("Error loading budget: " + error.message);
     }
   } finally {
     loadingIndicator.style.display = "none";
