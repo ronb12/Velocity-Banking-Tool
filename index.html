@@ -48,9 +48,10 @@
       </div>
       <div class="header-controls">
         <button id="darkModeToggle" class="control-btn">🌙 Dark Mode</button>
-        <div class="user-menu auth-required" style="display: none; cursor:pointer;">
+        <div class="user-menu auth-required" style="display: none; cursor:pointer;" title="Click to open profile">
           <span class="user-email"></span>
           <img src="icons/icon-192.png" alt="Profile" class="profile-avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;margin-left:0.5rem;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+          <span class="profile-text">Profile</span>
         </div>
       </div>
     </header>
@@ -603,7 +604,14 @@
     const profileModal = document.getElementById('profileModal');
     const closeProfileModal = document.getElementById('closeProfileModal');
     userMenu && userMenu.addEventListener('click', () => {
+      console.log('Profile menu clicked, opening modal');
       profileModal.style.display = 'flex';
+      // Debug: Check if avatar elements exist
+      setTimeout(() => {
+        console.log('Avatar container:', document.querySelector('.avatar-container'));
+        console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
+        console.log('Avatar upload text button:', document.querySelector('.avatar-upload-text-btn'));
+      }, 100);
     });
     closeProfileModal && closeProfileModal.addEventListener('click', () => {
       profileModal.style.display = 'none';
@@ -1471,6 +1479,13 @@
       font-size: 0.9rem;
     }
 
+    .profile-text {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 0.9rem;
+      margin-left: 0.5rem;
+    }
+
     /* Dark mode header adjustments */
     body.dark header {
       background: rgba(35, 41, 70, 0.95);
@@ -1483,6 +1498,10 @@
     }
 
     body.dark .user-email {
+      color: #f4f4f9;
+    }
+
+    body.dark .profile-text {
       color: #f4f4f9;
     }
 
