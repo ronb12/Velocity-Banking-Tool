@@ -6,6 +6,8 @@
   <title>Savings Goal Tracker – Pro</title>
   <link rel="stylesheet" href="theme.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     
@@ -413,7 +415,8 @@
     </div>
     
     <button class="btn btn-primary" onclick="openAddGoalModal()">+ Add New Goal</button>
-    <button class="btn btn-secondary" onclick="exportGoals()">📤 Export</button>
+    <button class="btn btn-secondary" onclick="exportGoals()">📤 Export CSV</button>
+    <button class="btn btn-secondary" onclick="exportToPDF()">📄 Export PDF</button>
     <button class="btn btn-secondary" onclick="printGoals()">🖨️ Print</button>
     <button class="btn btn-secondary" onclick="addSampleGoals()">📋 Load Sample Goals</button>
     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
@@ -474,6 +477,11 @@
             <option value="Vehicle">Vehicle</option>
             <option value="Retirement">Retirement</option>
             <option value="Wedding">Wedding</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Technology">Technology</option>
+            <option value="Hobbies">Hobbies</option>
+            <option value="Investment">Investment</option>
+            <option value="Charity">Charity</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -572,7 +580,7 @@ function addSampleGoals() {
     },
     {
       name: "New Laptop",
-      category: "Other",
+      category: "Technology",
       target: 2000,
       saved: 1800,
       targetDate: "2024-06-01",
@@ -592,6 +600,38 @@ function addSampleGoals() {
       target: 15000,
       saved: 8500,
       targetDate: "2024-10-15",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Dental Work",
+      category: "Healthcare",
+      target: 3000,
+      saved: 1200,
+      targetDate: "2024-09-30",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Guitar Lessons",
+      category: "Hobbies",
+      target: 800,
+      saved: 400,
+      targetDate: "2024-07-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Stock Investment",
+      category: "Investment",
+      target: 5000,
+      saved: 2500,
+      targetDate: "2024-12-31",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Local Food Bank",
+      category: "Charity",
+      target: 500,
+      saved: 200,
+      targetDate: "2024-12-25",
       createdDate: new Date().toISOString()
     }
   ];
@@ -763,6 +803,11 @@ function renderGoals() {
           <option value="Vehicle" ${goal.category === 'Vehicle' ? 'selected' : ''}>Vehicle</option>
           <option value="Retirement" ${goal.category === 'Retirement' ? 'selected' : ''}>Retirement</option>
           <option value="Wedding" ${goal.category === 'Wedding' ? 'selected' : ''}>Wedding</option>
+          <option value="Healthcare" ${goal.category === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
+          <option value="Technology" ${goal.category === 'Technology' ? 'selected' : ''}>Technology</option>
+          <option value="Hobbies" ${goal.category === 'Hobbies' ? 'selected' : ''}>Hobbies</option>
+          <option value="Investment" ${goal.category === 'Investment' ? 'selected' : ''}>Investment</option>
+          <option value="Charity" ${goal.category === 'Charity' ? 'selected' : ''}>Charity</option>
           <option value="Other" ${goal.category === 'Other' ? 'selected' : ''}>Other</option>
         </select>
       </td>
@@ -992,6 +1037,114 @@ function exportGoals() {
 
 function printGoals() {
   window.print();
+}
+
+// Export goals to PDF
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // Get current date
+  const currentDate = new Date().toLocaleDateString();
+  
+  // Add header
+  doc.setFontSize(20);
+  doc.setTextColor(102, 126, 234);
+  doc.text('Savings Goal Tracker Report', 20, 20);
+  
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Generated on: ${currentDate}`, 20, 30);
+  
+  // Get goals data
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+  
+  // Calculate statistics
+  const totalSaved = goals.reduce((sum, goal) => sum + goal.saved, 0);
+  const completedCount = archives.length;
+  const activeCount = goals.length;
+  const totalGoals = activeCount + completedCount;
+  const successRate = totalGoals > 0 ? Math.round((completedCount / totalGoals) * 100) : 0;
+  
+  // Add summary section
+  doc.setFontSize(14);
+  doc.text('Summary', 20, 50);
+  
+  doc.setFontSize(10);
+  doc.text(`Active Goals: ${activeCount}`, 20, 60);
+  doc.text(`Completed Goals: ${completedCount}`, 20, 67);
+  doc.text(`Total Saved: $${totalSaved.toFixed(2)}`, 20, 74);
+  doc.text(`Success Rate: ${successRate}%`, 20, 81);
+  
+  // Add active goals table
+  if (goals.length > 0) {
+    doc.setFontSize(14);
+    doc.text('Active Goals', 20, 95);
+    
+    const activeGoalsData = goals.map(goal => {
+      const progress = goal.target > 0 ? (goal.saved / goal.target) * 100 : 0;
+      return [
+        goal.name,
+        goal.category,
+        `$${goal.target.toFixed(2)}`,
+        `$${goal.saved.toFixed(2)}`,
+        `${progress.toFixed(1)}%`
+      ];
+    });
+    
+    doc.autoTable({
+      startY: 100,
+      head: [['Goal Name', 'Category', 'Target', 'Saved', 'Progress']],
+      body: activeGoalsData,
+      theme: 'grid',
+      headStyles: { fillColor: [102, 126, 234] },
+      styles: { fontSize: 9 }
+    });
+  }
+  
+  // Add completed goals table
+  if (archives.length > 0) {
+    const lastY = doc.lastAutoTable.finalY || 100;
+    doc.setFontSize(14);
+    doc.text('Completed Goals', 20, lastY + 20);
+    
+    const completedGoalsData = archives.map(goal => {
+      const completedDate = new Date(goal.completedDate).toLocaleDateString();
+      return [
+        goal.name,
+        goal.category,
+        `$${goal.target.toFixed(2)}`,
+        `$${goal.saved.toFixed(2)}`,
+        completedDate
+      ];
+    });
+    
+    doc.autoTable({
+      startY: lastY + 25,
+      head: [['Goal Name', 'Category', 'Target', 'Saved', 'Completed Date']],
+      body: completedGoalsData,
+      theme: 'grid',
+      headStyles: { fillColor: [40, 167, 69] },
+      styles: { fontSize: 9 }
+    });
+  }
+  
+  // Add footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.text('Bradley\'s Financial Tools - Savings Goal Tracker', 20, doc.internal.pageSize.height - 10);
+    doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 10);
+  }
+  
+  // Save the PDF
+  const fileName = `savings_goals_report_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
+  
+  showNotification('PDF report generated successfully!', 'success');
 }
 
 // Clear all data function
