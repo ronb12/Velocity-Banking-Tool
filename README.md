@@ -200,7 +200,12 @@ The app is pre-configured to work with the existing Firebase project:
 ### **📱 Live Demo Video**
 Watch the app in action with this comprehensive demonstration:
 
-https://github.com/ronb12/Velocity-Banking-Tool/assets/your-username/app_demo.mp4
+<video width="800" controls>
+  <source src="https://github.com/ronb12/Velocity-Banking-Tool/raw/main/app_demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+**Direct Link:** https://github.com/ronb12/Velocity-Banking-Tool/raw/main/app_demo.mp4
 
 *Comprehensive walkthrough showing all major features including debt tracking, budget management, velocity banking calculator, and more.*
 
