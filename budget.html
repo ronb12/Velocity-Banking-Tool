@@ -839,6 +839,15 @@
       loadingIndicator.style.display = "block";
       
       try {
+        // Get the selected month
+        const selectedMonth = document.getElementById("monthSelect").value;
+        let docId = userId;
+        
+        // Use month-based document ID if month is selected
+        if (selectedMonth) {
+          docId = userId + '_' + selectedMonth;
+        }
+        
         const budgetData = {
           income: Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(row => ({
             source: row.cells[0].querySelector("input").value,
@@ -849,13 +858,15 @@
             name: row.cells[1].querySelector("input").value,
             budgeted: parseFloat(row.cells[2].querySelector("input").value) || 0,
             spent: parseFloat(row.cells[3].querySelector("input").value) || 0,
-            due: row.cells[5].querySelector("input").value
+            due: row.cells[5].querySelector("input").value,
+            paidFrom: row.cells[6].querySelector("select").value
           })),
           notes: document.getElementById("monthlyNotes").value,
-          month: new Date().toISOString().slice(0, 7) // YYYY-MM format
+          month: selectedMonth || new Date().toISOString().slice(0, 7) // YYYY-MM format
         };
         
-        await db.collection("budgets").doc(userId).set(budgetData);
+        console.log('Saving budget for document ID:', docId);
+        await db.collection("budgets").doc(docId).set(budgetData);
         
         if (window.ErrorHandler) {
           window.ErrorHandler.showSuccess('Budget saved successfully!');
@@ -880,7 +891,17 @@
       loadingIndicator.style.display = "block";
       
       try {
-        const doc = await db.collection("budgets").doc(userId).get();
+        // Get the selected month
+        const selectedMonth = document.getElementById("monthSelect").value;
+        let docId = userId;
+        
+        // Use month-based document ID if month is selected
+        if (selectedMonth) {
+          docId = userId + '_' + selectedMonth;
+        }
+        
+        console.log('Loading budget for document ID:', docId);
+        const doc = await db.collection("budgets").doc(docId).get();
         
         if (doc.exists) {
           const data = doc.data();
