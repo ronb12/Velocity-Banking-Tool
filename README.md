@@ -211,6 +211,14 @@ The app is pre-configured to work with the existing Firebase project:
 ![Budget Tracker](screenshots/budget_tracker.png)
 *Zero-based budgeting system with category management, spending tracking, and variance analysis*
 
+### 🚀 **Velocity Banking Calculator**
+![Velocity Calculator with Sample Data](screenshots/velocity_calculator_with_data.png)
+*Advanced debt payoff calculator with interactive tutorial, example scenarios, and strategy comparison*
+
+### 📊 **Net Worth Tracker**
+![Net Worth Tracker with Sample Data](screenshots/net_worth_tracker_with_data.png)
+*Comprehensive asset and liability tracking with trend analysis and goal monitoring*
+
 ---
 
 ## 👨‍💻 Tech Stack
