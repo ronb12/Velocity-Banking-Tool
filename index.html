@@ -607,6 +607,9 @@
           profileModal.style.display = 'flex';
           console.log('Modal display set to flex');
           
+          // Update profile stats with current data
+          updateProfileStats();
+          
           // Debug: Check if avatar elements exist
           setTimeout(() => {
             console.log('Avatar container:', document.querySelector('.avatar-container'));
@@ -983,6 +986,9 @@
         profileModal.style.display = 'flex';
         console.log('Profile modal opened successfully');
         
+        // Update profile stats with current data
+        updateProfileStats();
+        
         // Debug: Check if avatar elements exist
         setTimeout(() => {
           console.log('Avatar container:', document.querySelector('.avatar-container'));
@@ -994,8 +1000,86 @@
       }
     }
 
-    // Make function globally available
+    // Function to update profile stats with current data
+    function updateProfileStats() {
+      console.log('Updating profile stats...');
+      
+      // Get current financial data from localStorage or calculate from current state
+      let netWorth = 0;
+      let totalDebt = 0;
+      let creditUtilization = 0;
+      let savingsProgress = 0;
+      
+      try {
+        // Try to get data from localStorage first
+        const debtsData = localStorage.getItem('debts');
+        if (debtsData) {
+          const debts = JSON.parse(debtsData);
+          if (Array.isArray(debts)) {
+            totalDebt = debts.reduce((sum, debt) => sum + (parseFloat(debt.balance) || 0), 0);
+            // Calculate credit utilization (simplified)
+            const creditCards = debts.filter(debt => debt.type === 'credit');
+            const totalCreditLimit = creditCards.reduce((sum, debt) => sum + (parseFloat(debt.limit) || 0), 0);
+            const totalCreditBalance = creditCards.reduce((sum, debt) => sum + (parseFloat(debt.balance) || 0), 0);
+            if (totalCreditLimit > 0) {
+              creditUtilization = (totalCreditBalance / totalCreditLimit) * 100;
+            }
+          }
+        }
+        
+        // Get net worth data
+        const netWorthData = localStorage.getItem('netWorth');
+        if (netWorthData) {
+          const netWorthObj = JSON.parse(netWorthData);
+          if (netWorthObj && netWorthObj.history && netWorthObj.history.length > 0) {
+            const latest = netWorthObj.history[netWorthObj.history.length - 1];
+            netWorth = parseFloat(latest.netWorth) || 0;
+          }
+        }
+        
+        // Get savings progress
+        const savingsData = localStorage.getItem('savingsGoals');
+        if (savingsData) {
+          const savings = JSON.parse(savingsData);
+          if (Array.isArray(savings) && savings.length > 0) {
+            const totalTarget = savings.reduce((sum, goal) => sum + (parseFloat(goal.target) || 0), 0);
+            const totalSaved = savings.reduce((sum, goal) => sum + (parseFloat(goal.saved) || 0), 0);
+            if (totalTarget > 0) {
+              savingsProgress = (totalSaved / totalTarget) * 100;
+            }
+          }
+        }
+        
+        // Update the profile stats display
+        document.getElementById('profileNetWorth').textContent = 
+          netWorth !== 0 ? `$${netWorth.toLocaleString()}` : '-';
+        document.getElementById('profileTotalDebt').textContent = 
+          totalDebt !== 0 ? `$${totalDebt.toLocaleString()}` : '-';
+        document.getElementById('profileCreditUtilization').textContent = 
+          creditUtilization !== 0 ? `${creditUtilization.toFixed(1)}%` : '-';
+        document.getElementById('profileSavings').textContent = 
+          savingsProgress !== 0 ? `${savingsProgress.toFixed(1)}%` : '-';
+        
+        console.log('Profile stats updated:', {
+          netWorth,
+          totalDebt,
+          creditUtilization,
+          savingsProgress
+        });
+        
+      } catch (error) {
+        console.error('Error updating profile stats:', error);
+        // Set fallback values
+        document.getElementById('profileNetWorth').textContent = '-';
+        document.getElementById('profileTotalDebt').textContent = '-';
+        document.getElementById('profileCreditUtilization').textContent = '-';
+        document.getElementById('profileSavings').textContent = '-';
+      }
+    }
+
+    // Make functions globally available
     window.openProfileModal = openProfileModal;
+    window.updateProfileStats = updateProfileStats;
 
     // Test all profile settings features
     function testProfileSettings() {
