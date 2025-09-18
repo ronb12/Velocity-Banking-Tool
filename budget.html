@@ -839,6 +839,8 @@
       const loadingIndicator = document.getElementById("loadingIndicator");
       loadingIndicator.style.display = "block";
       
+      console.log('Save Budget button clicked');
+      
       try {
         // Get the selected month
         const selectedMonth = document.getElementById("monthSelect").value;
@@ -871,9 +873,9 @@
         await db.collection("budgets").doc(docId).set(budgetData);
         
         if (window.ErrorHandler) {
-          window.ErrorHandler.showSuccess('Budget saved successfully!');
+          window.ErrorHandler.showSuccess(`Budget saved successfully for ${selectedMonth || 'current month'}!`);
         } else {
-          alert('Budget saved successfully!');
+          alert(`Budget saved successfully for ${selectedMonth || 'current month'}!`);
         }
       } catch (error) {
         console.error('Error saving budget:', error);
@@ -891,6 +893,8 @@
     async function loadBudget() {
       const loadingIndicator = document.getElementById("loadingIndicator");
       loadingIndicator.style.display = "block";
+      
+      console.log('Load Budget button clicked');
       
       try {
         // Get the selected month
@@ -942,7 +946,7 @@
           calculateBudget();
           
           if (window.ErrorHandler) {
-            window.ErrorHandler.showSuccess('Budget loaded successfully!');
+            window.ErrorHandler.showSuccess(`Budget loaded successfully for ${selectedMonth || 'current month'}!`);
           }
         } else {
           console.log('No data found for month:', selectedMonth);
