@@ -195,6 +195,25 @@ The app is pre-configured to work with the existing Firebase project:
 
 ---
 
+## 🎬 App Demonstration
+
+### **📱 Live Demo Video**
+Watch the app in action with this comprehensive demonstration:
+
+https://github.com/ronb12/Velocity-Banking-Tool/assets/your-username/app_demo.mp4
+
+*Comprehensive walkthrough showing all major features including debt tracking, budget management, velocity banking calculator, and more.*
+
+### **🎯 Key Features Shown:**
+- **AI-Powered Dashboard** with financial insights
+- **Debt Tracker** with avalanche/snowball strategies
+- **Budget Planner** with category management
+- **Velocity Banking Calculator** with example scenarios
+- **Net Worth Tracker** with asset/liability tracking
+- **Credit Score Estimator** and **1099 Tax Calculator**
+
+---
+
 ## 👨‍💻 Tech Stack
 
 - Firebase Auth + Firestore
