@@ -26,5 +26,9 @@ service cloud.firestore {
     match /users/{userId}/activity_logs/{logId} {
       allow read, write, create: if request.auth != null && request.auth.uid == userId;
     }
+    // Allow users to read/write their own notifications
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, write, create, delete: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }
