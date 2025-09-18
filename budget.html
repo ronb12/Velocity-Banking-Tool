@@ -801,10 +801,21 @@
         }
       });
       
-      // Distribute unallocated expenses proportionally across remaining income sources
+      // Only distribute unallocated expenses if there are expenses without "Paid From" selected
       const unallocatedExpenses = budgetedTotal - Object.values(incomeMap).reduce((sum, source) => sum + source.allocated, 0);
       
-      if (unallocatedExpenses > 0 && incomeTotal > 0) {
+      // Check if there are any expenses without "Paid From" selected
+      let hasUnallocatedExpenses = false;
+      document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
+        const paidFrom = row.cells[6].querySelector("select").value;
+        const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
+        if (budgeted > 0 && !paidFrom) {
+          hasUnallocatedExpenses = true;
+        }
+      });
+      
+      // Only distribute proportionally if there are unallocated expenses
+      if (hasUnallocatedExpenses && unallocatedExpenses > 0 && incomeTotal > 0) {
         const incomeSources = Object.keys(incomeMap);
         let remainingToAllocate = unallocatedExpenses;
         
