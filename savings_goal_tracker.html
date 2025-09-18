@@ -533,8 +533,15 @@ let progressChart = null;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
-  // Add sample goals if none exist
-  if (localStorage.getItem(STORAGE_KEY) === null || JSON.parse(localStorage.getItem(STORAGE_KEY)).length === 0) {
+  // Check if this is a fresh load (no data) and add sample goals
+  const existingGoals = localStorage.getItem(STORAGE_KEY);
+  const existingArchives = localStorage.getItem(ARCHIVE_KEY);
+  
+  // Check for URL parameter to force load samples
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceLoad = urlParams.get('load_samples') === 'true';
+  
+  if (!existingGoals || JSON.parse(existingGoals).length === 0 || forceLoad) {
     addSampleGoals();
   }
   
@@ -612,6 +619,14 @@ function addSampleGoals() {
   ];
   
   localStorage.setItem(ARCHIVE_KEY, JSON.stringify(sampleCompletedGoals));
+  
+  // Refresh the display
+  renderGoals();
+  renderArchivedGoals();
+  updateStats();
+  updateChart();
+  
+  showNotification('Sample goals loaded successfully!', 'success');
 }
 
 // Goal management functions
