@@ -179,6 +179,13 @@
       gap: 8px;
     }
     
+    /* Make table action buttons smaller to fit in container */
+    #expenseTable .btn {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      gap: 4px;
+    }
+    
     .btn-primary {
       background: #007bff;
       color: white;
@@ -249,10 +256,12 @@
       min-width: 120px;
     }
     
-    /* Make actions column narrower */
+    /* Make actions column narrower and ensure buttons fit */
     #expenseTable th:nth-child(7),
     #expenseTable td:nth-child(7) {
-      width: 10%;
+      width: 8%;
+      min-width: 80px;
+      text-align: center;
     }
     
     th {
@@ -456,6 +465,19 @@
       #expenseTable td:nth-child(5) {
         width: 18%;
         min-width: 100px;
+      }
+      
+      /* Make actions column even smaller on mobile */
+      #expenseTable th:nth-child(7),
+      #expenseTable td:nth-child(7) {
+        width: 6%;
+        min-width: 60px;
+      }
+      
+      /* Make action buttons even smaller on mobile */
+      #expenseTable .btn {
+        padding: 6px 8px;
+        font-size: 0.75rem;
       }
     }
     
