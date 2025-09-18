@@ -256,6 +256,11 @@
         const user = await login(email, password);
         
         if (user) {
+          // Reset login attempts on successful login
+          loginAttempts = 0;
+          localStorage.removeItem('loginAttempts');
+          document.getElementById('loginAttempts').textContent = '';
+          
           ErrorHandler.showSuccess('Login successful! Redirecting...');
           setTimeout(() => {
             window.location.href = 'index.html';
@@ -299,6 +304,11 @@
       const provider = new GoogleAuthProvider();
       signInWithPopup(auth, provider)
         .then(() => {
+          // Reset login attempts on successful Google login
+          loginAttempts = 0;
+          localStorage.removeItem('loginAttempts');
+          document.getElementById('loginAttempts').textContent = '';
+          
           window.location.href = "index.html";
         })
         .catch(error => {
