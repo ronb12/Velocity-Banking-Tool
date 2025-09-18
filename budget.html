@@ -17,6 +17,7 @@
   <script src="utils/mobileOptimizer.js"></script>
   <script src="utils/accessibility.js"></script>
   <script src="utils/analytics.js"></script>
+  <script type="module" src="utils/activityLogger.js"></script>
   
   <style>
     * {
@@ -728,6 +729,10 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let userId = "";
+
+// Initialize activity logger
+window.db = db;
+window.auth = auth;
     
     // Initialize utility functions
     if (window.ErrorHandler) {
@@ -838,6 +843,11 @@ function addIncome(source = "", amount = 0) {
   
   calculateBudget();
       updatePaidFromDropdowns();
+      
+      // Log activity
+      if (name && budgeted && window.activityLogger) {
+        window.activityLogger.logBudgetCreated(category || 'Uncategorized', parseFloat(budgeted));
+      }
 }
 
     // Update Paid From dropdowns with current income sources
@@ -964,6 +974,13 @@ async function saveBudget() {
         console.log('Saving budget for document ID:', docId);
         console.log('Budget data being saved:', budgetData);
         await db.collection("budgets").doc(docId).set(budgetData);
+        
+        // Log activity
+        if (window.activityLogger) {
+          const totalIncome = budgetData.income.reduce((sum, inc) => sum + inc.amount, 0);
+          const totalExpenses = budgetData.expenses.reduce((sum, exp) => sum + exp.budgeted, 0);
+          window.activityLogger.logActivity('budget_updated', `Updated budget for ${selectedMonth || 'current month'}: $${totalIncome.toFixed(2)} income, $${totalExpenses.toFixed(2)} expenses`, '📊');
+        }
         
         if (window.ErrorHandler) {
           window.ErrorHandler.showSuccess(`Budget saved successfully for ${selectedMonth || 'current month'}!`);
