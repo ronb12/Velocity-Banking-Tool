@@ -284,12 +284,34 @@ window.onload = function () {
         const baseInterestRate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
         const minimumPayment = parseFloat(document.getElementById('minimumPayment').value);
         const extraPayment = parseFloat(document.getElementById('extraPayment').value) || 0;
-        const chunkPayment = parseFloat(document.getElementById('chunkPayment').value);
-        const chunkMonths = document.getElementById('chunkMonths').value.split(',').map(Number).filter(n => !isNaN(n));
+        const chunkPayment = parseFloat(document.getElementById('chunkPayment').value) || 0;
+        const chunkMonths = document.getElementById('chunkMonths').value.split(',').map(Number).filter(n => !isNaN(n) && n > 0);
         const lineOfCredit = document.getElementById('lineOfCredit').value;
         const locBehavior = getLineOfCreditBehavior(lineOfCredit);
         const interestRate = baseInterestRate * locBehavior.rateMultiplier;
         const extraIncome = parseFloat(document.getElementById('extraIncome').value) || 0;
+        
+        // Input validation
+        if (minimumPayment <= 0) {
+            feedback.innerHTML = `<p class="feedback high">Error: Minimum monthly payment must be greater than $0. Please enter a valid minimum payment amount.</p>`;
+            return;
+        }
+        
+        if (chunkPayment <= 0) {
+            feedback.innerHTML = `<p class="feedback high">Error: Velocity banking chunk payment must be greater than $0. Please enter a valid chunk payment amount.</p>`;
+            return;
+        }
+        
+        if (chunkMonths.length === 0) {
+            feedback.innerHTML = `<p class="feedback high">Error: Please enter valid months for chunk payments (e.g., 3,6,12).</p>`;
+            return;
+        }
+        
+        // Calculate suggested minimum payment if not provided
+        if (minimumPayment < debtBalance * 0.01) {
+            const suggestedMinPayment = Math.max(debtBalance * 0.02, 100);
+            feedback.innerHTML = `<p class="feedback high">Warning: Your minimum payment seems low. For a $${debtBalance.toLocaleString()} debt at ${(baseInterestRate * 12 * 100).toFixed(1)}% interest, consider a minimum payment of at least $${suggestedMinPayment.toFixed(0)} to make meaningful progress.</p>`;
+        }
 
         const yearlyIncome = income * 12;
         const totalYearlyIncome = yearlyIncome + extraIncome;
