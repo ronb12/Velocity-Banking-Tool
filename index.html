@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Bradley's Financial Tools</title>
-  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="theme.css?v=2.1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Favicon and Manifest -->
@@ -801,7 +804,22 @@
     }
 
     // Initialize settings on page load
-    document.addEventListener('DOMContentLoaded', loadSettings);
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSettings();
+      console.log('Settings loaded successfully');
+    });
+
+    // Debug function to check if elements exist
+    function debugProfileModal() {
+      console.log('Profile modal elements:');
+      console.log('Avatar container:', document.querySelector('.avatar-container'));
+      console.log('Settings section:', document.querySelector('.profile-settings'));
+      console.log('Settings toggles:', document.querySelectorAll('.toggle-switch'));
+      console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
+    }
+
+    // Make debug function available globally
+    window.debugProfileModal = debugProfileModal;
 
     // Get financial data with Firestore and local storage fallback
     async function getFinancialData(userId) {
