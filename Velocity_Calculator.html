@@ -149,23 +149,89 @@ body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-
   font-weight: 700;
 }
 
-.dark-mode-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: #f8f9fa;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
+/* Dark Mode Support */
+body.dark-mode {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
 }
 
-.dark-mode-toggle:hover {
-  background: #e9ecef;
-  border-color: #007bff;
+body.dark-mode .container {
+  background: #2d2d2d;
+  color: #e0e0e0;
 }
+
+body.dark-mode .header {
+  background: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode .header h1 {
+  color: #4a9eff;
+}
+
+body.dark-mode .back-link {
+  color: #4a9eff;
+  background: rgba(74, 158, 255, 0.1);
+}
+
+body.dark-mode .back-link:hover {
+  background: rgba(74, 158, 255, 0.2);
+}
+
+body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+  background-color: #3d3d3d;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-mode input:focus, body.dark-mode select:focus, body.dark-mode textarea:focus {
+  border-color: #4a9eff;
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+body.dark-mode button {
+  background-color: #4a9eff;
+  color: white;
+}
+
+body.dark-mode button:hover {
+  background-color: #357abd;
+}
+
+body.dark-mode table {
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+body.dark-mode th {
+  background-color: #3d3d3d;
+  color: #e0e0e0;
+}
+
+body.dark-mode tr:hover {
+  background-color: #3d3d3d;
+}
+
+body.dark-mode .feedback.high {
+  background-color: #4a1a1a;
+  color: #ff6b6b;
+}
+
+body.dark-mode .feedback.normal {
+  background-color: #1a4a1a;
+  color: #6bff6b;
+}
+
+body.dark-mode #recommended-strategy {
+  background: #1a2d1a;
+  border-color: #4CAF50;
+}
+
+body.dark-mode .recommendation-badge {
+  background: #4CAF50;
+  color: white;
+}
+
 </style></head>
 <body>
 <div class="container">
@@ -173,7 +239,6 @@ body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-
         <a href="index.html" class="back-link">
             ← Back to Dashboard
         </a>
-        <button id="darkModeToggle" onclick="toggleDarkMode()" class="dark-mode-toggle">🌙 Toggle Dark Mode</button>
         <h1>Debt Crusher – Velocity Banking Tool</h1>
     </div>
 <form id="calculator-form">
@@ -226,6 +291,26 @@ body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-
 </div>
 <footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">Created by Ronell Bradley</footer></div>
 <script>
+// Check for global dark mode setting and apply it
+function applyDarkMode() {
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+    } else {
+        document.body.classList.remove('dark-mode');
+    }
+}
+
+// Apply dark mode on page load
+document.addEventListener('DOMContentLoaded', applyDarkMode);
+
+// Listen for dark mode changes from other pages
+window.addEventListener('storage', function(e) {
+    if (e.key === 'darkMode') {
+        applyDarkMode();
+    }
+});
+
 window.onload = function () {
     function getLineOfCreditBehavior(type) {
         switch(type) {
