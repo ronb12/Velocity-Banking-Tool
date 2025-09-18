@@ -168,16 +168,14 @@ body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-
 }
 </style></head>
 <body>
-        <nav style="text-align: center; margin-bottom: 20px;">
-  <a href="index.html" style="font-weight: bold; font-size: 16px; color: #007BFF; text-decoration: none;">
-    ⬅️ Back to Dashboard
-  </a>
-</nav>
-
-<button id="darkModeToggle" onclick="toggleDarkMode()" style="position: absolute; top: 10px; right: 10px;">🌙 Toggle Dark Mode</button>
-
 <div class="container">
-<h1>Debt Crusher – Velocity Banking Tool</h1>
+    <div class="header">
+        <a href="index.html" class="back-link">
+            ← Back to Dashboard
+        </a>
+        <button id="darkModeToggle" onclick="toggleDarkMode()" class="dark-mode-toggle">🌙 Toggle Dark Mode</button>
+        <h1>Debt Crusher – Velocity Banking Tool</h1>
+    </div>
 <form id="calculator-form">
 <label for="userName">Your Name (optional):</label>
 <input id="userName" name="userName" placeholder="Enter your name" type="text"/>
