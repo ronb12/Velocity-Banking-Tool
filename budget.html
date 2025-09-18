@@ -872,6 +872,9 @@ auth.onAuthStateChanged(user => {
 });
 
 function onMonthChange() {
+  const selectedMonth = document.getElementById("month").value;
+  console.log('Month changed to:', selectedMonth);
+  
   document.querySelector("#incomeTable tbody").innerHTML = "";
   document.querySelector("#expenseTable tbody").innerHTML = "";
   document.getElementById("monthlyNotes").value = "";
@@ -1027,7 +1030,14 @@ async function saveBudget() {
       notes: document.getElementById("monthlyNotes").value,
       month: document.getElementById("month").value
     };
-    await db.collection("budgets").doc(userId).set(budgetData);
+    const currentMonth = document.getElementById("month").value;
+    const docId = currentMonth ? userId + '_' + currentMonth : userId;
+    
+    console.log('Saving budget data for user:', userId);
+    console.log('Using document ID:', docId);
+    console.log('Budget data to save:', budgetData);
+    await db.collection("budgets").doc(docId).set(budgetData);
+    console.log('Budget data saved successfully');
     document.getElementById("savePopup").style.display = "block";
     setTimeout(() => document.getElementById("savePopup").style.display = "none", 2000);
   } catch (error) {
@@ -1043,18 +1053,66 @@ async function loadBudget() {
   
   try {
     console.log('Loading budget data from Firebase for user:', userId);
-    const doc = await db.collection("budgets").doc(userId).get();
+    
+    // Try to get the current month's budget first
+    const currentMonth = document.getElementById("month").value;
+    let docId = userId;
+    
+    if (currentMonth) {
+      // Try month-based document ID format
+      docId = userId + '_' + currentMonth;
+      console.log('Trying month-based document ID:', docId);
+    }
+    
+    let doc = await db.collection("budgets").doc(docId).get();
+    
+    // If month-based document doesn't exist, try user-only document
+    if (!doc.exists && currentMonth) {
+      console.log('Month-based document not found, trying user-only document');
+      doc = await db.collection("budgets").doc(userId).get();
+    }
     
     if (doc.exists) {
       const data = doc.data();
       console.log('Budget data loaded successfully:', data);
       
-      document.getElementById("month").value = data.month || "";
+      // Set month value
+      if (data.month) {
+        console.log('Setting month to:', data.month, 'Type:', typeof data.month);
+        document.getElementById("month").value = data.month;
+        console.log('Month input value after setting:', document.getElementById("month").value);
+      } else {
+        console.log('No month data found in loaded data');
+      }
+      
+      // Set notes
       document.getElementById("monthlyNotes").value = data.notes || "";
+      
+      // Clear existing data
       document.querySelector("#incomeTable tbody").innerHTML = "";
       document.querySelector("#expenseTable tbody").innerHTML = "";
-      data.income.forEach(inc => addIncome(inc.source, inc.amount));
-      data.expenses.forEach(exp => addExpense(exp.category, exp.name, exp.budgeted, exp.due));
+      
+      // Load income data
+      if (data.income && Array.isArray(data.income)) {
+        console.log('Loading income data:', data.income);
+        data.income.forEach(inc => {
+          if (inc.source && inc.amount) {
+            addIncome(inc.source, inc.amount);
+          }
+        });
+      }
+      
+      // Load expense data
+      if (data.expenses && Array.isArray(data.expenses)) {
+        console.log('Loading expense data:', data.expenses);
+        data.expenses.forEach(exp => {
+          if (exp.category && exp.name) {
+            addExpense(exp.category, exp.name, exp.budgeted || 0, exp.due || '');
+          }
+        });
+      }
+      
+      // Recalculate budget after loading data
       calculateBudget();
       
       // Show success message
