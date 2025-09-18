@@ -48,11 +48,12 @@
       </div>
       <div class="header-controls">
         <button id="darkModeToggle" class="control-btn">🌙 Dark Mode</button>
-        <div class="user-menu auth-required" style="display: none; cursor:pointer;" title="Click to open profile">
+        <button class="control-btn" onclick="openProfileModal()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">👤 Profile</button>
+        <button class="user-menu auth-required" style="display: none; cursor:pointer;" title="Click to open profile" id="profileButton">
           <span class="user-email"></span>
           <img src="icons/icon-192.png" alt="Profile" class="profile-avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;margin-left:0.5rem;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
           <span class="profile-text">Profile</span>
-        </div>
+        </button>
       </div>
     </header>
 
@@ -600,19 +601,37 @@
     });
 
     // Profile Modal Logic
-    const userMenu = document.querySelector('.user-menu');
+    const profileButton = document.getElementById('profileButton');
     const profileModal = document.getElementById('profileModal');
     const closeProfileModal = document.getElementById('closeProfileModal');
-    userMenu && userMenu.addEventListener('click', () => {
-      console.log('Profile menu clicked, opening modal');
-      profileModal.style.display = 'flex';
-      // Debug: Check if avatar elements exist
-      setTimeout(() => {
-        console.log('Avatar container:', document.querySelector('.avatar-container'));
-        console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
-        console.log('Avatar upload text button:', document.querySelector('.avatar-upload-text-btn'));
-      }, 100);
-    });
+    
+    console.log('Profile button found:', profileButton);
+    console.log('Profile modal found:', profileModal);
+    
+    if (profileButton) {
+      profileButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Profile button clicked, opening modal');
+        if (profileModal) {
+          profileModal.style.display = 'flex';
+          console.log('Modal display set to flex');
+          
+          // Debug: Check if avatar elements exist
+          setTimeout(() => {
+            console.log('Avatar container:', document.querySelector('.avatar-container'));
+            console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
+            console.log('Avatar upload text button:', document.querySelector('.avatar-upload-text-btn'));
+            console.log('Profile modal visible:', profileModal.style.display);
+            console.log('Profile modal computed style:', window.getComputedStyle(profileModal).display);
+          }, 100);
+        } else {
+          console.error('Profile modal not found!');
+        }
+      });
+    } else {
+      console.error('Profile button not found!');
+    }
     closeProfileModal && closeProfileModal.addEventListener('click', () => {
       profileModal.style.display = 'none';
     });
@@ -833,6 +852,28 @@
 
     // Make debug function available globally
     window.debugProfileModal = debugProfileModal;
+
+    // Function to open profile modal (for the fallback button)
+    function openProfileModal() {
+      console.log('Opening profile modal via fallback button');
+      const profileModal = document.getElementById('profileModal');
+      if (profileModal) {
+        profileModal.style.display = 'flex';
+        console.log('Profile modal opened successfully');
+        
+        // Debug: Check if avatar elements exist
+        setTimeout(() => {
+          console.log('Avatar container:', document.querySelector('.avatar-container'));
+          console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
+          console.log('Avatar upload text button:', document.querySelector('.avatar-upload-text-btn'));
+        }, 100);
+      } else {
+        console.error('Profile modal not found!');
+      }
+    }
+
+    // Make function globally available
+    window.openProfileModal = openProfileModal;
 
     // Get financial data with Firestore and local storage fallback
     async function getFinancialData(userId) {
