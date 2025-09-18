@@ -181,9 +181,11 @@
     
     /* Make table action buttons smaller to fit in container */
     #expenseTable .btn {
-      padding: 8px 12px;
-      font-size: 0.85rem;
-      gap: 4px;
+      padding: 4px 6px;
+      font-size: 0.7rem;
+      gap: 2px;
+      min-width: auto;
+      white-space: nowrap;
     }
     
     .btn-primary {
@@ -228,8 +230,8 @@
     /* Give more space to bill name column */
     #expenseTable th:nth-child(2),
     #expenseTable td:nth-child(2) {
-      min-width: 220px;
-      width: 30%;
+      min-width: 180px;
+      width: 25%;
     }
     
     /* Make category column much wider to show full names */
@@ -260,15 +262,15 @@
     /* Make paid from column */
     #expenseTable th:nth-child(7),
     #expenseTable td:nth-child(7) {
-      width: 15%;
-      min-width: 120px;
+      width: 12%;
+      min-width: 100px;
     }
     
     /* Make actions column narrower and ensure buttons fit */
     #expenseTable th:nth-child(8),
     #expenseTable td:nth-child(8) {
-      width: 8%;
-      min-width: 80px;
+      width: 6%;
+      min-width: 60px;
       text-align: center;
     }
     
@@ -485,14 +487,15 @@
       /* Make actions column even smaller on mobile */
       #expenseTable th:nth-child(8),
       #expenseTable td:nth-child(8) {
-        width: 6%;
-        min-width: 60px;
+        width: 5%;
+        min-width: 50px;
       }
       
       /* Make action buttons even smaller on mobile */
       #expenseTable .btn {
-        padding: 6px 8px;
-        font-size: 0.75rem;
+        padding: 3px 5px;
+        font-size: 0.65rem;
+        gap: 1px;
       }
     }
     
