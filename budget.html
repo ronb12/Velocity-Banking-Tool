@@ -224,11 +224,11 @@
       width: 30%;
     }
     
-    /* Make category column wider to show full names */
+    /* Make category column much wider to show full names */
     #expenseTable th:nth-child(1),
     #expenseTable td:nth-child(1) {
-      width: 20%;
-      min-width: 140px;
+      width: 25%;
+      min-width: 180px;
     }
     
     /* Make number columns wider for dollar amounts */
@@ -238,14 +238,15 @@
     #expenseTable td:nth-child(4),
     #expenseTable th:nth-child(5),
     #expenseTable td:nth-child(5) {
-      width: 15%;
-      min-width: 120px;
+      width: 12%;
+      min-width: 130px;
     }
     
     /* Make due date column narrower */
     #expenseTable th:nth-child(6),
     #expenseTable td:nth-child(6) {
-      width: 15%;
+      width: 12%;
+      min-width: 120px;
     }
     
     /* Make actions column narrower */
@@ -298,6 +299,9 @@
       font-size: 1.1rem;
       padding: 15px 20px;
       min-height: 50px;
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: unset;
     }
     
     input:focus, select:focus, textarea:focus {
@@ -418,8 +422,8 @@
       /* Make category column wider on mobile too */
       #expenseTable th:nth-child(1),
       #expenseTable td:nth-child(1) {
-        width: 25%;
-        min-width: 120px;
+        width: 30%;
+        min-width: 150px;
       }
       
     /* Make text inputs larger on mobile */
