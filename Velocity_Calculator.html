@@ -5,6 +5,8 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Debt Crusher – Velocity Banking Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
         body {
             font-family: Arial, sans-serif;
@@ -245,31 +247,95 @@ window.onload = function () {
     document.getElementById('exportPdf').addEventListener('click', async function () {
         const loadingIndicator = document.getElementById("pdfLoadingIndicator");
         loadingIndicator.style.display = "block";
+        
         try {
+            // Check if jsPDF is loaded
+            if (typeof window.jspdf === 'undefined') {
+                throw new Error('PDF library not loaded. Please refresh the page and try again.');
+            }
+            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            
+            // Get form data
+            const userName = document.getElementById('userName').value || 'User';
+            const income = document.getElementById('income').value;
+            const extraIncome = document.getElementById('extraIncome').value;
+            const expenses = document.getElementById('expenses').value;
+            const debtBalance = document.getElementById('debtBalance').value;
+            const interestRate = document.getElementById('interestRate').value;
+            const minimumPayment = document.getElementById('minimumPayment').value;
+            const extraPayment = document.getElementById('extraPayment').value;
+            const lineOfCredit = document.getElementById('lineOfCredit').value;
+            const chunkPayment = document.getElementById('chunkPayment').value;
+            const chunkMonths = document.getElementById('chunkMonths').value;
+            
+            // Header
             doc.setFontSize(20);
             doc.text("Velocity Banking Strategy Report", 14, 15);
-            doc.setFontSize(10);
-            doc.text("Generated on: " + new Date().toLocaleDateString(), 14, 25);
+            doc.setFontSize(12);
+            doc.text(`Prepared for: ${userName}`, 14, 25);
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 35);
+            
+            // Input Summary Table
+            doc.setFontSize(14);
+            doc.text("Input Summary", 14, 50);
+            
             doc.autoTable({
+                startY: 55,
                 head: [["Field", "Value"]],
                 body: [
-                    ["Income", document.getElementById('income').value],
-                    ["Extra Income", document.getElementById('extraIncome').value],
-                    ["Expenses", document.getElementById('expenses').value],
-                    ["Debt Balance", document.getElementById('debtBalance').value],
-                    ["Interest Rate", document.getElementById('interestRate').value],
-                    ["Minimum Payment", document.getElementById('minimumPayment').value],
-                    ["Extra Payment", document.getElementById('extraPayment').value],
-                    ["Line of Credit", document.getElementById('lineOfCredit').value],
-                    ["Chunk Payment", document.getElementById('chunkPayment').value],
-                    ["Chunk Months", document.getElementById('chunkMonths').value]
-                ]
+                    ["Monthly Income", `$${parseFloat(income || 0).toLocaleString()}`],
+                    ["Yearly Extra Income", `$${parseFloat(extraIncome || 0).toLocaleString()}`],
+                    ["Monthly Expenses", `$${parseFloat(expenses || 0).toLocaleString()}`],
+                    ["Total Debt Balance", `$${parseFloat(debtBalance || 0).toLocaleString()}`],
+                    ["Interest Rate", `${interestRate}%`],
+                    ["Minimum Payment", `$${parseFloat(minimumPayment || 0).toLocaleString()}`],
+                    ["Extra Payment", `$${parseFloat(extraPayment || 0).toLocaleString()}`],
+                    ["Line of Credit", lineOfCredit],
+                    ["Chunk Payment", `$${parseFloat(chunkPayment || 0).toLocaleString()}`],
+                    ["Chunk Months", chunkMonths]
+                ],
+                styles: { fontSize: 10 },
+                headStyles: { fillColor: [0, 123, 255] }
             });
-            doc.save("velocity_strategy_report.pdf");
+            
+            // Results Summary (if available)
+            const resultsDiv = document.getElementById('results');
+            if (resultsDiv && resultsDiv.innerHTML.trim() !== '') {
+                doc.setFontSize(14);
+                doc.text("Strategy Results", 14, doc.lastAutoTable.finalY + 20);
+                
+                // Extract key results
+                const resultsText = resultsDiv.innerText;
+                const lines = resultsText.split('\n').filter(line => line.trim() !== '');
+                
+                let yPosition = doc.lastAutoTable.finalY + 35;
+                lines.forEach(line => {
+                    if (yPosition > 280) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.setFontSize(10);
+                    doc.text(line.substring(0, 80), 14, yPosition);
+                    yPosition += 10;
+                });
+            } else {
+                doc.setFontSize(12);
+                doc.text("Please run the calculation first to see detailed results.", 14, doc.lastAutoTable.finalY + 20);
+            }
+            
+            // Footer
+            doc.setFontSize(8);
+            doc.text("Generated by Bradley's Financial Tools - Velocity Banking Calculator", 14, 285);
+            
+            // Save the PDF
+            const fileName = `velocity-banking-strategy-${userName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0, 10)}.pdf`;
+            doc.save(fileName);
+            
         } catch (error) {
-            alert("Error generating PDF: " + error.message);
+            console.error('PDF Export Error:', error);
+            alert("Error generating PDF: " + error.message + "\n\nPlease make sure to run the calculation first, then try exporting again.");
         } finally {
             loadingIndicator.style.display = "none";
         }
