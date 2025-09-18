@@ -3,29 +3,392 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🔔 Notifications | Bradley's Toolkit</title>
+  <title>🔔 Notifications | Bradley's Financial Tools</title>
   <link rel="stylesheet" href="theme.css">
+  <style>
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0; 
+      padding: 20px; 
+      min-height: 100vh;
+    }
+    
+    .container { 
+      max-width: 1000px; 
+      margin: auto; 
+      background: #fff; 
+      padding: 30px; 
+      border-radius: 20px; 
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #f0f0f0;
+    }
+    
+    .back-button { 
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      display: inline-block; 
+      margin-bottom: 20px; 
+      text-decoration: none; 
+      color: white; 
+      padding: 12px 20px; 
+      border-radius: 25px;
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+    }
+    
+    h1 { 
+      color: #2c3e50; 
+      margin: 0;
+      font-size: 2.5em;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 30px 0;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    label { 
+      font-weight: 600; 
+      color: #2c3e50;
+    }
+    
+    select { 
+      padding: 12px 15px; 
+      border: 2px solid #e0e0e0; 
+      border-radius: 10px; 
+      font-size: 14px;
+      transition: border-color 0.3s ease;
+      background: white;
+    }
+    
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(45deg, #dc3545, #c82333);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(45deg, #6c757d, #495057);
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+    
+    .notifications-container {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 30px 0;
+      min-height: 400px;
+    }
+    
+    .notification {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      border-left: 4px solid #e9ecef;
+      position: relative;
+    }
+    
+    .notification:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .notification.unread {
+      border-left-color: #007bff;
+      background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+    }
+    
+    .notification.unread::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 8px;
+      height: 8px;
+      background: #007bff;
+      border-radius: 50%;
+    }
+    
+    .notification-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    
+    .notification-message {
+      font-size: 16px;
+      color: #2c3e50;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    
+    .notification-time {
+      font-size: 12px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+    
+    .notification-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    
+    .notification-actions .btn {
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+      font-size: 18px;
+    }
+    
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+    }
+    
+    .empty-state i {
+      font-size: 4em;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.2em;
+    }
+    
+    .stat-card .value {
+      font-size: 2em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      z-index: 10000;
+      font-weight: 600;
+      visibility: hidden;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    
+    .notification-type {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    
+    .type-info { background: #e3f2fd; color: #1976d2; }
+    .type-success { background: #e8f5e8; color: #2e7d32; }
+    .type-warning { background: #fff3e0; color: #f57c00; }
+    .type-error { background: #ffebee; color: #c62828; }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+        margin: 10px;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .notification-header {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .notification-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Notifications</h1>
-    <select id="notifFilter">
-      <option value="all">All</option>
-      <option value="unread">Unread</option>
-      <option value="read">Read</option>
-    </select>
-    <button class="clear-all" onclick="clearAllNotifications()">Clear All</button>
-    <div id="loading">Loading notifications...</div>
-    <div id="notifications"></div>
-    <div id="toast"></div>
+    <a href="index.html" class="back-button">🔙 Back to Dashboard</a>
+
+    <div class="header">
+      <h1>🔔 Notifications</h1>
+      <p>Stay updated with your financial progress and important alerts</p>
+    </div>
+
+    <!-- Statistics Dashboard -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>📬 Total Notifications</h3>
+        <div class="value" id="totalNotifications">0</div>
+        <p>All notifications</p>
+      </div>
+      <div class="stat-card">
+        <h3>🔴 Unread</h3>
+        <div class="value" id="unreadNotifications">0</div>
+        <p>Require attention</p>
+      </div>
+      <div class="stat-card">
+        <h3>✅ Read</h3>
+        <div class="value" id="readNotifications">0</div>
+        <p>Already viewed</p>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="filter-group">
+        <label for="notifFilter">Filter by Status:</label>
+        <select id="notifFilter">
+          <option value="all">All Notifications</option>
+          <option value="unread">Unread Only</option>
+          <option value="read">Read Only</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <button class="btn btn-secondary" onclick="markAllAsRead()">✅ Mark All Read</button>
+        <button class="btn btn-danger" onclick="clearAllNotifications()">🗑️ Clear All</button>
+      </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div class="notifications-container">
+      <div id="loading" class="loading">Loading notifications...</div>
+      <div id="notifications"></div>
+    </div>
   </div>
+
+  <div id="toast" class="toast"></div>
+
   <script type="module">
     import { auth, db } from './firebase-config.js';
     import { collection, query, where, orderBy, getDocs, updateDoc, doc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
-    function showToast(msg) {
+    let allNotifications = [];
+
+    function showToast(msg, type = 'success') {
       const toast = document.getElementById("toast");
       toast.innerText = msg;
+      toast.className = `toast ${type}`;
       toast.style.visibility = "visible";
       toast.style.opacity = "1";
       setTimeout(() => {
@@ -34,56 +397,200 @@
       }, 3000);
     }
 
+    function getNotificationType(message) {
+      if (message.includes('success') || message.includes('completed') || message.includes('achieved')) {
+        return 'type-success';
+      } else if (message.includes('warning') || message.includes('caution') || message.includes('attention')) {
+        return 'type-warning';
+      } else if (message.includes('error') || message.includes('failed') || message.includes('problem')) {
+        return 'type-error';
+      }
+      return 'type-info';
+    }
+
+    function getNotificationIcon(message) {
+      if (message.includes('goal') || message.includes('target')) {
+        return '🎯';
+      } else if (message.includes('payment') || message.includes('debt')) {
+        return '💳';
+      } else if (message.includes('budget') || message.includes('spending')) {
+        return '💰';
+      } else if (message.includes('savings') || message.includes('saved')) {
+        return '💵';
+      } else if (message.includes('reminder') || message.includes('due')) {
+        return '⏰';
+      } else if (message.includes('welcome') || message.includes('account')) {
+        return '👋';
+      }
+      return '📢';
+    }
+
+    function updateStats() {
+      const total = allNotifications.length;
+      const unread = allNotifications.filter(n => !n.read).length;
+      const read = total - unread;
+
+      document.getElementById('totalNotifications').textContent = total;
+      document.getElementById('unreadNotifications').textContent = unread;
+      document.getElementById('readNotifications').textContent = read;
+    }
+
     async function loadNotifications(user) {
       const container = document.getElementById("notifications");
       const loading = document.getElementById("loading");
       const filter = document.getElementById("notifFilter").value;
+      
       container.innerHTML = "";
       loading.style.display = "block";
-      let q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('timestamp', 'desc'));
-      if (filter === 'unread') {
-        q = query(q, where('read', '==', false));
-      } else if (filter === 'read') {
-        q = query(q, where('read', '==', true));
-      }
-      const snapshot = await getDocs(q);
-      loading.style.display = "none";
-      if (snapshot.empty) {
-        container.innerHTML = '<div style="text-align:center;">No notifications found.</div>';
-        return;
-      }
-      snapshot.forEach(docSnap => {
-        const notif = docSnap.data();
-        const div = document.createElement('div');
-        div.className = 'notification' + (notif.read ? '' : ' unread');
-        div.innerHTML = `
-          <div>${notif.message}</div>
-          <time>${notif.timestamp ? new Date(notif.timestamp.seconds * 1000).toLocaleString() : ''}</time>
-          <button class="mark-read" onclick="markAsRead('${docSnap.id}')">Mark as Read</button>
+      
+      try {
+        let q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('timestamp', 'desc'));
+        if (filter === 'unread') {
+          q = query(q, where('read', '==', false));
+        } else if (filter === 'read') {
+          q = query(q, where('read', '==', true));
+        }
+        
+        const snapshot = await getDocs(q);
+        loading.style.display = "none";
+        
+        allNotifications = [];
+        snapshot.forEach(docSnap => {
+          allNotifications.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        
+        updateStats();
+        
+        if (allNotifications.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size: 4em; margin-bottom: 20px;">🔔</div>
+              <h3>No notifications found</h3>
+              <p>You're all caught up! New notifications will appear here.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Filter notifications based on current filter
+        const filteredNotifications = allNotifications.filter(notif => {
+          if (filter === 'unread') return !notif.read;
+          if (filter === 'read') return notif.read;
+          return true;
+        });
+        
+        filteredNotifications.forEach(notif => {
+          const div = document.createElement('div');
+          div.className = `notification ${notif.read ? '' : 'unread'}`;
+          
+          const type = getNotificationType(notif.message);
+          const icon = getNotificationIcon(notif.message);
+          const time = notif.timestamp ? new Date(notif.timestamp.seconds * 1000).toLocaleString() : 'Just now';
+          
+          div.innerHTML = `
+            <div class="notification-header">
+              <div>
+                <span class="notification-type ${type}">${type.replace('type-', '')}</span>
+                <div class="notification-message">
+                  <span style="font-size: 1.2em; margin-right: 8px;">${icon}</span>
+                  ${notif.message}
+                </div>
+              </div>
+            </div>
+            <div class="notification-time">${time}</div>
+            <div class="notification-actions">
+              ${!notif.read ? `<button class="btn btn-primary" onclick="markAsRead('${notif.id}')">✅ Mark as Read</button>` : ''}
+              <button class="btn btn-secondary" onclick="deleteNotification('${notif.id}')">🗑️ Delete</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+        
+      } catch (error) {
+        loading.style.display = "none";
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 4em; margin-bottom: 20px;">❌</div>
+            <h3>Error loading notifications</h3>
+            <p>Please try refreshing the page.</p>
+          </div>
         `;
-        container.appendChild(div);
-      });
+        console.error('Error loading notifications:', error);
+      }
     }
 
     window.markAsRead = async function(id) {
       const user = auth.currentUser;
       if (!user) return;
-      const notifRef = doc(db, 'users', user.uid, 'notifications', id);
-      await updateDoc(notifRef, { read: true });
-      showToast('Marked as read');
-      loadNotifications(user);
+      
+      try {
+        const notifRef = doc(db, 'users', user.uid, 'notifications', id);
+        await updateDoc(notifRef, { read: true });
+        showToast('Notification marked as read', 'success');
+        loadNotifications(user);
+      } catch (error) {
+        showToast('Error marking notification as read', 'error');
+        console.error('Error:', error);
+      }
+    };
+
+    window.deleteNotification = async function(id) {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      if (confirm('Are you sure you want to delete this notification?')) {
+        try {
+          const notifRef = doc(db, 'users', user.uid, 'notifications', id);
+          await deleteDoc(notifRef);
+          showToast('Notification deleted', 'success');
+          loadNotifications(user);
+        } catch (error) {
+          showToast('Error deleting notification', 'error');
+          console.error('Error:', error);
+        }
+      }
+    };
+
+    window.markAllAsRead = async function() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const unreadNotifications = allNotifications.filter(n => !n.read);
+        const promises = unreadNotifications.map(notif => {
+          const notifRef = doc(db, 'users', user.uid, 'notifications', notif.id);
+          return updateDoc(notifRef, { read: true });
+        });
+        
+        await Promise.all(promises);
+        showToast(`${unreadNotifications.length} notifications marked as read`, 'success');
+        loadNotifications(user);
+      } catch (error) {
+        showToast('Error marking notifications as read', 'error');
+        console.error('Error:', error);
+      }
     };
 
     window.clearAllNotifications = async function() {
       const user = auth.currentUser;
       if (!user) return;
-      const q = query(collection(db, 'users', user.uid, 'notifications'));
-      const snapshot = await getDocs(q);
-      for (const docSnap of snapshot.docs) {
-        await deleteDoc(doc(db, 'users', user.uid, 'notifications', docSnap.id));
+      
+      if (confirm('Are you sure you want to delete ALL notifications? This action cannot be undone.')) {
+        try {
+          const q = query(collection(db, 'users', user.uid, 'notifications'));
+          const snapshot = await getDocs(q);
+          const promises = snapshot.docs.map(docSnap => 
+            deleteDoc(doc(db, 'users', user.uid, 'notifications', docSnap.id))
+          );
+          
+          await Promise.all(promises);
+          showToast('All notifications cleared', 'success');
+          loadNotifications(user);
+        } catch (error) {
+          showToast('Error clearing notifications', 'error');
+          console.error('Error:', error);
+        }
       }
-      showToast('All notifications cleared');
-      loadNotifications(user);
     };
 
     document.getElementById('notifFilter').addEventListener('change', () => {
@@ -95,7 +602,14 @@
       if (user) {
         loadNotifications(user);
       } else {
-        document.getElementById("notifications").innerHTML = '<div style="text-align:center;">Please log in to view notifications.</div>';
+        document.getElementById("notifications").innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 4em; margin-bottom: 20px;">🔐</div>
+            <h3>Please log in</h3>
+            <p>You need to be logged in to view your notifications.</p>
+            <a href="login.html" class="btn btn-primary" style="margin-top: 20px;">Login</a>
+          </div>
+        `;
         document.getElementById("loading").style.display = "none";
       }
     });
