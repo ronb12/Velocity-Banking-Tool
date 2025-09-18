@@ -992,16 +992,17 @@ function calculateBudget() {
   });
 
   const remaining = incomeTotal - budgetedTotal;
-  document.getElementById("tileIncome").querySelector(".tile-value").textContent = `$${incomeTotal.toFixed(2)}`;
-  document.getElementById("tileBudgeted").querySelector(".tile-value").textContent = `$${budgetedTotal.toFixed(2)}`;
-  document.getElementById("tileSpent").querySelector(".tile-value").textContent = `$${spentTotal.toFixed(2)}`;
-  document.getElementById("tileRemaining").querySelector(".tile-value").textContent = `$${remaining.toFixed(2)}`;
-  document.getElementById("tilePaid").querySelector(".tile-value").textContent = `$${paidTotal.toFixed(2)}`;
+  document.getElementById("tileIncome").querySelector(".summary-value").textContent = `$${incomeTotal.toFixed(2)}`;
+  document.getElementById("tileBudgeted").querySelector(".summary-value").textContent = `$${budgetedTotal.toFixed(2)}`;
+  document.getElementById("tileSpent").querySelector(".summary-value").textContent = `$${spentTotal.toFixed(2)}`;
+  document.getElementById("tileRemaining").querySelector(".summary-value").textContent = `$${remaining.toFixed(2)}`;
+  // Note: tilePaid was removed in the new design, so we'll skip it
 
   // Add visual feedback for remaining amount
   const remainingElement = document.getElementById("tileRemaining");
-  remainingElement.style.color = remaining < 0 ? "#dc3545" : remaining > 0 ? "#28a745" : "#007bff";
-  remainingElement.style.fontWeight = remaining !== 0 ? "bold" : "normal";
+  const remainingValue = remainingElement.querySelector(".summary-value");
+  remainingValue.style.color = remaining < 0 ? "#dc3545" : remaining > 0 ? "#28a745" : "#2c3e50";
+  remainingValue.style.fontWeight = remaining !== 0 ? "bold" : "normal";
 
   document.getElementById("zeroBasedMessage").style.display = (incomeTotal > 0 && incomeTotal === budgetedTotal) ? "block" : "none";
 }
@@ -1108,8 +1109,8 @@ function checkAll(box) {
 
 function zeroBasedBudget() {
   calculateBudget();
-  const incomeTotal = parseFloat(document.getElementById("tileIncome").querySelector(".tile-value").textContent.replace(/[^0-9.-]+/g, ""));
-  const budgetedTotal = parseFloat(document.getElementById("tileBudgeted").querySelector(".tile-value").textContent.replace(/[^0-9.-]+/g, ""));
+  const incomeTotal = parseFloat(document.getElementById("tileIncome").querySelector(".summary-value").textContent.replace(/[^0-9.-]+/g, ""));
+  const budgetedTotal = parseFloat(document.getElementById("tileBudgeted").querySelector(".summary-value").textContent.replace(/[^0-9.-]+/g, ""));
   const remaining = incomeTotal - budgetedTotal;
 
   if (incomeTotal === 0) {
@@ -1412,9 +1413,9 @@ function initializeCharts() {
 }
 
 function updateChart() {
-  const income = parseFloat(document.getElementById('tileIncome').querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ''));
-  const spent = parseFloat(document.getElementById('tileSpent').querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ''));
-  const remaining = parseFloat(document.getElementById('tileRemaining').querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ''));
+  const income = parseFloat(document.getElementById('tileIncome').querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ''));
+  const spent = parseFloat(document.getElementById('tileSpent').querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ''));
+  const remaining = parseFloat(document.getElementById('tileRemaining').querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ''));
 
   window.budgetChart.data.datasets[0].data = [income, spent, remaining];
   window.budgetChart.update();
@@ -1436,8 +1437,8 @@ function updateCharts() {
   // Update Monthly Chart
   // This would typically load historical data from Firebase
   // For now, we'll just show current month
-  const incomeTotal = parseFloat(document.getElementById("tileIncome").querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ""));
-  const spentTotal = parseFloat(document.getElementById("tileSpent").querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ""));
+  const incomeTotal = parseFloat(document.getElementById("tileIncome").querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ""));
+  const spentTotal = parseFloat(document.getElementById("tileSpent").querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ""));
 
   window.monthlyChart.data.labels = [document.getElementById("month").value];
   window.monthlyChart.data.datasets[0].data = [incomeTotal];
@@ -1497,9 +1498,9 @@ function detectRecurringExpenses() {
 }
 
 function validateZeroBasedBudget() {
-  const income = parseFloat(document.getElementById('tileIncome').querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ''));
-  const budgeted = parseFloat(document.getElementById('tileBudgeted').querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ''));
-  const remaining = parseFloat(document.getElementById('tileRemaining').querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ''));
+  const income = parseFloat(document.getElementById('tileIncome').querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ''));
+  const budgeted = parseFloat(document.getElementById('tileBudgeted').querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ''));
+  const remaining = parseFloat(document.getElementById('tileRemaining').querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ''));
   
   if (Math.abs(remaining) > 0.01) { // Using 0.01 to account for floating point precision
     alert(`Your budget is not zero-based! You have $${remaining.toFixed(2)} remaining to allocate.`);
@@ -1509,7 +1510,7 @@ function validateZeroBasedBudget() {
 }
 
 function checkCategoryPercentages() {
-  const income = parseFloat(document.getElementById('tileIncome').querySelector('.tile-value').textContent.replace(/[^0-9.-]+/g, ''));
+  const income = parseFloat(document.getElementById('tileIncome').querySelector('.summary-value').textContent.replace(/[^0-9.-]+/g, ''));
   const categoryTotals = {};
   
   document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
