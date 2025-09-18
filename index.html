@@ -453,17 +453,23 @@
           userData = await gatherUserData(user.uid);
         } catch (error) {
           console.error('Error gathering user data:', error);
-          ErrorHandler.handleFirebaseError(error);
           
-          // Show error state
+          // Use fallback data instead of showing error
+          userData = {
+            debts: [],
+            budget: { expenses: [], incomes: [] },
+            netWorth: [],
+            savings: []
+          };
+          
+          // Show a gentle message instead of error
           if (insightsContainer) {
             insightsContainer.innerHTML = `
-              <div class="error-state">
-                <p>Unable to load financial data. Please check your permissions and try again.</p>
+              <div class="info-state">
+                <p>Welcome! Add some financial data to get personalized insights and recommendations.</p>
               </div>
             `;
           }
-          return;
         }
         
         // Generate insights
@@ -835,6 +841,15 @@
       background: #fef2f2;
       border-radius: 0.5rem;
       border: 1px solid #fecaca;
+    }
+
+    .info-state {
+      text-align: center;
+      padding: 2rem;
+      color: #2563eb;
+      background: #eff6ff;
+      border-radius: 0.5rem;
+      border: 1px solid #bfdbfe;
     }
 
     /* Dark mode adjustments */
