@@ -516,6 +516,15 @@ window.onload = function () {
             return;
         }
         
+        // Calculate minimum required payment to cover interest
+        const monthlyInterest = debtBalance * baseInterestRate;
+        const minimumRequiredPayment = monthlyInterest + 1; // At least $1 more than interest
+        
+        if (minimumPayment < monthlyInterest) {
+            feedback.innerHTML = `<p class="feedback high">Error: Your minimum payment (${formatCurrency(minimumPayment)}) is less than the monthly interest (${formatCurrency(monthlyInterest)}). The debt will grow instead of shrink. Please enter a minimum payment of at least ${formatCurrency(minimumRequiredPayment)}.</p>`;
+            return;
+        }
+        
         // Only validate chunk payment and months if user wants to use velocity banking
         if (chunkPayment > 0 && chunkMonths.length === 0) {
             feedback.innerHTML = `<p class="feedback high">Warning: You entered a chunk payment but no months. Please enter valid months for chunk payments (e.g., 3,6,12) or set chunk payment to $0.</p>`;
@@ -529,8 +538,8 @@ window.onload = function () {
         
         // Calculate suggested minimum payment if not provided
         if (minimumPayment < debtBalance * 0.01) {
-            const suggestedMinPayment = Math.max(debtBalance * 0.02, 100);
-            feedback.innerHTML = `<p class="feedback high">Warning: Your minimum payment seems low. For a $${debtBalance.toLocaleString()} debt at ${(baseInterestRate * 12 * 100).toFixed(1)}% interest, consider a minimum payment of at least $${suggestedMinPayment.toFixed(0)} to make meaningful progress.</p>`;
+            const suggestedMinPayment = Math.max(debtBalance * 0.02, minimumRequiredPayment);
+            feedback.innerHTML = `<p class="feedback high">Warning: Your minimum payment seems low. For a $${debtBalance.toLocaleString()} debt at ${(baseInterestRate * 12 * 100).toFixed(1)}% interest, consider a minimum payment of at least ${formatCurrency(suggestedMinPayment)} to make meaningful progress.</p>`;
         }
 
         const yearlyIncome = income * 12;
