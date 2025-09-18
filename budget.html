@@ -709,7 +709,7 @@
     }
     
     // Add Expense function
-    function addExpense(category = '', name = '', budgeted = 0, dueDate = '') {
+    function addExpense(category = '', name = '', budgeted = 0, dueDate = '', spent = 0, paidFrom = '') {
       const tbody = document.querySelector("#expenseTable tbody");
       const row = tbody.insertRow();
       
@@ -731,12 +731,13 @@
         </td>
         <td><input type="text" value="${name}" placeholder="Bill name" onchange="calculateBudget()"></td>
         <td><input type="number" value="${budgeted}" placeholder="0.00" onchange="calculateBudget()"></td>
-        <td><input type="number" placeholder="0.00" onchange="calculateBudget()"></td>
+        <td><input type="number" value="${spent}" placeholder="0.00" onchange="calculateBudget()"></td>
         <td><input type="number" readonly></td>
         <td><input type="date" value="${dueDate}" onchange="calculateBudget()"></td>
         <td>
           <select onchange="calculateBudget()">
             <option value="">Select Income Source</option>
+            <option value="${paidFrom}" ${paidFrom ? 'selected' : ''}>${paidFrom || ''}</option>
           </select>
         </td>
         <td><button class="btn btn-outline" onclick="this.closest('tr').remove(); calculateBudget()">🗑️ Remove</button></td>
@@ -924,7 +925,7 @@
           if (data.expenses && Array.isArray(data.expenses)) {
             data.expenses.forEach(exp => {
               if (exp.category && exp.name) {
-                addExpense(exp.category, exp.name, exp.budgeted || 0, exp.due || '');
+                addExpense(exp.category, exp.name, exp.budgeted || 0, exp.due || '', exp.spent || 0, exp.paidFrom || '');
               }
             });
           }
