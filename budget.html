@@ -47,6 +47,8 @@
       padding: 20px 0;
       margin-bottom: 0;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 10;
     }
     
     .header-content {
@@ -525,7 +527,7 @@
       border-radius: 12px;
       background: rgba(102, 126, 234, 0.1);
       transition: all 0.3s ease;
-      margin-bottom: 20px;
+      margin: 20px 0;
     }
     
     .back-link:hover {
@@ -845,8 +847,12 @@ if (window.Analytics) {
 
 // Function to load sample budget data
 async function loadSampleBudget() {
-  const sampleUserId = 'RuZRK7a3BdQ25l3ioyJa9ulLMHe2';
+  // Use the current logged-in user ID instead of hardcoded ID
+  const currentUserId = userId || 'RuZRK7a3BdQ25l3ioyJa9ulLMHe2';
   const currentMonth = document.getElementById("month").value || '2024-01';
+  
+  console.log('Loading sample budget for user:', currentUserId);
+  console.log('Current month:', currentMonth);
   
   const sampleBudgetData = {
     month: currentMonth,
@@ -881,11 +887,12 @@ async function loadSampleBudget() {
   };
   
   try {
-    console.log('Loading sample budget data for user:', sampleUserId);
+    console.log('Loading sample budget data for user:', currentUserId);
     console.log('Sample budget data:', sampleBudgetData);
     
     // Save sample data to Firebase
-    const docId = sampleUserId + '_' + currentMonth;
+    const docId = currentUserId + '_' + currentMonth;
+    console.log('Using document ID:', docId);
     await db.collection("budgets").doc(docId).set(sampleBudgetData);
     console.log('Sample budget data saved successfully');
     
@@ -1119,6 +1126,11 @@ async function loadBudget() {
     if (!doc.exists && currentMonth) {
       console.log('Month-based document not found, trying user-only document');
       doc = await db.collection("budgets").doc(userId).get();
+    }
+    
+    console.log('Document exists:', doc.exists);
+    if (doc.exists) {
+      console.log('Document ID used:', docId);
     }
     
     if (doc.exists) {
