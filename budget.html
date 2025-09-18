@@ -57,6 +57,37 @@
     .header p {
       color: #6c757d;
       font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+    
+    .month-selector {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .month-selector label {
+      font-weight: 600;
+      color: #495057;
+      font-size: 1rem;
+    }
+    
+    .month-selector input[type="month"] {
+      padding: 12px 16px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: white;
+      transition: all 0.3s ease;
+      min-width: 150px;
+    }
+    
+    .month-selector input[type="month"]:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
     }
     
     .back-link {
@@ -332,6 +363,15 @@
         font-size: 2rem;
       }
       
+      .month-selector {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .month-selector input[type="month"] {
+        min-width: 200px;
+      }
+      
       .summary-cards {
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;
@@ -414,6 +454,11 @@
     <div class="header">
       <h1>💰 Bradley's Budget Tracker</h1>
       <p>Take control of your finances with our zero-based budgeting system</p>
+      <div class="month-selector">
+        <label for="monthSelect">Select Month:</label>
+        <input type="month" id="monthSelect" onchange="onMonthChange()" />
+        <button class="btn btn-outline" onclick="goToCurrentMonth()">📅 Current Month</button>
+      </div>
     </div>
     
     <div class="summary-cards">
@@ -502,7 +547,7 @@
     </div>
   </div>
   
-  <div id="loadingIndicator" class="loading" style="display: none;">
+  <div id="loadingIndicator" class="loading" style="display: none !important;">
     <div class="spinner"></div>
     <p>Loading...</p>
   </div>
@@ -532,9 +577,10 @@
       window.MobileOptimizer.init();
     }
     
-    if (window.AccessibilityUtils) {
-      window.AccessibilityUtils.init();
-    }
+    // AccessibilityUtils disabled to remove skip link
+    // if (window.AccessibilityUtils) {
+    //   window.AccessibilityUtils.init();
+    // }
     
     if (window.Analytics) {
       window.Analytics.init();
@@ -549,8 +595,34 @@
       }
       userId = user.uid;
       console.log('User authenticated, loading budget data...');
+      
+      // Set current month as default
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      document.getElementById('monthSelect').value = currentMonth;
+      
       loadBudget();
     });
+    
+    // Month change handler
+    function onMonthChange() {
+      const selectedMonth = document.getElementById('monthSelect').value;
+      console.log('Month changed to:', selectedMonth);
+      
+      // Clear current data
+      document.querySelector("#incomeTable tbody").innerHTML = "";
+      document.querySelector("#expenseTable tbody").innerHTML = "";
+      document.getElementById("monthlyNotes").value = "";
+      
+      // Load budget for selected month
+      loadBudget();
+    }
+    
+    // Go to current month
+    function goToCurrentMonth() {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      document.getElementById('monthSelect').value = currentMonth;
+      onMonthChange();
+    }
     
     // Add Income function
     function addIncome(source = "", amount = 0) {
