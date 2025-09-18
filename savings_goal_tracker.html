@@ -454,7 +454,9 @@
   <!-- Progress Chart -->
   <div class="chart-container">
     <h3 class="section-title">📊 Goals Progress Overview</h3>
-    <canvas id="progressChart" width="400" height="200"></canvas>
+    <div style="position: relative; height: 300px; width: 100%;">
+      <canvas id="progressChart"></canvas>
+    </div>
   </div>
 
   <!-- Add Goal Modal -->
@@ -586,7 +588,12 @@ document.addEventListener('DOMContentLoaded', function() {
   renderGoals();
   renderArchivedGoals();
   updateStats();
-  initializeChart();
+  
+  // Initialize chart with a small delay to ensure DOM is ready
+  setTimeout(() => {
+    initializeChart();
+    updateChart();
+  }, 100);
 });
 
 // Add sample goals for demonstration
@@ -1020,49 +1027,76 @@ function updateCategoryFilter() {
 
 function initializeChart() {
   const ctx = document.getElementById('progressChart').getContext('2d');
+  
+  // Destroy existing chart if it exists
+  if (progressChart) {
+    progressChart.destroy();
+  }
+  
   progressChart = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: [],
+      labels: ['No Goals'],
       datasets: [{
-        data: [],
-        backgroundColor: [
-          '#28a745',
-          '#ffc107',
-          '#dc3545',
-          '#17a2b8',
-          '#6f42c1',
-          '#fd7e14'
-        ]
+        data: [1],
+        backgroundColor: ['#e9ecef'],
+        borderWidth: 0
       }]
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'bottom'
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            usePointStyle: true
+          }
+        },
+        tooltip: {
+          enabled: false
         }
-      }
+      },
+      cutout: '60%'
     }
   });
 }
 
 function updateChart() {
+  if (!progressChart) {
+    initializeChart();
+    return;
+  }
+  
   const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   
   if (goals.length === 0) {
-    progressChart.data.labels = ['No Goals'];
+    progressChart.data.labels = ['No Goals Yet'];
     progressChart.data.datasets[0].data = [1];
     progressChart.data.datasets[0].backgroundColor = ['#e9ecef'];
+    progressChart.data.datasets[0].borderWidth = 0;
   } else {
     progressChart.data.labels = goals.map(goal => goal.name);
     progressChart.data.datasets[0].data = goals.map(goal => goal.saved);
     progressChart.data.datasets[0].backgroundColor = [
-      '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1', '#fd7e14'
+      '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1', '#fd7e14',
+      '#20c997', '#6c757d', '#fd7e14', '#e83e8c', '#6f42c1', '#20c997',
+      '#ffc107', '#dc3545', '#17a2b8', '#28a745', '#6c757d'
     ].slice(0, goals.length);
+    progressChart.data.datasets[0].borderWidth = 2;
   }
   
-  progressChart.update();
+  progressChart.update('active');
+}
+
+// Debug function to check chart status
+function debugChart() {
+  console.log('Chart Status:', {
+    chartExists: !!progressChart,
+    goalsCount: JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').length,
+    canvasElement: !!document.getElementById('progressChart')
+  });
 }
 
 function showNotification(message, type = 'info') {
