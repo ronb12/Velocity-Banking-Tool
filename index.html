@@ -240,6 +240,11 @@
           </button>
           <input type="file" id="avatarInput" accept="image/*" style="display: none;" onchange="handleAvatarUpload(event)">
         </div>
+        <div class="avatar-upload-text">
+          <button class="avatar-upload-text-btn" onclick="document.getElementById('avatarInput').click()">
+            📷 Change Avatar
+          </button>
+        </div>
         <div>
           <h2 id="profileName">User</h2>
           <p id="profileEmail">Email</p>
@@ -1108,20 +1113,21 @@
 
     .avatar-upload-btn {
       position: absolute;
-      bottom: 0;
-      right: 0;
+      bottom: -5px;
+      right: -5px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      border: none;
-      width: 32px;
-      height: 32px;
+      border: 3px solid white;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
       transition: all 0.3s ease;
+      z-index: 10;
     }
 
     .avatar-upload-btn:hover {
@@ -1130,7 +1136,31 @@
     }
 
     .upload-icon {
-      font-size: 14px;
+      font-size: 18px;
+    }
+
+    .avatar-upload-text {
+      margin-top: 0.75rem;
+      text-align: center;
+    }
+
+    .avatar-upload-text-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .avatar-upload-text-btn:hover {
+      background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
 
     .profile-settings {
