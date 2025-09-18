@@ -251,24 +251,6 @@
           <p id="profileEmail">Email</p>
         </div>
       </div>
-      <div class="profile-stats">
-        <div class="profile-stat">
-          <span>Net Worth</span>
-          <strong id="profileNetWorth">-</strong>
-        </div>
-        <div class="profile-stat">
-          <span>Credit Utilization</span>
-          <strong id="profileCreditUtilization">-</strong>
-        </div>
-        <div class="profile-stat">
-          <span>Total Debt</span>
-          <strong id="profileTotalDebt">-</strong>
-        </div>
-        <div class="profile-stat">
-          <span>Savings Progress</span>
-          <strong id="profileSavings">-</strong>
-        </div>
-      </div>
       
       <div class="profile-settings">
         <h3>Settings</h3>
@@ -607,8 +589,6 @@
           profileModal.style.display = 'flex';
           console.log('Modal display set to flex');
           
-          // Update profile stats with current data
-          updateProfileStats();
           
           // Debug: Check if avatar elements exist
           setTimeout(() => {
@@ -986,8 +966,6 @@
         profileModal.style.display = 'flex';
         console.log('Profile modal opened successfully');
         
-        // Update profile stats with current data
-        updateProfileStats();
         
         // Debug: Check if avatar elements exist
         setTimeout(() => {
@@ -1737,30 +1715,6 @@ Keep this file secure as it contains sensitive financial information.
       color: #64748b;
       font-size: 1rem;
     }
-    .profile-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.2rem;
-      width: 100%;
-      margin-top: 0.5rem;
-    }
-    .profile-stat {
-      background: #f8fafc;
-      border-radius: 1rem;
-      padding: 1.1rem 1rem;
-      text-align: center;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.06);
-      font-size: 1rem;
-      color: #1e293b;
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-    body.dark .profile-stat {
-      background: #232946;
-      color: #f4f4f9;
-      box-shadow: 0 2px 8px rgba(37,99,235,0.12);
-    }
 
     .avatar-container {
       position: relative;
@@ -2146,7 +2100,6 @@ Keep this file secure as it contains sensitive financial information.
         margin: 0;
       }
       .profile-header { flex-direction: column; gap: 0.7rem; }
-      .profile-stats { grid-template-columns: 1fr; gap: 0.7rem; }
     }
 
     /* Header Styles */
