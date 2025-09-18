@@ -545,6 +545,60 @@ body.dark-mode .suggestion-box p {
                 <p>Min Payment: $400</p>
                 <p>Chunk: $800 every 3 months</p>
             </div>
+            
+            <div class="example-card" onclick="loadExample('mortgage')">
+                <h3>🏠 Mortgage</h3>
+                <p>Debt: $300,000 at 7.5% APR</p>
+                <p>Income: $8,000/month</p>
+                <p>Expenses: $5,500/month</p>
+                <p>Min Payment: $2,100</p>
+                <p>Chunk: $4,200 every 6 months</p>
+            </div>
+            
+            <div class="example-card" onclick="loadExample('business-debt')">
+                <h3>💼 Business Debt</h3>
+                <p>Debt: $75,000 at 18% APR</p>
+                <p>Income: $12,000/month</p>
+                <p>Expenses: $8,500/month</p>
+                <p>Min Payment: $1,500</p>
+                <p>Chunk: $3,000 every 2 months</p>
+            </div>
+            
+            <div class="example-card" onclick="loadExample('medical-debt')">
+                <h3>🏥 Medical Debt</h3>
+                <p>Debt: $45,000 at 0% APR</p>
+                <p>Income: $4,200/month</p>
+                <p>Expenses: $3,100/month</p>
+                <p>Min Payment: $500</p>
+                <p>Chunk: $1,200 every 4 months</p>
+            </div>
+            
+            <div class="example-card" onclick="loadExample('home-equity')">
+                <h3>🏡 Home Equity Loan</h3>
+                <p>Debt: $120,000 at 8.2% APR</p>
+                <p>Income: $9,500/month</p>
+                <p>Expenses: $6,800/month</p>
+                <p>Min Payment: $1,800</p>
+                <p>Chunk: $3,600 every 3 months</p>
+            </div>
+            
+            <div class="example-card" onclick="loadExample('consolidation')">
+                <h3>🔄 Debt Consolidation</h3>
+                <p>Debt: $60,000 at 14% APR</p>
+                <p>Income: $6,500/month</p>
+                <p>Expenses: $4,200/month</p>
+                <p>Min Payment: $1,200</p>
+                <p>Chunk: $2,400 every 3 months</p>
+            </div>
+            
+            <div class="example-card" onclick="loadExample('high-income')">
+                <h3>💰 High Income Scenario</h3>
+                <p>Debt: $200,000 at 6% APR</p>
+                <p>Income: $25,000/month</p>
+                <p>Expenses: $15,000/month</p>
+                <p>Min Payment: $2,500</p>
+                <p>Chunk: $8,000 every 2 months</p>
+            </div>
         </div>
     </div>
 </div>
@@ -639,6 +693,78 @@ body.dark-mode .suggestion-box p {
                 lineOfCredit: 'creditCard',
                 chunkPayment: 800,
                 chunkMonths: '3,6,9'
+            },
+            'mortgage': {
+                income: 8000,
+                extraIncome: 0,
+                expenses: 5500,
+                debtBalance: 300000,
+                interestRate: 7.5,
+                minimumPayment: 2100,
+                extraPayment: 0,
+                lineOfCredit: 'HELOC',
+                chunkPayment: 4200,
+                chunkMonths: '6,12,18,24'
+            },
+            'business-debt': {
+                income: 12000,
+                extraIncome: 0,
+                expenses: 8500,
+                debtBalance: 75000,
+                interestRate: 18,
+                minimumPayment: 1500,
+                extraPayment: 0,
+                lineOfCredit: 'businessLoan',
+                chunkPayment: 3000,
+                chunkMonths: '2,4,6,8,10'
+            },
+            'medical-debt': {
+                income: 4200,
+                extraIncome: 0,
+                expenses: 3100,
+                debtBalance: 45000,
+                interestRate: 0,
+                minimumPayment: 500,
+                extraPayment: 0,
+                lineOfCredit: 'personalLoan',
+                chunkPayment: 1200,
+                chunkMonths: '4,8,12,16,20'
+            },
+            'home-equity': {
+                income: 9500,
+                extraIncome: 0,
+                expenses: 6800,
+                debtBalance: 120000,
+                interestRate: 8.2,
+                minimumPayment: 1800,
+                extraPayment: 0,
+                lineOfCredit: 'HELOC',
+                chunkPayment: 3600,
+                chunkMonths: '3,6,9,12,15'
+            },
+            'consolidation': {
+                income: 6500,
+                extraIncome: 0,
+                expenses: 4200,
+                debtBalance: 60000,
+                interestRate: 14,
+                minimumPayment: 1200,
+                extraPayment: 0,
+                lineOfCredit: 'personalLoan',
+                chunkPayment: 2400,
+                chunkMonths: '3,6,9,12,15'
+            },
+            'high-income': {
+                income: 25000,
+                extraIncome: 0,
+                expenses: 15000,
+                debtBalance: 200000,
+                interestRate: 6,
+                minimumPayment: 2500,
+                extraPayment: 0,
+                lineOfCredit: 'HELOC',
+                chunkPayment: 8000,
+                chunkMonths: '2,4,6,8,10,12'
             }
         };
 
