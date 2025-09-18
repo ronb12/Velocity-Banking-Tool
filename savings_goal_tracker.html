@@ -482,6 +482,21 @@
             <option value="Hobbies">Hobbies</option>
             <option value="Investment">Investment</option>
             <option value="Charity">Charity</option>
+            <option value="Business">Business</option>
+            <option value="Fitness">Fitness</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Insurance">Insurance</option>
+            <option value="Taxes">Taxes</option>
+            <option value="Legal">Legal</option>
+            <option value="Childcare">Childcare</option>
+            <option value="Pet Care">Pet Care</option>
+            <option value="Home Improvement">Home Improvement</option>
+            <option value="Garden">Garden</option>
+            <option value="Books">Books</option>
+            <option value="Gaming">Gaming</option>
+            <option value="Photography">Photography</option>
+            <option value="Travel">Travel</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -632,6 +647,62 @@ function addSampleGoals() {
       target: 500,
       saved: 200,
       targetDate: "2024-12-25",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Gym Membership",
+      category: "Fitness",
+      target: 600,
+      saved: 300,
+      targetDate: "2024-08-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Concert Tickets",
+      category: "Entertainment",
+      target: 400,
+      saved: 200,
+      targetDate: "2024-07-15",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "New Wardrobe",
+      category: "Clothing",
+      target: 1200,
+      saved: 600,
+      targetDate: "2024-09-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Pet Surgery",
+      category: "Pet Care",
+      target: 2000,
+      saved: 800,
+      targetDate: "2024-10-30",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Kitchen Renovation",
+      category: "Home Improvement",
+      target: 15000,
+      saved: 5000,
+      targetDate: "2025-03-31",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Garden Tools",
+      category: "Garden",
+      target: 300,
+      saved: 150,
+      targetDate: "2024-05-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Professional Camera",
+      category: "Photography",
+      target: 2500,
+      saved: 1000,
+      targetDate: "2024-11-15",
       createdDate: new Date().toISOString()
     }
   ];
@@ -808,6 +879,21 @@ function renderGoals() {
           <option value="Hobbies" ${goal.category === 'Hobbies' ? 'selected' : ''}>Hobbies</option>
           <option value="Investment" ${goal.category === 'Investment' ? 'selected' : ''}>Investment</option>
           <option value="Charity" ${goal.category === 'Charity' ? 'selected' : ''}>Charity</option>
+          <option value="Business" ${goal.category === 'Business' ? 'selected' : ''}>Business</option>
+          <option value="Fitness" ${goal.category === 'Fitness' ? 'selected' : ''}>Fitness</option>
+          <option value="Entertainment" ${goal.category === 'Entertainment' ? 'selected' : ''}>Entertainment</option>
+          <option value="Clothing" ${goal.category === 'Clothing' ? 'selected' : ''}>Clothing</option>
+          <option value="Insurance" ${goal.category === 'Insurance' ? 'selected' : ''}>Insurance</option>
+          <option value="Taxes" ${goal.category === 'Taxes' ? 'selected' : ''}>Taxes</option>
+          <option value="Legal" ${goal.category === 'Legal' ? 'selected' : ''}>Legal</option>
+          <option value="Childcare" ${goal.category === 'Childcare' ? 'selected' : ''}>Childcare</option>
+          <option value="Pet Care" ${goal.category === 'Pet Care' ? 'selected' : ''}>Pet Care</option>
+          <option value="Home Improvement" ${goal.category === 'Home Improvement' ? 'selected' : ''}>Home Improvement</option>
+          <option value="Garden" ${goal.category === 'Garden' ? 'selected' : ''}>Garden</option>
+          <option value="Books" ${goal.category === 'Books' ? 'selected' : ''}>Books</option>
+          <option value="Gaming" ${goal.category === 'Gaming' ? 'selected' : ''}>Gaming</option>
+          <option value="Photography" ${goal.category === 'Photography' ? 'selected' : ''}>Photography</option>
+          <option value="Travel" ${goal.category === 'Travel' ? 'selected' : ''}>Travel</option>
           <option value="Other" ${goal.category === 'Other' ? 'selected' : ''}>Other</option>
         </select>
       </td>
