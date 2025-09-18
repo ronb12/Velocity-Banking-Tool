@@ -697,7 +697,6 @@
         <button class="btn btn-outline" onclick="calculateBudget()">🧮 Recalculate</button>
         <button class="btn btn-success" onclick="saveBudget()">💾 Save Budget</button>
         <button class="btn btn-outline" onclick="loadBudget()">📥 Load Budget</button>
-        <button class="btn btn-primary" onclick="loadSampleBudget()">🎯 Load Sample</button>
         <button class="btn btn-outline" onclick="zeroBasedBudget()">✅ Zero-Based Check</button>
         <button class="btn btn-outline" onclick="exportBudgetToCSV()">📊 Export CSV</button>
         <button class="btn btn-outline" onclick="exportToPDF()">📄 Export PDF</button>
@@ -1062,63 +1061,6 @@
       }
     }
     
-    // Load Sample Budget function
-    async function loadSampleBudget() {
-      const sampleBudgetData = {
-        month: new Date().toISOString().slice(0, 7),
-        notes: 'Sample budget for testing purposes. This includes typical income and expense categories.',
-        income: [
-          { source: 'Primary Job', amount: 5000 },
-          { source: 'Freelance Work', amount: 1200 },
-          { source: 'Investment Returns', amount: 300 }
-        ],
-        expenses: [
-          { category: 'Housing', name: 'Rent/Mortgage', budgeted: 1500, spent: 1500, due: '2024-01-01' },
-          { category: 'Housing', name: 'Utilities', budgeted: 200, spent: 180, due: '2024-01-15' },
-          { category: 'Transportation', name: 'Car Payment', budgeted: 400, spent: 400, due: '2024-01-05' },
-          { category: 'Transportation', name: 'Gas', budgeted: 200, spent: 180, due: '2024-01-01' },
-          { category: 'Food', name: 'Groceries', budgeted: 600, spent: 550, due: '2024-01-01' },
-          { category: 'Food', name: 'Dining Out', budgeted: 200, spent: 180, due: '2024-01-01' },
-          { category: 'Personal', name: 'Phone Bill', budgeted: 100, spent: 100, due: '2024-01-15' },
-          { category: 'Health', name: 'Health Insurance', budgeted: 300, spent: 300, due: '2024-01-01' },
-          { category: 'Debt', name: 'Credit Card Payment', budgeted: 500, spent: 500, due: '2024-01-25' },
-          { category: 'Savings', name: 'Emergency Fund', budgeted: 500, spent: 500, due: '2024-01-01' }
-        ]
-      };
-      
-      try {
-        // Clear existing data
-        document.querySelector("#incomeTable tbody").innerHTML = "";
-        document.querySelector("#expenseTable tbody").innerHTML = "";
-        document.getElementById("monthlyNotes").value = "";
-        
-        // Load sample data
-        sampleBudgetData.income.forEach(inc => {
-          addIncome(inc.source, inc.amount);
-        });
-        
-        sampleBudgetData.expenses.forEach(exp => {
-          addExpense(exp.category, exp.name, exp.budgeted, exp.due);
-        });
-        
-        document.getElementById("monthlyNotes").value = sampleBudgetData.notes;
-        
-        calculateBudget();
-        
-        if (window.ErrorHandler) {
-          window.ErrorHandler.showSuccess('Sample budget loaded successfully!');
-        } else {
-          alert('Sample budget loaded successfully!');
-        }
-      } catch (error) {
-        console.error('Error loading sample budget:', error);
-        if (window.ErrorHandler) {
-          window.ErrorHandler.handleFirebaseError(error);
-        } else {
-          alert('Error loading sample budget: ' + error.message);
-        }
-      }
-    }
     
     // Zero-Based Budget Check function
     function zeroBasedBudget() {
