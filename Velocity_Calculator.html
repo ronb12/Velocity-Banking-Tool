@@ -111,6 +111,61 @@ body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-
   font-weight: bold;
   font-size: 14px;
 }
+
+/* Header and Navigation Styles */
+.header {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  position: relative;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(0, 123, 255, 0.1);
+  transition: all 0.3s ease;
+  margin-bottom: 15px;
+}
+
+.back-link:hover {
+  background: rgba(0, 123, 255, 0.2);
+  transform: translateX(-5px);
+}
+
+.header h1 {
+  color: #007bff;
+  font-size: 2.2rem;
+  margin: 10px 0;
+  font-weight: 700;
+}
+
+.dark-mode-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.dark-mode-toggle:hover {
+  background: #e9ecef;
+  border-color: #007bff;
+}
 </style></head>
 <body>
         <nav style="text-align: center; margin-bottom: 20px;">
@@ -156,6 +211,7 @@ body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-
 <button id="saveInputs" type="button">Save Inputs</button>
 <button id="loadInputs" type="button">Load Inputs</button>
 <button id="exportPdf" type="button">Export Strategy as PDF</button>
+<button id="exportCsv" type="button">📊 Export to CSV</button>
 <label><input id="limitMonthsToggle" style="width:auto; margin-right:10px;" type="checkbox"/> Limit table to first 60 months</label>
 </form>
 <div id="feedback"></div>
@@ -171,7 +227,6 @@ body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-
   <p>Generating PDF...</p>
 </div>
 <footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">Created by Ronell Bradley</footer></div>
-<button onclick="exportStrategyToCSV()">📊 Export to CSV</button>
 <script>
 window.onload = function () {
     function getLineOfCreditBehavior(type) {
@@ -242,6 +297,10 @@ window.onload = function () {
         } finally {
             loadingIndicator.style.display = "none";
         }
+    });
+
+    document.getElementById('exportCsv').addEventListener('click', function () {
+        exportStrategyToCSV();
     });
 
     document.getElementById('exportPdf').addEventListener('click', async function () {
