@@ -195,19 +195,20 @@ The app is pre-configured to work with the existing Firebase project:
 
 ---
 
-## 🎬 App Demonstration
+## 🎬 Professional Advertisement
 
-### **📱 Live Demo Video**
-Watch the app in action with this comprehensive demonstration:
+### **📱 Watch Our Professional Ad**
+Experience Bradley's Financial Tools with our professional advertisement featuring voice-over narration:
 
 <video width="800" controls>
-  <source src="https://github.com/ronb12/Velocity-Banking-Tool/raw/main/app_demo.mp4" type="video/mp4">
+  <source src="https://github.com/ronb12/Velocity-Banking-Tool/raw/main/bradley_financial_tools_professional_ad.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
-**Direct Link:** https://github.com/ronb12/Velocity-Banking-Tool/raw/main/app_demo.mp4
+**Professional Ad:** https://github.com/ronb12/Velocity-Banking-Tool/raw/main/bradley_financial_tools_professional_ad.mp4  
+**30-Second Social Media Version:** https://github.com/ronb12/Velocity-Banking-Tool/raw/main/bradley_financial_tools_30sec.mp4
 
-*Comprehensive walkthrough showing all major features including debt tracking, budget management, velocity banking calculator, and more.*
+*Professional voice-over advertisement showcasing all major features with compelling narration and dramatic visuals.*
 
 ### **🎯 Key Features Shown:**
 - **AI-Powered Dashboard** with financial insights
