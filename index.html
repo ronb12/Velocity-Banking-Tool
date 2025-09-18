@@ -142,13 +142,35 @@
       <div id="activityList"></div>
     </div>
 
-    <!-- Financial Insights Section -->
-    <div class="financial-insights auth-required" style="display: none;">
-      <h2>💡 Financial Insights</h2>
-      <div id="insightsContainer">
-        <div class="insights-loading">
-          <div class="spinner"></div>
-          <p>Analyzing your financial data...</p>
+    <!-- Financial Education Tips Section -->
+    <div class="financial-education">
+      <h2>💡 Financial Education Tips</h2>
+      <div id="educationContainer">
+        <div class="tip-card active" id="tipCard">
+          <div class="tip-header">
+            <span class="tip-category" id="tipCategory">Budgeting</span>
+            <span class="tip-number" id="tipNumber">1 of 12</span>
+          </div>
+          <h3 class="tip-title" id="tipTitle">The 50/30/20 Rule</h3>
+          <p class="tip-content" id="tipContent">Allocate 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment. This simple framework helps maintain financial balance.</p>
+          <div class="tip-actions">
+            <button class="tip-btn" onclick="previousTip()">← Previous</button>
+            <button class="tip-btn primary" onclick="nextTip()">Next →</button>
+          </div>
+        </div>
+        <div class="tip-navigation">
+          <button class="nav-dot active" onclick="goToTip(0)"></button>
+          <button class="nav-dot" onclick="goToTip(1)"></button>
+          <button class="nav-dot" onclick="goToTip(2)"></button>
+          <button class="nav-dot" onclick="goToTip(3)"></button>
+          <button class="nav-dot" onclick="goToTip(4)"></button>
+          <button class="nav-dot" onclick="goToTip(5)"></button>
+          <button class="nav-dot" onclick="goToTip(6)"></button>
+          <button class="nav-dot" onclick="goToTip(7)"></button>
+          <button class="nav-dot" onclick="goToTip(8)"></button>
+          <button class="nav-dot" onclick="goToTip(9)"></button>
+          <button class="nav-dot" onclick="goToTip(10)"></button>
+          <button class="nav-dot" onclick="goToTip(11)"></button>
         </div>
       </div>
     </div>
@@ -221,11 +243,75 @@
     //   window.LazyLoader.preloadAllTools();
     // }
     
-    // Load financial insights (only for authenticated users)
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        loadFinancialInsights();
+    // Initialize educational tips system
+    let currentTipIndex = 0;
+    const financialTips = [
+      {
+        category: "Budgeting",
+        title: "The 50/30/20 Rule",
+        content: "Allocate 50% of your income to needs, 30% to wants, and 20% to savings and debt repayment. This simple framework helps maintain financial balance."
+      },
+      {
+        category: "Debt Management",
+        title: "Debt Snowball vs. Avalanche",
+        content: "Snowball method: Pay smallest debts first for quick wins. Avalanche method: Pay highest interest rates first to save money. Choose based on your motivation style."
+      },
+      {
+        category: "Savings",
+        title: "Emergency Fund Priority",
+        content: "Build an emergency fund covering 3-6 months of expenses before investing. This prevents you from going into debt during unexpected situations."
+      },
+      {
+        category: "Investing",
+        title: "Start Early, Start Small",
+        content: "Time is your greatest asset in investing. Even $50/month invested at 7% annual return becomes $100,000+ in 30 years. Start with what you can afford."
+      },
+      {
+        category: "Credit",
+        title: "Credit Utilization Matters",
+        content: "Keep credit card balances below 30% of your credit limit. Lower utilization (under 10%) can significantly improve your credit score."
+      },
+      {
+        category: "Budgeting",
+        title: "Zero-Based Budgeting",
+        content: "Give every dollar a job before the month begins. This method ensures you're intentional with every dollar you earn and spend."
+      },
+      {
+        category: "Debt Management",
+        title: "Velocity Banking Strategy",
+        content: "Use a line of credit to pay off debts faster by cycling money through the credit line, reducing interest payments and accelerating payoff."
+      },
+      {
+        category: "Savings",
+        title: "Automate Your Savings",
+        content: "Set up automatic transfers to savings accounts. Pay yourself first by treating savings like a non-negotiable bill."
+      },
+      {
+        category: "Investing",
+        title: "Diversification is Key",
+        content: "Don't put all your eggs in one basket. Spread investments across different asset classes, sectors, and geographic regions to reduce risk."
+      },
+      {
+        category: "Credit",
+        title: "Monitor Your Credit Regularly",
+        content: "Check your credit report quarterly for errors and identity theft. You're entitled to one free report from each bureau annually at AnnualCreditReport.com."
+      },
+      {
+        category: "Budgeting",
+        title: "Track Every Expense",
+        content: "Know where your money goes. Use apps, spreadsheets, or the envelope method. Awareness is the first step to better financial control."
+      },
+      {
+        category: "General",
+        title: "Financial Goals Should Be SMART",
+        content: "Make goals Specific, Measurable, Achievable, Relevant, and Time-bound. 'Save $5,000 for emergency fund by December 2024' is better than 'save money.'"
       }
+    ];
+
+    // Initialize tips on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      updateTipDisplay();
+      startTipRotation();
     });
     
     // Make functions globally available
@@ -441,93 +527,46 @@
       }
     });
 
-    // Load financial insights and recommendations
-    async function loadFinancialInsights() {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-
-        // Show loading state
-        const insightsContainer = document.getElementById('insightsContainer');
-        const recommendationsContainer = document.getElementById('recommendationsContainer');
-        
-        // Check if elements exist before proceeding
-        if (!insightsContainer && !recommendationsContainer) {
-          console.log('Financial insights containers not found, skipping...');
-          return;
-        }
-        
-        if (insightsContainer) {
-          insightsContainer.innerHTML = `
-            <div class="insights-loading">
-              <div class="spinner"></div>
-              <p>Analyzing your financial data...</p>
-            </div>
-          `;
-        }
-
-        // Try to get data from Firestore first, then fallback to local storage
-        let userData = await getFinancialData(user.uid);
-        
-        // Generate insights
-        let insights = [];
-        let allInsights = { insights: [], recommendations: [], financialHealthScore: 0 };
-        
-        // Check if we have any data to analyze
-        const hasData = userData.debts?.length > 0 || 
-                       userData.budget?.expenses?.length > 0 || 
-                       userData.budget?.incomes?.length > 0 ||
-                       userData.netWorth?.length > 0 ||
-                       userData.savings?.length > 0;
-        
-        if (hasData && window.FinancialInsights && typeof window.FinancialInsights.generateInsights === 'function') {
-          try {
-            console.log('User data for insights:', userData);
-            insights = await window.FinancialInsights.generateInsights(userData);
-            allInsights = window.FinancialInsights.getAllInsights();
-            console.log('Generated insights:', allInsights);
-          } catch (error) {
-            console.warn('Could not generate financial insights:', error);
-          }
-        }
-        
-        // Display insights
-        if (insightsContainer) {
-          insightsContainer.innerHTML = renderInsights(allInsights.insights);
-        }
-        
-        // Display recommendations
-        if (recommendationsContainer) {
-          recommendationsContainer.innerHTML = renderRecommendations(allInsights.recommendations);
-        }
-        
-        // Track analytics
-        if (window.Analytics && typeof window.Analytics.trackFeatureUsage === 'function') {
-          try {
-            window.Analytics.trackFeatureUsage('financial_insights', {
-              insightsCount: allInsights.insights.length,
-              recommendationsCount: allInsights.recommendations.length,
-              financialHealthScore: allInsights.financialHealthScore
-            });
-          } catch (error) {
-            console.warn('Could not track analytics:', error);
-          }
-        }
-        
-      } catch (error) {
-        ErrorHandler.handleFirebaseError(error);
-        
-        // Show error state
-        const insightsContainer = document.getElementById('insightsContainer');
-        if (insightsContainer) {
-          insightsContainer.innerHTML = `
-            <div class="error-state">
-              <p>Unable to load financial insights. Please try again later.</p>
-            </div>
-          `;
-        }
-      }
+    // Educational Tips Functions
+    function updateTipDisplay() {
+      const tip = financialTips[currentTipIndex];
+      document.getElementById('tipCategory').textContent = tip.category;
+      document.getElementById('tipNumber').textContent = `${currentTipIndex + 1} of ${financialTips.length}`;
+      document.getElementById('tipTitle').textContent = tip.title;
+      document.getElementById('tipContent').textContent = tip.content;
+      
+      // Update navigation dots
+      document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentTipIndex);
+      });
     }
+
+    function nextTip() {
+      currentTipIndex = (currentTipIndex + 1) % financialTips.length;
+      updateTipDisplay();
+    }
+
+    function previousTip() {
+      currentTipIndex = currentTipIndex === 0 ? financialTips.length - 1 : currentTipIndex - 1;
+      updateTipDisplay();
+    }
+
+    function goToTip(index) {
+      currentTipIndex = index;
+      updateTipDisplay();
+    }
+
+    function startTipRotation() {
+      // Auto-rotate tips every 10 seconds
+      setInterval(() => {
+        nextTip();
+      }, 10000);
+    }
+
+    // Make tip functions globally available
+    window.nextTip = nextTip;
+    window.previousTip = previousTip;
+    window.goToTip = goToTip;
 
     // Get financial data with Firestore and local storage fallback
     async function getFinancialData(userId) {
@@ -814,8 +853,8 @@
       .profile-stats { grid-template-columns: 1fr; gap: 0.7rem; }
     }
 
-    /* Financial Insights Styles */
-    .financial-insights, .recommendations {
+    /* Financial Education Styles */
+    .financial-education {
       margin-top: 2rem;
       padding: 1.5rem;
       background: rgba(255,255,255,0.65);
@@ -824,7 +863,135 @@
       backdrop-filter: blur(4px);
     }
 
-    .financial-insights h2, .recommendations h2 {
+    .financial-education h2 {
+      margin: 0 0 1.5rem 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .tip-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateX(20px);
+    }
+
+    .tip-card.active {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .tip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .tip-category {
+      background: rgba(255,255,255,0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tip-number {
+      font-size: 0.875rem;
+      opacity: 0.8;
+    }
+
+    .tip-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0 0 1rem 0;
+      line-height: 1.3;
+    }
+
+    .tip-content {
+      font-size: 1rem;
+      line-height: 1.6;
+      margin: 0 0 1.5rem 0;
+      opacity: 0.95;
+    }
+
+    .tip-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+    }
+
+    .tip-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tip-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+
+    .tip-btn.primary {
+      background: rgba(255,255,255,0.9);
+      color: #667eea;
+    }
+
+    .tip-btn.primary:hover {
+      background: white;
+    }
+
+    .tip-navigation {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .nav-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(102, 126, 234, 0.3);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .nav-dot.active {
+      background: #667eea;
+      transform: scale(1.2);
+    }
+
+    .nav-dot:hover {
+      background: #667eea;
+      transform: scale(1.1);
+    }
+
+    /* Recommendations Styles */
+    .recommendations {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: rgba(255,255,255,0.65);
+      border-radius: 1.25rem;
+      box-shadow: 0 4px 24px rgba(37,99,235,0.08);
+      backdrop-filter: blur(4px);
+    }
+
+    .recommendations h2 {
       margin: 0 0 1.5rem 0;
       font-size: 1.5rem;
       font-weight: 700;
@@ -935,7 +1102,10 @@
     }
 
     /* Dark mode adjustments */
-    body.dark .financial-insights, 
+    body.dark .financial-education {
+      background: rgba(35, 41, 70, 0.65);
+    }
+
     body.dark .recommendations {
       background: rgba(35, 41, 70, 0.65);
     }
