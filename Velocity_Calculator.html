@@ -291,15 +291,23 @@ body.dark-mode .recommendation-badge {
 </div>
 <footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">Created by Ronell Bradley</footer></div>
 <script>
-// Check for global dark mode setting and apply it
-function applyDarkMode() {
-    const isDarkMode = localStorage.getItem('darkMode') === 'true';
-    if (isDarkMode) {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.remove('dark-mode');
-    }
-}
+        // Check for global dark mode setting and apply it
+        function applyDarkMode() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        // Format currency with proper comma separators
+        function formatCurrency(amount) {
+            return `$${parseFloat(amount).toLocaleString('en-US', { 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2 
+            })}`;
+        }
 
 // Apply dark mode on page load
 document.addEventListener('DOMContentLoaded', applyDarkMode);
@@ -530,8 +538,8 @@ window.onload = function () {
         const dtiRatio = (debtBalance / totalYearlyIncome) * 100;
         const cashFlow = income - expenses;
         feedback.innerHTML = `
-            <p>Yearly Income (with Extra): $${totalYearlyIncome.toFixed(2)}</p>
-            <p>Available Cash Flow: $${cashFlow.toFixed(2)}</p>
+            <p>Yearly Income (with Extra): ${formatCurrency(totalYearlyIncome)}</p>
+            <p>Available Cash Flow: ${formatCurrency(cashFlow)}</p>
             <p>Selected Line of Credit: ${locBehavior.description}</p>
         `;
 
@@ -654,12 +662,12 @@ window.onload = function () {
                 <div class="strategy" style="border-top: 4px solid #4CAF50;">
                     <h2>${strategy.strategyName.replace('Minimum Payments with Extra Payment', '🧮 Minimum Payments with Extra Payment')}</h2>
                     ${notice}
-                    <p>Total Interest Paid: $${strategy.totalInterest.toFixed(2)}</p>
+                    <p>Total Interest Paid: ${formatCurrency(strategy.totalInterest)}</p>
                     <p>Months to Payoff: ${strategy.months} (${strategy.yearsToPayoff} years)</p>
                     <p>Debt-Free Date: ${strategy.debtFreeDate.toLocaleDateString()}</p>
-                    <p>Interest Saved Compared to Minimum Payments: $${savings.toFixed(2)}</p>
-                    <p>Total Principal Paid: $${strategy.totalPrincipalPaid.toFixed(2)}</p>
-                    <p>Total Amount Paid: $${(strategy.totalPrincipalPaid + strategy.totalInterest).toFixed(2)}</p>
+                    <p>Interest Saved Compared to Minimum Payments: ${formatCurrency(savings)}</p>
+                    <p>Total Principal Paid: ${formatCurrency(strategy.totalPrincipalPaid)}</p>
+                    <p>Total Amount Paid: ${formatCurrency(strategy.totalPrincipalPaid + strategy.totalInterest)}</p>
                     <table>
                         <tr>
                             <th>Month</th>
@@ -671,10 +679,10 @@ window.onload = function () {
                         ${strategy.payments.slice(0, maxRows).map((p, i) => {
                             return `<tr>
                                 <td>${i + 1}</td>
-                                <td>${p.payment}</td>
-                                <td>${p.principalPaid}</td>
-                                <td>${p.interest}</td>
-                                <td>${p.balance}</td>
+                                <td>${formatCurrency(p.payment)}</td>
+                                <td>${formatCurrency(p.principalPaid)}</td>
+                                <td>${formatCurrency(p.interest)}</td>
+                                <td>${formatCurrency(p.balance)}</td>
                             </tr>`;
                         }).join('')}
                     </table>
@@ -703,10 +711,10 @@ window.onload = function () {
         const recommendedHtml = `
             <p><em>✅ Recommended because it saves the most interest while maintaining a fast payoff timeline.</em></p>
             <p><strong>Recommended Strategy:</strong> ${bestStrategy.strategyName}</p>
-            <p>Total Interest: $${bestStrategy.totalInterest.toFixed(2)}</p>
+            <p>Total Interest: ${formatCurrency(bestStrategy.totalInterest)}</p>
             <p>Months to Payoff: ${bestStrategy.months} months (${bestStrategy.yearsToPayoff} years)</p>
             <p>Debt-Free Date: ${bestStrategy.debtFreeDate.toLocaleDateString()}</p>
-            <p>💰 Est. Avg. Monthly Savings vs. Minimum: $${avgMonthlySavings.toFixed(2)}</p>
+            <p>💰 Est. Avg. Monthly Savings vs. Minimum: ${formatCurrency(avgMonthlySavings)}</p>
             <p>📊 Payoff Confidence: <strong>${confidenceLevel}</strong></p>
         `;
         
