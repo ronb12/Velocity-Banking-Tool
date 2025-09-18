@@ -725,13 +725,20 @@
       let budgetedTotal = 0;
       let spentTotal = 0;
       
-      // Calculate income
+      // Create income map to track allocation
+      const incomeMap = {};
+      
+      // Calculate income and initialize income map
       document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+        const source = row.cells[0].querySelector("input").value.trim();
         const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
         incomeTotal += amount;
+        if (source) {
+          incomeMap[source] = { amount: amount, allocated: 0 };
+        }
       });
       
-      // Calculate expenses
+      // Calculate expenses and track allocation
       document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
         const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
         const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
@@ -742,6 +749,25 @@
         
         // Update remaining cell
         row.cells[4].querySelector("input").value = remaining.toFixed(2);
+        
+        // For now, we'll assume all expenses are allocated from the first income source
+        // In a more advanced version, you could add a "Paid From" column
+        if (Object.keys(incomeMap).length > 0) {
+          const firstIncomeSource = Object.keys(incomeMap)[0];
+          incomeMap[firstIncomeSource].allocated += budgeted;
+        }
+      });
+      
+      // Update income remaining to allocate
+      document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
+        const source = row.cells[0].querySelector("input").value.trim();
+        if (source && incomeMap[source]) {
+          const remainingToAllocate = incomeMap[source].amount - incomeMap[source].allocated;
+          row.cells[2].textContent = `$${remainingToAllocate.toFixed(2)}`;
+        } else {
+          const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+          row.cells[2].textContent = `$${amount.toFixed(2)}`;
+        }
       });
       
       const remaining = incomeTotal - budgetedTotal;
