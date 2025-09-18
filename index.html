@@ -216,8 +216,12 @@
     // Preload critical tools
     LazyLoader.preloadAllTools();
     
-    // Load financial insights
-    loadFinancialInsights();
+    // Load financial insights (only for authenticated users)
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loadFinancialInsights();
+      }
+    });
     
     // Make functions globally available
     window.logout = logout;
@@ -333,7 +337,12 @@
               }
             },
             error => {
-              ErrorHandler.handleFirebaseError(error);
+              console.error('Firestore snapshot error:', error);
+              if (error.code === 'permission-denied') {
+                ErrorHandler.showError('Permission denied. Please check your account access.');
+              } else {
+                ErrorHandler.handleFirebaseError(error);
+              }
             }
           );
         } catch (error) {
@@ -396,6 +405,12 @@
         const insightsContainer = document.getElementById('insightsContainer');
         const recommendationsContainer = document.getElementById('recommendationsContainer');
         
+        // Check if elements exist before proceeding
+        if (!insightsContainer && !recommendationsContainer) {
+          console.log('Financial insights containers not found, skipping...');
+          return;
+        }
+        
         if (insightsContainer) {
           insightsContainer.innerHTML = `
             <div class="insights-loading">
@@ -406,7 +421,23 @@
         }
 
         // Gather user data from Firestore
-        const userData = await gatherUserData(user.uid);
+        let userData = {};
+        try {
+          userData = await gatherUserData(user.uid);
+        } catch (error) {
+          console.error('Error gathering user data:', error);
+          ErrorHandler.handleFirebaseError(error);
+          
+          // Show error state
+          if (insightsContainer) {
+            insightsContainer.innerHTML = `
+              <div class="error-state">
+                <p>Unable to load financial data. Please check your permissions and try again.</p>
+              </div>
+            `;
+          }
+          return;
+        }
         
         // Generate insights
         const insights = await FinancialInsights.generateInsights(userData);
@@ -450,35 +481,52 @@
       
       try {
         // Get debts
-        const debtsRef = doc(db, 'debts', userId);
-        const debtsSnap = await getDoc(debtsRef);
-        if (debtsSnap.exists()) {
-          userData.debts = debtsSnap.data().debts || [];
+        try {
+          const debtsRef = doc(db, 'debts', userId);
+          const debtsSnap = await getDoc(debtsRef);
+          if (debtsSnap.exists()) {
+            userData.debts = debtsSnap.data().debts || [];
+          }
+        } catch (error) {
+          console.warn('Could not fetch debts:', error.message);
         }
         
         // Get budget
-        const budgetRef = doc(db, 'budgets', userId + '_' + new Date().toISOString().slice(0,7));
-        const budgetSnap = await getDoc(budgetRef);
-        if (budgetSnap.exists()) {
-          userData.budget = budgetSnap.data();
+        try {
+          const budgetRef = doc(db, 'budgets', userId + '_' + new Date().toISOString().slice(0,7));
+          const budgetSnap = await getDoc(budgetRef);
+          if (budgetSnap.exists()) {
+            userData.budget = budgetSnap.data();
+          }
+        } catch (error) {
+          console.warn('Could not fetch budget:', error.message);
         }
         
         // Get net worth
-        const netWorthRef = doc(db, 'networth', userId);
-        const netWorthSnap = await getDoc(netWorthRef);
-        if (netWorthSnap.exists()) {
-          userData.netWorth = netWorthSnap.data().history || [];
+        try {
+          const netWorthRef = doc(db, 'networth', userId);
+          const netWorthSnap = await getDoc(netWorthRef);
+          if (netWorthSnap.exists()) {
+            userData.netWorth = netWorthSnap.data().history || [];
+          }
+        } catch (error) {
+          console.warn('Could not fetch net worth:', error.message);
         }
         
         // Get savings
-        const savingsRef = doc(db, 'savings', userId);
-        const savingsSnap = await getDoc(savingsRef);
-        if (savingsSnap.exists()) {
-          userData.savings = savingsSnap.data().goals || [];
+        try {
+          const savingsRef = doc(db, 'savings', userId);
+          const savingsSnap = await getDoc(savingsRef);
+          if (savingsSnap.exists()) {
+            userData.savings = savingsSnap.data().goals || [];
+          }
+        } catch (error) {
+          console.warn('Could not fetch savings:', error.message);
         }
         
       } catch (error) {
         console.error('Error gathering user data:', error);
+        throw error; // Re-throw to be handled by caller
       }
       
       return userData;
