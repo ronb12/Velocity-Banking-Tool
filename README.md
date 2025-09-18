@@ -20,7 +20,16 @@ A comprehensive, AI-powered personal finance dashboard built with Firebase and m
 - **Net Worth Calculator** with trend tracking
 - **1099 Tax Estimator** for self-employed users
 - **Savings Goal Tracker** with progress monitoring
-- **Velocity Banking Calculator** for debt optimization
+- **Velocity Banking Calculator** for debt optimization with interactive tutorial and example scenarios
+
+#### 🚀 **Velocity Banking Calculator Features:**
+- **Interactive Tutorial** - Comprehensive guide explaining velocity banking concepts
+- **Pre-loaded Examples** - 4 realistic scenarios (credit card, student loan, car loan, personal loan)
+- **Smart Input Suggestions** - Real-time recommendations based on debt amount and interest rate
+- **Multiple Strategy Comparison** - Compare minimum payments, extra payments, and velocity banking
+- **Professional Export** - PDF and CSV export with detailed calculations
+- **Input Validation** - Prevents invalid scenarios and provides helpful error messages
+- **Mobile Optimized** - Touch-friendly interface with responsive design
 
 ### 🤖 **AI-Powered Insights**
 - **Smart Financial Analysis** with automated insights
@@ -105,7 +114,7 @@ A comprehensive, AI-powered personal finance dashboard built with Firebase and m
 └── Financial Tools/              # Core financial tools
     ├── Debt_Tracker.html         # Debt management
     ├── budget.html               # Budget planning
-    ├── Velocity_Calculator.html  # Velocity banking
+    ├── Velocity_Calculator.html  # Velocity banking with tutorial & examples
     ├── net_worth_tracker.html    # Net worth tracking
     ├── Credit_Score_Estimator.html # Credit scoring
     ├── 1099_calculator.html      # Tax estimation
