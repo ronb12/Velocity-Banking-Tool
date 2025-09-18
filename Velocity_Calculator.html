@@ -291,6 +291,9 @@ window.onload = function () {
         const interestRate = baseInterestRate * locBehavior.rateMultiplier;
         const extraIncome = parseFloat(document.getElementById('extraIncome').value) || 0;
         
+        // Get feedback element first
+        const feedback = document.getElementById('feedback');
+        
         // Input validation
         if (minimumPayment <= 0) {
             feedback.innerHTML = `<p class="feedback high">Error: Minimum monthly payment must be greater than $0. Please enter a valid minimum payment amount.</p>`;
@@ -317,8 +320,6 @@ window.onload = function () {
         const totalYearlyIncome = yearlyIncome + extraIncome;
         const dtiRatio = (debtBalance / totalYearlyIncome) * 100;
         const cashFlow = income - expenses;
-
-        const feedback = document.getElementById('feedback');
         feedback.innerHTML = `
             <p>Yearly Income (with Extra): $${totalYearlyIncome.toFixed(2)}</p>
             <p>Available Cash Flow: $${cashFlow.toFixed(2)}</p>
