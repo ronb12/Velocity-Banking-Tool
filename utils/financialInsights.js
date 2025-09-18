@@ -41,22 +41,35 @@ class FinancialInsights {
   analyzeDebtSituation(debts) {
     console.log('Analyzing debt situation with debts:', debts);
     
-    const totalDebt = debts.reduce((sum, debt) => sum + (debt.balance || 0), 0);
-    const totalInterest = debts.reduce((sum, debt) => {
-      const monthlyInterest = (debt.balance || 0) * (debt.interestRate || 0) / 100 / 12;
+    // Ensure all values are numbers
+    const processedDebts = debts.map(debt => ({
+      ...debt,
+      balance: parseFloat(debt.balance) || 0,
+      interestRate: parseFloat(debt.interestRate) || 0,
+      minPayment: parseFloat(debt.minPayment) || 0,
+      limit: parseFloat(debt.limit) || 0
+    }));
+    
+    console.log('Processed debts with numeric values:', processedDebts);
+    
+    const totalDebt = processedDebts.reduce((sum, debt) => sum + debt.balance, 0);
+    const totalInterest = processedDebts.reduce((sum, debt) => {
+      const monthlyInterest = debt.balance * debt.interestRate / 100 / 12;
       return sum + monthlyInterest;
     }, 0);
     
-    const avgInterestRate = debts.reduce((sum, debt) => sum + (debt.interestRate || 0), 0) / debts.length;
-    const highestInterestDebt = debts.reduce((max, debt) => 
-      (debt.interestRate || 0) > (max.interestRate || 0) ? debt : max
+    const avgInterestRate = processedDebts.length > 0 ? processedDebts.reduce((sum, debt) => sum + debt.interestRate, 0) / processedDebts.length : 0;
+    const highestInterestDebt = processedDebts.reduce((max, debt) => 
+      debt.interestRate > max.interestRate ? debt : max
     );
     
     console.log('Debt analysis results:', {
       totalDebt,
       totalInterest,
       avgInterestRate,
-      highestInterestDebt
+      highestInterestDebt,
+      debtCount: processedDebts.length,
+      interestRates: processedDebts.map(d => d.interestRate)
     });
     
     // Debt-to-income ratio (if income data available)

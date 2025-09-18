@@ -690,13 +690,27 @@
     // Format values for display
     function formatValue(value) {
       if (typeof value === 'number') {
+        // Handle currency values (large numbers)
         if (value > 1000) {
-          return `$${value.toLocaleString()}`;
-        } else if (value < 1) {
-          return `${(value * 100).toFixed(1)}%`;
-        } else {
-          return value.toFixed(2);
+          return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
         }
+        // Handle percentages (values less than 1, or specific percentage fields)
+        else if (value < 1 || (typeof value === 'number' && value <= 100 && value > 0)) {
+          return `${(value * 100).toFixed(1)}%`;
+        }
+        // Handle regular numbers with appropriate decimal places
+        else if (value < 10) {
+          return value.toFixed(2);
+        } else {
+          return value.toFixed(1);
+        }
+      }
+      // Handle objects (like highestInterestDebt)
+      if (typeof value === 'object' && value !== null) {
+        if (value.name && value.interestRate !== undefined) {
+          return `${value.name} (${value.interestRate.toFixed(1)}%)`;
+        }
+        return JSON.stringify(value);
       }
       return value;
     }
