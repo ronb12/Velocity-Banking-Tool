@@ -8,6 +8,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Enhanced Utility Scripts -->
+  <script src="config.js"></script>
+  <script src="utils/validation.js"></script>
+  <script src="utils/errorHandler.js"></script>
+  <script src="utils/performance.js"></script>
+  <script src="utils/mobileOptimizer.js"></script>
+  <script src="utils/accessibility.js"></script>
+  <script src="utils/analytics.js"></script>
   <style>
     body { font-family: 'Segoe UI', sans-serif; background: #f4f4f9; padding: 20px; margin: 0; text-align: center; }
     h1 { color: #007bff; }
@@ -245,10 +254,14 @@
 <button id="darkModeToggle" onclick="toggleDarkMode()" style="position: absolute; top: 10px; right: 10px;">🌙 Toggle Dark Mode</button>
 
 <script>
-const firebaseConfig = {
+// Use centralized configuration
+const firebaseConfig = window.CONFIG?.firebase || {
   apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
   authDomain: "mobile-debt-tracker.firebaseapp.com",
-  projectId: "mobile-debt-tracker"
+  projectId: "mobile-debt-tracker",
+  storageBucket: "mobile-debt-tracker.appspot.com",
+  messagingSenderId: "153601029964",
+  appId: "1:153601029964:web:ddd1880ba21bce2e9041e9"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -256,9 +269,28 @@ const db = firebase.firestore();
 let userId = "";
 let prefillBackup = [];
 
+// Initialize utility functions
+if (window.ErrorHandler) {
+  window.ErrorHandler.setupGlobalErrorHandling();
+}
+
+if (window.MobileOptimizer) {
+  window.MobileOptimizer.init();
+}
+
+if (window.AccessibilityUtils) {
+  window.AccessibilityUtils.init();
+}
+
+if (window.Analytics) {
+  window.Analytics.init();
+  window.Analytics.trackPageView('/budget.html', 'Budget Tracker');
+}
+
 auth.onAuthStateChanged(user => {
   if (!user) return window.location.href = "login.html";
   userId = user.uid;
+  console.log('User authenticated, loading budget data...');
   loadBudget();
   setInterval(saveBudget, 30000);
 });
@@ -431,10 +463,15 @@ async function saveBudget() {
 async function loadBudget() {
   const loadingIndicator = document.getElementById("loadingIndicator");
   loadingIndicator.style.display = "block";
+  
   try {
+    console.log('Loading budget data from Firebase for user:', userId);
     const doc = await db.collection("budgets").doc(userId).get();
+    
     if (doc.exists) {
       const data = doc.data();
+      console.log('Budget data loaded successfully:', data);
+      
       document.getElementById("month").value = data.month || "";
       document.getElementById("monthlyNotes").value = data.notes || "";
       document.querySelector("#incomeTable tbody").innerHTML = "";
@@ -442,9 +479,24 @@ async function loadBudget() {
       data.income.forEach(inc => addIncome(inc.source, inc.amount));
       data.expenses.forEach(exp => addExpense(exp.category, exp.name, exp.budgeted, exp.due));
       calculateBudget();
+      
+      // Show success message
+      if (window.ErrorHandler) {
+        window.ErrorHandler.showSuccess('Budget data loaded successfully from Firebase!');
+      }
+    } else {
+      console.log('No budget data found for user:', userId);
+      if (window.ErrorHandler) {
+        window.ErrorHandler.showWarning('No budget data found. Start by adding income and expenses.');
+      }
     }
   } catch (error) {
-    alert("Error loading budget: " + error.message);
+    console.error('Error loading budget from Firebase:', error);
+    if (window.ErrorHandler) {
+      window.ErrorHandler.handleFirebaseError(error);
+    } else {
+      alert("Error loading budget: " + error.message);
+    }
   } finally {
     loadingIndicator.style.display = "none";
   }
