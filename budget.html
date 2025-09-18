@@ -1063,6 +1063,163 @@
       document.body.removeChild(link);
     }
     
+    // Export to PDF function
+    function exportToPDF() {
+      // Get current budget data
+      const incomeTotal = document.getElementById("tileIncome").textContent;
+      const budgetedTotal = document.getElementById("tileBudgeted").textContent;
+      const spentTotal = document.getElementById("tileSpent").textContent;
+      const remainingTotal = document.getElementById("tileRemaining").textContent;
+      const selectedMonth = document.getElementById("monthSelect").value || new Date().toISOString().slice(0, 7);
+      
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      
+      // Get income data
+      const incomeRows = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(row => ({
+        source: row.cells[0].querySelector("input").value,
+        amount: row.cells[1].querySelector("input").value
+      })).filter(inc => inc.source && inc.amount);
+      
+      // Get expense data
+      const expenseRows = Array.from(document.querySelectorAll("#expenseTable tbody tr")).map(row => ({
+        category: row.cells[0].querySelector("select").value,
+        name: row.cells[1].querySelector("input").value,
+        budgeted: row.cells[2].querySelector("input").value,
+        spent: row.cells[3].querySelector("input").value,
+        remaining: row.cells[4].querySelector("input").value,
+        dueDate: row.cells[5].querySelector("input").value,
+        paidFrom: row.cells[6].querySelector("select").value
+      })).filter(exp => exp.name);
+      
+      // Get notes
+      const notes = document.getElementById("monthlyNotes").value;
+      
+      // Create HTML content for PDF
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Budget Report - ${selectedMonth}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .summary { display: flex; justify-content: space-around; margin-bottom: 30px; }
+            .summary-item { text-align: center; padding: 10px; border: 1px solid #ccc; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #f5f5f5; }
+            .section { margin-bottom: 30px; }
+            .notes { margin-top: 20px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>💰 Bradley's Budget Tracker</h1>
+            <h2>Budget Report - ${selectedMonth}</h2>
+          </div>
+          
+          <div class="summary">
+            <div class="summary-item">
+              <h3>Total Income</h3>
+              <p>${incomeTotal}</p>
+            </div>
+            <div class="summary-item">
+              <h3>Budgeted</h3>
+              <p>${budgetedTotal}</p>
+            </div>
+            <div class="summary-item">
+              <h3>Spent</h3>
+              <p>${spentTotal}</p>
+            </div>
+            <div class="summary-item">
+              <h3>Remaining</h3>
+              <p>${remainingTotal}</p>
+            </div>
+          </div>
+          
+          <div class="section">
+            <h3>💰 Income Sources</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${incomeRows.map(inc => `
+                  <tr>
+                    <td>${inc.source}</td>
+                    <td>$${parseFloat(inc.amount || 0).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          <div class="section">
+            <h3>💳 Expenses</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Bill Name</th>
+                  <th>Budgeted</th>
+                  <th>Spent</th>
+                  <th>Remaining</th>
+                  <th>Due Date</th>
+                  <th>Paid From</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${expenseRows.map(exp => `
+                  <tr>
+                    <td>${exp.category}</td>
+                    <td>${exp.name}</td>
+                    <td>$${parseFloat(exp.budgeted || 0).toFixed(2)}</td>
+                    <td>$${parseFloat(exp.spent || 0).toFixed(2)}</td>
+                    <td>$${parseFloat(exp.remaining || 0).toFixed(2)}</td>
+                    <td>${exp.dueDate || ''}</td>
+                    <td>${exp.paidFrom || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+          
+          ${notes ? `
+          <div class="notes">
+            <h3>📝 Notes</h3>
+            <p>${notes}</p>
+          </div>
+          ` : ''}
+          
+          <div style="margin-top: 30px; text-align: center; color: #666;">
+            <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      // Write content to new window
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Wait for content to load, then print
+      printWindow.onload = function() {
+        printWindow.print();
+        printWindow.close();
+      };
+      
+      if (window.ErrorHandler) {
+        window.ErrorHandler.showSuccess('Budget exported to PDF successfully!');
+      } else {
+        alert('Budget exported to PDF successfully!');
+      }
+    }
+    
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
       calculateBudget();
