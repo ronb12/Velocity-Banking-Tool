@@ -15,6 +15,8 @@ body {
 body.dark {
   background: linear-gradient(135deg, #1a1a1a 0%, #232946 100%);
   color: #f4f4f9;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Responsive Design */
@@ -384,6 +386,8 @@ header h1 {
   padding: 1.5rem 0.5rem 2rem 0.5rem;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 header {
@@ -560,6 +564,10 @@ body.dark .tool-icon { background: #334155; }
 @media (max-width: 600px) {
   .dashboard {
     padding: 0.5rem 0.1rem;
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   header {
     flex-direction: column;
