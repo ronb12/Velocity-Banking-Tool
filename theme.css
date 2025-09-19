@@ -1,8 +1,37 @@
-/* Ensure proper scrolling on mobile */
+/* Ensure proper scrolling on mobile and PWA */
 html {
   height: 100%;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  /* PWA-specific fixes */
+  position: relative;
+  overscroll-behavior: none;
+}
+
+/* PWA-specific scrolling fixes */
+@media (display-mode: standalone) {
+  html {
+    height: 100%;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+  
+  body {
+    height: 100%;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+    position: relative;
+  }
+  
+  .dashboard {
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
 }
 
 /* Light mode (default) */
