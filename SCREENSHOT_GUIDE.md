@@ -126,3 +126,4 @@ If you need help with any step:
 2. Ensure all features are working properly
 3. Test with sample data before taking screenshots
 4. Use browser developer tools to adjust zoom if needed
+
