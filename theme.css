@@ -7,6 +7,8 @@ body {
   padding: 0;
   min-height: 100vh;
   letter-spacing: 0.01em;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Dark mode */
@@ -19,6 +21,8 @@ body.dark {
 @media (max-width: 768px) {
   body {
     padding: 1rem;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
   h1 {
     font-size: 1.5em;
@@ -26,18 +30,22 @@ body.dark {
   .container {
     width: 100%;
     padding: 1rem;
+    justify-content: flex-start;
   }
 }
 
 @media (max-width: 480px) {
   body {
     padding: 5px;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
   h1 {
     font-size: 1.2em;
   }
   .container {
     padding: 5px;
+    justify-content: flex-start;
   }
 }
 
@@ -374,6 +382,8 @@ header h1 {
   max-width: 1050px;
   margin: 0 auto;
   padding: 1.5rem 0.5rem 2rem 0.5rem;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 header {
