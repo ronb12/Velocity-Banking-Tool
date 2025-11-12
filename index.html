@@ -1500,7 +1500,16 @@
     async function exportAllData(format) {
       try {
         showNotification('Preparing data export...', 'info');
-        
+
+        const financialData = await gatherAllFinancialData();
+        const summary = calculateSummaryMetrics(financialData);
+        const accountInfo = {
+          displayName: localStorage.getItem('profileName') || auth?.currentUser?.displayName || "Bradley's Finance Hub Member",
+          email: localStorage.getItem('profileEmail') || auth?.currentUser?.email || 'Not linked',
+          uid: auth?.currentUser?.uid || '',
+          generatedAt: new Date().toISOString()
+        };
+
         const exportData = {
           exportInfo: {
             timestamp: new Date().toISOString(),
@@ -1508,6 +1517,7 @@
             format: format,
             userAgent: navigator.userAgent
           },
+          account: accountInfo,
           userSettings: {
             darkMode: localStorage.getItem('darkMode') === 'true',
             theme: localStorage.getItem('theme'),
@@ -1516,7 +1526,8 @@
             showTipsEnabled: localStorage.getItem('showTipsEnabled') !== 'false',
             userAvatar: localStorage.getItem('userAvatar') ? 'Present' : 'Not set'
           },
-          financialData: await gatherAllFinancialData()
+          financialData,
+          summary
         };
         
         if (format === 'json') {
@@ -1587,6 +1598,150 @@
       }
       
       return data;
+    }
+
+    function calculateSummaryMetrics(financialData) {
+      const metrics = {
+        totalDebt: 0,
+        creditBalance: 0,
+        creditLimit: 0,
+        creditUtilization: null,
+        netWorth: null,
+        netWorthChange: null,
+        netWorthChangePercent: null,
+        incomeTotal: 0,
+        expenseBudgeted: 0,
+        expenseActual: 0,
+        netCashFlow: null,
+        savingsProgress: null,
+        savingsTarget: 0,
+        savingsSaved: 0
+      };
+
+      const datasetCounts = {};
+
+      const debts = Array.isArray(financialData.debts) ? financialData.debts : [];
+      datasetCounts.debts = debts.length;
+      debts.forEach(debt => {
+        const balance = parseFloat(debt.balance) || 0;
+        metrics.totalDebt += balance;
+        if ((debt.type || '').toLowerCase() === 'credit') {
+          metrics.creditBalance += balance;
+          metrics.creditLimit += parseFloat(debt.limit) || 0;
+        }
+      });
+      if (metrics.creditLimit > 0) {
+        metrics.creditUtilization = (metrics.creditBalance / metrics.creditLimit) * 100;
+      } else if (metrics.creditBalance > 0) {
+        metrics.creditUtilization = 100;
+      } else {
+        metrics.creditUtilization = 0;
+      }
+
+      let netWorthHistory = [];
+      const netWorthRaw = financialData.netWorth;
+      if (Array.isArray(netWorthRaw)) {
+        netWorthHistory = netWorthRaw;
+      } else if (netWorthRaw && typeof netWorthRaw === 'object') {
+        if (Array.isArray(netWorthRaw.history)) {
+          netWorthHistory = netWorthRaw.history;
+        }
+      }
+      datasetCounts.netWorthHistory = netWorthHistory.length;
+      if (netWorthHistory.length) {
+        const ordered = netWorthHistory
+          .slice()
+          .sort((a, b) => new Date(a.date || a.timestamp || 0) - new Date(b.date || b.timestamp || 0));
+        const latest = ordered[ordered.length - 1];
+        const previous = ordered[ordered.length - 2];
+        metrics.netWorth = parseFloat(latest?.netWorth) || 0;
+        if (previous) {
+          const prevValue = parseFloat(previous.netWorth) || 0;
+          const delta = metrics.netWorth - prevValue;
+          metrics.netWorthChange = delta;
+          if (prevValue !== 0) {
+            metrics.netWorthChangePercent = (delta / Math.abs(prevValue)) * 100;
+          }
+        }
+      }
+
+      const savingsGoals = Array.isArray(financialData.savingsGoals) ? financialData.savingsGoals : [];
+      datasetCounts.savingsGoals = savingsGoals.length;
+      const totalSaved = savingsGoals.reduce((sum, goal) => sum + (parseFloat(goal.saved ?? goal.current ?? 0) || 0), 0);
+      const totalTarget = savingsGoals.reduce((sum, goal) => sum + (parseFloat(goal.target ?? 0) || 0), 0);
+      metrics.savingsSaved = totalSaved;
+      metrics.savingsTarget = totalTarget;
+      if (totalTarget > 0) {
+        metrics.savingsProgress = (totalSaved / totalTarget) * 100;
+      }
+
+      let budgetRecords = [];
+      if (Array.isArray(financialData.budgets)) {
+        budgetRecords = financialData.budgets;
+      } else if (financialData.budgets && typeof financialData.budgets === 'object') {
+        budgetRecords = Object.values(financialData.budgets);
+      } else if (financialData.budget && typeof financialData.budget === 'object') {
+        budgetRecords = [financialData.budget];
+      }
+      datasetCounts.budgets = budgetRecords.length;
+
+      budgetRecords.forEach(record => {
+        const incomes = Array.isArray(record.incomes) ? record.incomes : (Array.isArray(record.income) ? record.income : []);
+        incomes.forEach(entry => {
+          metrics.incomeTotal += parseFloat(entry.amount) || 0;
+        });
+        const expenses = Array.isArray(record.expenses) ? record.expenses : [];
+        expenses.forEach(exp => {
+          metrics.expenseBudgeted += parseFloat(exp.budgeted ?? exp.amount ?? 0) || 0;
+          metrics.expenseActual += parseFloat(exp.spent ?? exp.amount ?? 0) || 0;
+        });
+      });
+      metrics.netCashFlow = metrics.incomeTotal - metrics.expenseActual;
+
+      const velocityCalculations = Array.isArray(financialData.velocityCalculations) ? financialData.velocityCalculations : [];
+      datasetCounts.velocityCalculations = velocityCalculations.length;
+
+      const taxCalculations = Array.isArray(financialData.taxCalculations) ? financialData.taxCalculations : [];
+      datasetCounts.taxCalculations = taxCalculations.length;
+
+      const activityLogs = Array.isArray(financialData.activityLogs) ? financialData.activityLogs : [];
+      datasetCounts.activityLogs = activityLogs.length;
+
+      if (typeof window !== 'undefined') {
+        try {
+          const localStats = typeof window.getLocalTestData === 'function'
+            ? window.getLocalTestData('userStats')
+            : window.LOCAL_TEST_DATA?.userStats;
+          if (localStats) {
+            if ((metrics.netWorth ?? null) === null || metrics.netWorth === 0) {
+              metrics.netWorth = typeof localStats.netWorth === 'number' ? localStats.netWorth : metrics.netWorth;
+            }
+            if ((metrics.totalDebt ?? null) === null || metrics.totalDebt === 0) {
+              metrics.totalDebt = typeof localStats.totalDebt === 'number' ? localStats.totalDebt : metrics.totalDebt;
+            }
+            if (metrics.creditUtilization === null || Number.isNaN(metrics.creditUtilization)) {
+              if (typeof localStats.creditUtilization === 'number') {
+                metrics.creditUtilization = localStats.creditUtilization;
+              }
+            }
+            if (metrics.savingsProgress === null || Number.isNaN(metrics.savingsProgress)) {
+              if (typeof localStats.savingsProgress === 'number') {
+                metrics.savingsProgress = localStats.savingsProgress;
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('Unable to merge local summary stats:', error);
+        }
+      }
+
+      datasetCounts.totalDatasets = Object.values(datasetCounts).reduce((sum, value) => sum + (Number(value) || 0), 0);
+
+      return {
+        generatedAt: new Date().toISOString(),
+        metrics,
+        datasetCounts
+      };
     }
     
     function exportAsJSON(data) {
@@ -1672,6 +1827,17 @@
           doc.setFontSize(12);
           doc.setFont('helvetica', 'normal');
           doc.text("Personal Financial Intelligence Suite", marginX, 63);
+          if (data.account) {
+            const displayName = data.account.displayName || 'Client';
+            const email = data.account.email || '';
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.text(displayName, pageWidth - marginX, 42, { align: 'right' });
+            doc.setFont('helvetica', 'normal');
+            if (email) {
+              doc.text(email, pageWidth - marginX, 57, { align: 'right' });
+            }
+          }
           doc.setTextColor(...colors.text);
         };
 
@@ -1734,37 +1900,74 @@
           cursorY += 24 + (lines.length - 1) * 12;
         };
 
-        const addGrid = (items = []) => {
-          if (!Array.isArray(items) || !items.length) return;
-          const columns = 2;
-          const cardWidth = (pageWidth - marginX * 2 - 16) / columns;
-          doc.setFontSize(10);
+        const addParagraph = (text, fontSize = 11) => {
+          ensureSpace(24);
+          doc.setFontSize(fontSize);
           doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.text);
+          const lines = doc.splitTextToSize(text, pageWidth - marginX * 2);
+          lines.forEach(line => {
+            ensureSpace(16);
+            doc.text(line, marginX, cursorY);
+            cursorY += 14;
+          });
+          cursorY += 6;
+        };
 
-          items.forEach((item, index) => {
-            const col = index % columns;
-            const row = Math.floor(index / columns);
-            const cardX = marginX + col * (cardWidth + 16);
-            const cardY = cursorY + row * 70;
+        const addMetricCards = (cards = []) => {
+          if (!cards.length) return;
+          const cardsPerRow = 2;
+          const spacing = 20;
+          const cardWidth = (pageWidth - marginX * 2 - spacing * (cardsPerRow - 1)) / cardsPerRow;
+          const cardHeight = 110;
 
-            ensureSpace(80);
-            doc.setDrawColor(...colors.lightGray);
-            doc.setFillColor(255, 255, 255);
-            doc.roundedRect(cardX, cardY, cardWidth, 60, 6, 6, 'S');
-            doc.setDrawColor(...colors.accent);
-            doc.line(cardX, cardY + 24, cardX + cardWidth, cardY + 24);
+          cards.forEach((card, index) => {
+            const col = index % cardsPerRow;
+            if (col === 0) {
+              ensureSpace(cardHeight + spacing);
+            }
+            const cardX = marginX + col * (cardWidth + spacing);
+            const cardY = cursorY;
+
+            const fill = card.fill || colors.primary;
+            doc.setFillColor(...fill);
+            doc.setDrawColor(...fill);
+            doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 12, 12, 'FD');
 
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(...colors.primary);
-            doc.text(item.title || '', cardX + 12, cardY + 18);
+            doc.setFontSize(12);
+            doc.setTextColor(255, 255, 255);
+            doc.text(card.title, cardX + 16, cardY + 26);
 
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(...colors.text);
-            const details = doc.splitTextToSize(item.detail || '', cardWidth - 24);
-            doc.text(details, cardX + 12, cardY + 36);
+            doc.setFontSize(26);
+            doc.text(card.value, cardX + 16, cardY + 62);
+
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(10);
+            doc.text(card.caption, cardX + 16, cardY + 84);
+
+            if (col === cardsPerRow - 1 || index === cards.length - 1) {
+              cursorY = cardY + cardHeight + spacing;
+            }
           });
 
-          cursorY += Math.ceil(items.length / columns) * 70 + 16;
+          doc.setTextColor(...colors.text);
+        };
+
+        const addBulletList = (items = []) => {
+          if (!items.length) return;
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          doc.setTextColor(...colors.text);
+          items.forEach(item => {
+            ensureSpace(18);
+            doc.setFillColor(...colors.accent);
+            doc.circle(marginX + 4, cursorY - 4, 2, 'F');
+            const lines = doc.splitTextToSize(item, pageWidth - marginX * 2 - 16);
+            doc.text(lines, marginX + 14, cursorY);
+            cursorY += 14 + (lines.length - 1) * 12;
+          });
+          cursorY += 6;
         };
 
         const addTable = (columns = [], rows = []) => {
@@ -1807,65 +2010,283 @@
           cursorY += 16;
         };
 
-        addSectionTitle('Executive Summary', 'Snapshot of your financial profile and system settings');
-        addGrid([
+        const formatCurrency = (value) => {
+          if (value === null || value === undefined || isNaN(value)) return '—';
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0
+          }).format(Number(value));
+        };
+
+        const formatPercent = (value) => {
+          if (value === null || value === undefined || isNaN(value)) return '—';
+          return `${Number(value).toFixed(1)}%`;
+        };
+
+        const formatDate = (value) => {
+          if (!value) return '—';
+          const parsed = new Date(value);
+          if (Number.isNaN(parsed.getTime())) return value;
+          return parsed.toLocaleDateString();
+        };
+
+        const summary = data.summary || {};
+        const metrics = summary.metrics || {};
+        const datasetCounts = summary.datasetCounts || {};
+        const account = data.account || {};
+
+        addSectionTitle('Executive Summary', 'Snapshot of account health and preferences');
+
+        const metricCards = [
           {
-            title: 'Report Generated',
-            detail: `${new Date().toLocaleString()} · Version ${data.exportInfo.version}`
+            title: 'Credit Utilization',
+            value: formatPercent(metrics.creditUtilization),
+            caption: metrics.creditLimit
+              ? `${formatCurrency(metrics.creditBalance)} of ${formatCurrency(metrics.creditLimit)} in use`
+              : 'No revolving credit on file',
+            fill: [59, 130, 246]
           },
           {
-            title: 'Export Format',
-            detail: `${data.exportInfo.format.toUpperCase()} · ${navigator.userAgent}`
+            title: 'Total Debt',
+            value: formatCurrency(metrics.totalDebt),
+            caption: `${datasetCounts.debts || 0} active accounts tracked`,
+            fill: [239, 68, 68]
           },
           {
-            title: 'Interface Preferences',
-            detail: `Theme: ${data.userSettings.theme || 'Default'} · Dark Mode: ${data.userSettings.darkMode ? 'On' : 'Off'}`
+            title: 'Net Worth',
+            value: formatCurrency(metrics.netWorth),
+            caption: metrics.netWorthChange !== null && metrics.netWorthChange !== undefined
+              ? `${metrics.netWorthChange >= 0 ? '+' : ''}${formatCurrency(metrics.netWorthChange)} vs last period`
+              : 'Trend pending additional history',
+            fill: [16, 185, 129]
           },
           {
-            title: 'Notification Preferences',
-            detail: `Notifications: ${data.userSettings.notificationsEnabled ? 'Enabled' : 'Disabled'} · Auto-save: ${data.userSettings.autoSaveEnabled ? 'On' : 'Off'}`
+            title: 'Savings Progress',
+            value: formatPercent(metrics.savingsProgress),
+            caption: `Saved ${formatCurrency(metrics.savingsSaved)} of ${formatCurrency(metrics.savingsTarget)}`,
+            fill: [168, 85, 247]
           }
+        ];
+
+        addMetricCards(metricCards);
+
+        const insightsBoxHeight = 90;
+        ensureSpace(insightsBoxHeight + 20);
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(...colors.lightGray);
+        doc.roundedRect(marginX, cursorY, pageWidth - marginX * 2, insightsBoxHeight, 10, 10, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(...colors.primary);
+        doc.text('Client Overview', marginX + 18, cursorY + 26);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...colors.text);
+        doc.setFontSize(10);
+        doc.text(`Prepared for: ${account.displayName || 'Member'}`, marginX + 18, cursorY + 44);
+        doc.text(`Email: ${account.email || 'Not linked'}`, marginX + 18, cursorY + 60);
+        doc.text(`User ID: ${account.uid || '—'}`, marginX + 18, cursorY + 76);
+        doc.text(`Report generated: ${formatDate(account.generatedAt || summary.generatedAt || data.exportInfo.timestamp)}`, marginX + 300, cursorY + 44);
+        doc.text(`Version: ${data.exportInfo.version}`, marginX + 300, cursorY + 60);
+        cursorY += insightsBoxHeight + 28;
+
+        addSectionTitle('Data Coverage', 'Overview of datasets included in this export');
+        const friendlyLabel = (key) => ({
+          debts: 'Debt Accounts',
+          budgets: 'Budget Plans',
+          savingsGoals: 'Savings Goals',
+          netWorthHistory: 'Net Worth Entries',
+          velocityCalculations: 'Velocity Strategies',
+          taxCalculations: 'Tax Scenarios',
+          activityLogs: 'Activity Logs'
+        })[key] || key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+        const datasetRows = Object.entries(datasetCounts)
+          .filter(([, value]) => value !== undefined && value !== null)
+          .map(([key, value]) => [friendlyLabel(key), `${value} record${value === 1 ? '' : 's'}`]);
+
+        if (datasetRows.length) {
+          addTable(['Dataset', 'Records'], datasetRows);
+        } else {
+          addParagraph('No datasets were detected for this account. Use the JSON export for raw data if needed.');
+        }
+
+        const debts = Array.isArray(data.financialData.debts) ? data.financialData.debts : [];
+        const budgets = (() => {
+          if (Array.isArray(data.financialData.budgets)) return data.financialData.budgets;
+          if (data.financialData.budgets && typeof data.financialData.budgets === 'object') {
+            return Object.values(data.financialData.budgets);
+          }
+          if (data.financialData.budget && typeof data.financialData.budget === 'object') return [data.financialData.budget];
+          return [];
+        })();
+        const savingsGoals = Array.isArray(data.financialData.savingsGoals) ? data.financialData.savingsGoals : [];
+        const netWorthHistory = (() => {
+          const raw = data.financialData.netWorth;
+          if (Array.isArray(raw)) return raw;
+          if (raw && typeof raw === 'object') {
+            if (Array.isArray(raw.history)) return raw.history;
+          }
+          return [];
+        })();
+        const activityLogs = Array.isArray(data.financialData.activityLogs) ? data.financialData.activityLogs : [];
+
+        addSectionTitle('Debt Portfolio', 'Top balances and repayment metrics');
+        if (debts.length) {
+          const topDebts = debts
+            .slice()
+            .sort((a, b) => (parseFloat(b.balance) || 0) - (parseFloat(a.balance) || 0))
+            .slice(0, 6)
+            .map(debt => [
+              debt.name || 'Account',
+              formatCurrency(debt.balance),
+              debt.interestRate !== undefined ? `${Number(debt.interestRate).toFixed(2)}%` : '—',
+              formatCurrency(debt.minPayment),
+              (debt.type || 'N/A').toString().toUpperCase()
+            ]);
+          addTable(['Account', 'Balance', 'Rate', 'Min Payment', 'Type'], topDebts);
+        } else {
+          addParagraph('No debt records were found. Add credit or loan accounts to monitor repayment progress.');
+        }
+
+        addSectionTitle('Budget Snapshot', 'Income and spending performance across tracked plans');
+        const allExpenses = budgets.flatMap(record => Array.isArray(record.expenses) ? record.expenses : []);
+        const allIncomes = budgets.flatMap(record => Array.isArray(record.incomes) ? record.incomes : (Array.isArray(record.income) ? record.income : []));
+
+        addKeyValue('Total Scheduled Income', formatCurrency(metrics.incomeTotal));
+        addKeyValue('Actual Spending', formatCurrency(metrics.expenseActual));
+        addKeyValue('Net Cash Flow', formatCurrency(metrics.netCashFlow));
+
+        if (allExpenses.length) {
+          const topExpenses = allExpenses
+            .slice()
+            .sort((a, b) => (parseFloat(b.spent ?? b.amount ?? 0) || 0) - (parseFloat(a.spent ?? a.amount ?? 0) || 0))
+            .slice(0, 6)
+            .map(exp => [
+              exp.category || exp.name || 'Expense',
+              formatCurrency(exp.budgeted ?? exp.amount),
+              formatCurrency(exp.spent ?? exp.amount),
+              exp.paidFrom || '—'
+            ]);
+          addTable(['Category', 'Budgeted', 'Actual', 'Paid From'], topExpenses);
+        } else {
+          addParagraph('No expense items found. Add budget categories to monitor spending.');
+        }
+
+        addSectionTitle('Savings Goal Progress', 'Milestones toward your target balances');
+        if (savingsGoals.length) {
+          const savingsRows = savingsGoals
+            .slice()
+            .sort((a, b) => {
+              const progressA = (parseFloat(a.saved ?? 0) || 0) / (parseFloat(a.target ?? 1) || 1);
+              const progressB = (parseFloat(b.saved ?? 0) || 0) / (parseFloat(b.target ?? 1) || 1);
+              return progressB - progressA;
+            })
+            .slice(0, 6)
+            .map(goal => {
+              const saved = parseFloat(goal.saved ?? goal.current ?? 0) || 0;
+              const target = parseFloat(goal.target ?? 0) || 0;
+              const progress = target > 0 ? `${((saved / target) * 100).toFixed(1)}%` : '—';
+              return [
+                goal.name || 'Goal',
+                goal.category || '—',
+                formatCurrency(saved),
+                formatCurrency(target),
+                progress,
+                goal.targetDate ? formatDate(goal.targetDate) : '—'
+              ];
+            });
+          addTable(['Goal', 'Category', 'Saved', 'Target', 'Progress', 'Target Date'], savingsRows);
+        } else {
+          addParagraph('No savings goals recorded. Create goals to visualize growth toward major milestones.');
+        }
+
+        addSectionTitle('Net Worth Trend', 'Historical perspective on total assets vs liabilities');
+        if (netWorthHistory.length) {
+          const historyRows = netWorthHistory
+            .slice()
+            .sort((a, b) => new Date(a.date || a.timestamp) - new Date(b.date || b.timestamp))
+            .slice(-6)
+            .map(entry => [
+              formatDate(entry.date || entry.timestamp),
+              formatCurrency(entry.netWorth),
+              formatCurrency(entry.assets ?? entry.totalAssets),
+              formatCurrency(entry.liabilities ?? entry.totalLiabilities)
+            ]);
+          addTable(['Date', 'Net Worth', 'Assets', 'Liabilities'], historyRows);
+        } else {
+          addParagraph('Net worth history will appear once two or more monthly positions are recorded.');
+        }
+
+        addSectionTitle('Recent Activity', 'Most recent account events captured in the system');
+        if (activityLogs.length) {
+          const activityRows = activityLogs
+            .slice()
+            .sort((a, b) => new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0))
+            .slice(0, 6)
+            .map(activity => [
+              formatDate(activity.timestamp || activity.date),
+              (activity.type || 'activity').toString().replace(/_/g, ' ').toUpperCase(),
+              activity.text || activity.description || '—'
+            ]);
+          addTable(['Date', 'Type', 'Description'], activityRows);
+        } else {
+          addParagraph('Activity feed will populate as actions are recorded across the platform.');
+        }
+
+        addSectionTitle('Insights & Recommendations', 'Tailored guidance based on your current metrics');
+        const recommendations = [];
+        if (metrics.creditUtilization !== null && metrics.creditUtilization !== undefined) {
+          if (metrics.creditUtilization > 50) {
+            recommendations.push('Credit utilization is above 50%. Prioritize paying down revolving balances to improve credit health.');
+          } else if (metrics.creditUtilization > 30) {
+            recommendations.push('Credit utilization is above 30%. A small pay down will optimize credit scoring models.');
+          } else {
+            recommendations.push('Credit utilization is in a healthy range. Maintain current habits to preserve credit strength.');
+          }
+        } else {
+          recommendations.push('No credit utilization data available. Link credit accounts to monitor utilization trends.');
+        }
+
+        if (metrics.netCashFlow !== null && metrics.netCashFlow !== undefined) {
+          if (metrics.netCashFlow < 0) {
+            recommendations.push('Spending exceeds income this period. Review budget allocations to identify reduction opportunities.');
+          } else if (metrics.netCashFlow < 200) {
+            recommendations.push('Cash flow is positive but tight. Consider boosting emergency fund contributions.');
+          } else {
+            recommendations.push('Cash flow is positive. Allocate surplus toward priority goals or accelerated debt payoff.');
+          }
+        }
+
+        if (metrics.savingsProgress !== null && metrics.savingsProgress !== undefined) {
+          if (metrics.savingsProgress >= 100) {
+            recommendations.push('Congratulations on achieving your current savings targets. Create new goals to sustain momentum.');
+          } else if (metrics.savingsProgress >= 50) {
+            recommendations.push('Savings goals are over halfway funded. Stay consistent to reach completion on schedule.');
+          } else {
+            recommendations.push('Savings goals are in early stages. Automate transfers to accelerate progress.');
+          }
+        }
+
+        if (!recommendations.length) {
+          recommendations.push('Add financial data across debts, savings, and budgets to unlock personalized insights.');
+        }
+
+        addBulletList(recommendations);
+
+        addSectionTitle('Next Steps', 'Continue building financial momentum with Bradley’s Finance Hub');
+        addBulletList([
+          'Use the JSON export option for a machine-readable backup or advisor hand-off.',
+          'Review each dashboard module to update inputs before your next reporting cycle.',
+          'Invite accountability partners or advisors to review this PDF and align on action items.'
         ]);
 
-        addSectionTitle('Financial Data Overview', 'Key dataset metrics extracted from your account activity');
-        const summaryRows = Object.entries(data.financialData).map(([dataType, content]) => {
-          if (Array.isArray(content)) {
-            return [dataType, `${content.length} records • ${content.slice(0, 1).map(item => Object.keys(item).length).join(' fields')} per entry`];
-          }
-          if (content && typeof content === 'object') {
-            return [dataType, `${Object.keys(content).length} fields available`];
-          }
-          return [dataType, 'No data captured'];
-        });
-        if (summaryRows.length) {
-          addTable(['Dataset', 'Details'], summaryRows);
-        } else {
-          addParagraph('No financial data sources were found during export.');
-        }
-
-        addSectionTitle('Detailed Dataset Appendix', 'Raw, machine-readable payload for data portability');
-
-        const detailedData = JSON.stringify(data.financialData, null, 2);
-        const chunkSize = 2200;
-        for (let i = 0; i < detailedData.length; i += chunkSize) {
-          ensureSpace(40);
-          const chunk = detailedData.slice(i, i + chunkSize);
-          doc.setFont('courier', 'normal');
-          doc.setFontSize(8);
-          const lines = doc.splitTextToSize(chunk, pageWidth - marginX * 2);
-          lines.forEach(line => {
-            ensureSpace(10);
-            doc.text(line, marginX, cursorY);
-            cursorY += 10;
-          });
-        }
-
-        ensureSpace(60);
+        ensureSpace(50);
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(9);
         doc.setTextColor(...colors.muted);
         doc.text(
-          "This report is intended for personal archival and advisory collaboration. Please secure it appropriately.",
+          "This report mirrors the Bradley’s Finance Hub dashboard experience. Secure the document and consult trusted professionals as needed.",
           marginX,
           cursorY
         );
