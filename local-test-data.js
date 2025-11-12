@@ -142,4 +142,14 @@
     localStorage.setItem('local_test_budget', JSON.stringify(budget));
     localStorage.setItem('local_test_networth', JSON.stringify(netWorth));
     localStorage.setItem('netWorth', JSON.stringify({ history: deepClone(netWorth.history) }));
-    localStorage.setItem('savingsGoals', JSON.stri
+    localStorage.setItem('savingsGoals', JSON.stringify(deepClone(savingsGoals)));
+    localStorage.setItem('savings_goals', JSON.stringify(deepClone(savingsGoals)));
+    localStorage.setItem('savings_goals_archive', JSON.stringify([]));
+
+    localStorage.setItem('local_test_notifications', JSON.stringify(notifications));
+    localStorage.setItem('local_test_activity', JSON.stringify(activityLogs));
+  } catch (storageError) {
+    console.warn('Unable to seed local test data in storage:', storageError);
+  }
+})();
+

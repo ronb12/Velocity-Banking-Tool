@@ -26,7 +26,10 @@ const CONFIG = {
     maxLoginAttempts: 5,
     lockoutDuration: 15 * 60 * 1000, // 15 minutes
     enableRateLimiting: true,
-    allowUnverifiedLocalLogin: true
+    allowUnverifiedLocalLogin: true,
+    allowUnverifiedAccounts: [
+      'testuser@BFH.com',
+    ]
   },
   
   // Feature Flags
