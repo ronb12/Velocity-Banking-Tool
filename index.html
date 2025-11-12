@@ -1647,71 +1647,229 @@
           throw new Error('Unable to load jsPDF library');
         }
 
-        const doc = new jsPDFConstructor();
-        const lineHeight = 8;
-        let cursorY = 20;
+        const doc = new jsPDFConstructor({ unit: 'pt', format: 'letter' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const marginX = 56;
+        const marginY = 64;
+        let cursorY = marginY;
 
-        const addSectionTitle = (title) => {
-          doc.setFontSize(14);
+        const colors = {
+          primary: [23, 37, 84],
+          accent: [59, 130, 246],
+          text: [55, 65, 81],
+          muted: [100, 116, 139],
+          lightGray: [226, 232, 240]
+        };
+
+        const addHeader = () => {
+          doc.setFillColor(...colors.primary);
+          doc.rect(0, 0, pageWidth, 70, 'F');
           doc.setFont('helvetica', 'bold');
-          doc.text(title, 14, cursorY);
-          cursorY += lineHeight;
-          doc.setDrawColor(100, 116, 139);
-          doc.line(14, cursorY - 5, 196, cursorY - 5);
+          doc.setFontSize(22);
+          doc.setTextColor(255, 255, 255);
+          doc.text("Bradley's Finance Hub", marginX, 45);
+          doc.setFontSize(12);
           doc.setFont('helvetica', 'normal');
+          doc.text("Personal Financial Intelligence Suite", marginX, 63);
+          doc.setTextColor(...colors.text);
         };
 
-        const addParagraph = (text, fontSize = 11) => {
-          doc.setFontSize(fontSize);
-          const lines = doc.splitTextToSize(text, 180);
-          lines.forEach(line => {
-            if (cursorY > 270) {
-              doc.addPage();
-              cursorY = 20;
-            }
-            doc.text(line, 14, cursorY);
-            cursorY += lineHeight;
-          });
+        const addFooter = (pageNumber) => {
+          doc.setDrawColor(...colors.lightGray);
+          doc.setLineWidth(0.5);
+          doc.line(marginX, pageHeight - 50, pageWidth - marginX, pageHeight - 50);
+          doc.setFontSize(9);
+          doc.setTextColor(...colors.muted);
+          doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, pageHeight - 30);
+          doc.text(`Confidential · For Bradley's Finance Hub account holder`, marginX, pageHeight - 15);
+          doc.text(`Page ${pageNumber}`, pageWidth - marginX - 40, pageHeight - 15);
+          doc.setTextColor(...colors.text);
         };
 
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text("Bradley's Financial Tools", 14, cursorY);
-        cursorY += lineHeight;
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text("Comprehensive Data Export Report", 14, cursorY);
-        cursorY += lineHeight * 2;
+        let pageNumber = 1;
+        addHeader();
+        addFooter(pageNumber);
 
-        addParagraph(`Generated: ${new Date().toLocaleString()}`);
-        addParagraph(`Version: ${data.exportInfo.version}`);
-        addParagraph(`Format: ${data.exportInfo.format.toUpperCase()}`);
-        cursorY += lineHeight;
-
-        addSectionTitle('User Settings');
-        addParagraph(`Dark Mode: ${data.userSettings.darkMode ? 'Enabled' : 'Disabled'}`);
-        addParagraph(`Theme: ${data.userSettings.theme || 'Not set'}`);
-        addParagraph(`Notifications: ${data.userSettings.notificationsEnabled ? 'Enabled' : 'Disabled'}`);
-        addParagraph(`Auto-save: ${data.userSettings.autoSaveEnabled ? 'Enabled' : 'Disabled'}`);
-        addParagraph(`Show Tips: ${data.userSettings.showTipsEnabled ? 'Enabled' : 'Disabled'}`);
-        cursorY += lineHeight;
-
-        addSectionTitle('Financial Data Summary');
-        Object.entries(data.financialData).forEach(([dataType, dataContent]) => {
-          if (Array.isArray(dataContent)) {
-            addParagraph(`${dataType}: ${dataContent.length} records`);
-          } else if (dataContent && typeof dataContent === 'object') {
-            addParagraph(`${dataType}: ${Object.keys(dataContent).length} fields`);
+        const ensureSpace = (spaceNeeded = 24) => {
+          if (cursorY + spaceNeeded > pageHeight - marginY) {
+            doc.addPage();
+            pageNumber += 1;
+            cursorY = marginY;
+            addHeader();
+            addFooter(pageNumber);
           }
+        };
+
+        const addSectionTitle = (title, subtitle = '') => {
+          ensureSpace(40);
+          doc.setFontSize(15);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...colors.primary);
+          doc.text(title.toUpperCase(), marginX, cursorY);
+          cursorY += 18;
+          if (subtitle) {
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...colors.muted);
+            doc.text(subtitle, marginX, cursorY);
+            cursorY += 18;
+          }
+          doc.setDrawColor(...colors.accent);
+          doc.setLineWidth(1);
+          doc.line(marginX, cursorY - 12, marginX + 200, cursorY - 12);
+          doc.setTextColor(...colors.text);
+        };
+
+        const addKeyValue = (label, value) => {
+          ensureSpace(24);
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...colors.muted);
+          doc.text(label.toUpperCase(), marginX, cursorY);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.text);
+          const lines = doc.splitTextToSize(String(value), pageWidth - marginX * 2);
+          doc.text(lines, marginX, cursorY + 14);
+          cursorY += 24 + (lines.length - 1) * 12;
+        };
+
+        const addGrid = (items = []) => {
+          if (!Array.isArray(items) || !items.length) return;
+          const columns = 2;
+          const cardWidth = (pageWidth - marginX * 2 - 16) / columns;
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+
+          items.forEach((item, index) => {
+            const col = index % columns;
+            const row = Math.floor(index / columns);
+            const cardX = marginX + col * (cardWidth + 16);
+            const cardY = cursorY + row * 70;
+
+            ensureSpace(80);
+            doc.setDrawColor(...colors.lightGray);
+            doc.setFillColor(255, 255, 255);
+            doc.roundedRect(cardX, cardY, cardWidth, 60, 6, 6, 'S');
+            doc.setDrawColor(...colors.accent);
+            doc.line(cardX, cardY + 24, cardX + cardWidth, cardY + 24);
+
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...colors.primary);
+            doc.text(item.title || '', cardX + 12, cardY + 18);
+
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(...colors.text);
+            const details = doc.splitTextToSize(item.detail || '', cardWidth - 24);
+            doc.text(details, cardX + 12, cardY + 36);
+          });
+
+          cursorY += Math.ceil(items.length / columns) * 70 + 16;
+        };
+
+        const addTable = (columns = [], rows = []) => {
+          if (!columns.length || !rows.length) return;
+
+          ensureSpace(40);
+          const startY = cursorY;
+          const columnWidth = (pageWidth - marginX * 2) / columns.length;
+
+          doc.setFillColor(248, 250, 252);
+          doc.setDrawColor(...colors.lightGray);
+          doc.rect(marginX, startY, pageWidth - marginX * 2, 24, 'F');
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(...colors.primary);
+          columns.forEach((column, colIndex) => {
+            doc.text(column.toUpperCase(), marginX + columnWidth * colIndex + 6, startY + 16);
+          });
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...colors.text);
+          let currentY = startY + 30;
+
+          rows.forEach(row => {
+            ensureSpace(30);
+            doc.setDrawColor(...colors.lightGray);
+            doc.line(marginX, currentY, pageWidth - marginX, currentY);
+
+            row.forEach((cell, colIndex) => {
+              const cellText = cell === undefined || cell === null ? '' : String(cell);
+              const lines = doc.splitTextToSize(cellText, columnWidth - 12);
+              doc.text(lines, marginX + columnWidth * colIndex + 6, currentY + 14);
+            });
+
+            currentY += 22;
+            cursorY = currentY;
+          });
+
+          cursorY += 16;
+        };
+
+        addSectionTitle('Executive Summary', 'Snapshot of your financial profile and system settings');
+        addGrid([
+          {
+            title: 'Report Generated',
+            detail: `${new Date().toLocaleString()} · Version ${data.exportInfo.version}`
+          },
+          {
+            title: 'Export Format',
+            detail: `${data.exportInfo.format.toUpperCase()} · ${navigator.userAgent}`
+          },
+          {
+            title: 'Interface Preferences',
+            detail: `Theme: ${data.userSettings.theme || 'Default'} · Dark Mode: ${data.userSettings.darkMode ? 'On' : 'Off'}`
+          },
+          {
+            title: 'Notification Preferences',
+            detail: `Notifications: ${data.userSettings.notificationsEnabled ? 'Enabled' : 'Disabled'} · Auto-save: ${data.userSettings.autoSaveEnabled ? 'On' : 'Off'}`
+          }
+        ]);
+
+        addSectionTitle('Financial Data Overview', 'Key dataset metrics extracted from your account activity');
+        const summaryRows = Object.entries(data.financialData).map(([dataType, content]) => {
+          if (Array.isArray(content)) {
+            return [dataType, `${content.length} records • ${content.slice(0, 1).map(item => Object.keys(item).length).join(' fields')} per entry`];
+          }
+          if (content && typeof content === 'object') {
+            return [dataType, `${Object.keys(content).length} fields available`];
+          }
+          return [dataType, 'No data captured'];
         });
-        cursorY += lineHeight;
+        if (summaryRows.length) {
+          addTable(['Dataset', 'Details'], summaryRows);
+        } else {
+          addParagraph('No financial data sources were found during export.');
+        }
 
-        addSectionTitle('Detailed Data');
+        addSectionTitle('Detailed Dataset Appendix', 'Raw, machine-readable payload for data portability');
+
         const detailedData = JSON.stringify(data.financialData, null, 2);
-        addParagraph(detailedData, 9);
+        const chunkSize = 2200;
+        for (let i = 0; i < detailedData.length; i += chunkSize) {
+          ensureSpace(40);
+          const chunk = detailedData.slice(i, i + chunkSize);
+          doc.setFont('courier', 'normal');
+          doc.setFontSize(8);
+          const lines = doc.splitTextToSize(chunk, pageWidth - marginX * 2);
+          lines.forEach(line => {
+            ensureSpace(10);
+            doc.text(line, marginX, cursorY);
+            cursorY += 10;
+          });
+        }
 
-        cursorY += lineHeight;
-        addParagraph("This export contains all of your financial data from Bradley's Financial Tools. Please handle this report securely as it contains sensitive information.", 10);
+        ensureSpace(60);
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(...colors.muted);
+        doc.text(
+          "This report is intended for personal archival and advisory collaboration. Please secure it appropriately.",
+          marginX,
+          cursorY
+        );
+        doc.setTextColor(...colors.text);
 
         doc.save(`bradley-financial-report-${new Date().toISOString().split('T')[0]}.pdf`);
       } catch (error) {
