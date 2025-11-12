@@ -342,7 +342,7 @@
           <span class="settings-icon">⚙️</span>
           <span class="settings-text">Advanced Settings</span>
         </button>
-        <button class="logout-btn" onclick="logout()">
+        <button class="control-btn logout-btn" onclick="logout()">
           <span class="logout-icon">🚪</span>
           <span class="logout-text">Logout</span>
         </button>
@@ -1016,18 +1016,31 @@
     // Load saved settings on page load
     function loadSettings() {
       // Load dark mode setting
+      const darkModeToggle = document.getElementById('settingsDarkMode');
       const darkMode = localStorage.getItem('darkMode') === 'true' || localStorage.getItem('theme') === 'dark';
-      document.getElementById('settingsDarkMode').checked = darkMode;
-      
-      // Ensure dark mode is applied if setting is true
+      if (darkModeToggle) {
+        darkModeToggle.checked = darkMode;
+      }
+
       if (darkMode) {
         document.body.classList.add('dark');
+      } else {
+        document.body.classList.remove('dark');
       }
 
       // Load other settings
-      document.getElementById('settingsNotifications').checked = localStorage.getItem('notificationsEnabled') !== 'false';
-      document.getElementById('settingsAutoSave').checked = localStorage.getItem('autoSaveEnabled') !== 'false';
-      document.getElementById('settingsShowTips').checked = localStorage.getItem('showTipsEnabled') !== 'false';
+      const notificationsToggle = document.getElementById('settingsNotifications');
+      const autoSaveToggle = document.getElementById('settingsAutoSave');
+      const showTipsToggle = document.getElementById('settingsShowTips');
+      if (notificationsToggle) {
+        notificationsToggle.checked = localStorage.getItem('notificationsEnabled') !== 'false';
+      }
+      if (autoSaveToggle) {
+        autoSaveToggle.checked = localStorage.getItem('autoSaveEnabled') !== 'false';
+      }
+      if (showTipsToggle) {
+        showTipsToggle.checked = localStorage.getItem('showTipsEnabled') !== 'false';
+      }
 
       // Load saved avatar
       const savedAvatar = localStorage.getItem('userAvatar');
@@ -1092,25 +1105,43 @@
       }
       
       // Get current financial data from localStorage or calculate from current state
-      let netWorth = 0;
-      let totalDebt = 0;
-      let creditUtilization = 0;
-      let savingsProgress = 0;
+      let netWorth = null;
+      let totalDebt = null;
+      let creditUtilization = null;
+      let savingsProgress = null;
+      let totalCreditLimit = null;
+      let totalCreditBalance = null;
+
+      const setDebtMetricsFromArray = (debts = []) => {
+        if (!Array.isArray(debts)) return;
+        const debtBalance = debts.reduce((sum, debt) => sum + (parseFloat(debt.balance) || 0), 0);
+        if (!Number.isNaN(debtBalance)) {
+          totalDebt = debtBalance;
+        }
+
+        const creditCards = debts.filter(debt => debt.type === 'credit');
+        const limit = creditCards.reduce((sum, debt) => sum + (parseFloat(debt.limit) || 0), 0);
+        const balance = creditCards.reduce((sum, debt) => sum + (parseFloat(debt.balance) || 0), 0);
+        totalCreditLimit = limit;
+        totalCreditBalance = balance;
+        if (limit > 0) {
+          creditUtilization = (balance / limit) * 100;
+        } else if (creditUtilization === null && balance === 0) {
+          creditUtilization = 0;
+        }
+      };
       
       try {
         // Try to get data from localStorage first
         const debtsData = localStorage.getItem('debts');
         if (debtsData) {
-          const debts = JSON.parse(debtsData);
-          if (Array.isArray(debts)) {
-            totalDebt = debts.reduce((sum, debt) => sum + (parseFloat(debt.balance) || 0), 0);
-            // Calculate credit utilization (simplified)
-            const creditCards = debts.filter(debt => debt.type === 'credit');
-            const totalCreditLimit = creditCards.reduce((sum, debt) => sum + (parseFloat(debt.limit) || 0), 0);
-            const totalCreditBalance = creditCards.reduce((sum, debt) => sum + (parseFloat(debt.balance) || 0), 0);
-            if (totalCreditLimit > 0) {
-              creditUtilization = (totalCreditBalance / totalCreditLimit) * 100;
-            }
+          setDebtMetricsFromArray(JSON.parse(debtsData));
+        }
+
+        if (totalDebt === null) {
+          const localDebtsData = localStorage.getItem('local_test_debts');
+          if (localDebtsData) {
+            setDebtMetricsFromArray(JSON.parse(localDebtsData));
           }
         }
         
@@ -1120,7 +1151,24 @@
           const netWorthObj = JSON.parse(netWorthData);
           if (netWorthObj && netWorthObj.history && netWorthObj.history.length > 0) {
             const latest = netWorthObj.history[netWorthObj.history.length - 1];
-            netWorth = parseFloat(latest.netWorth) || 0;
+            const value = parseFloat(latest.netWorth);
+            if (!Number.isNaN(value)) {
+              netWorth = value;
+            }
+          }
+        }
+
+        if (netWorth === null) {
+          const localNetWorth = localStorage.getItem('local_test_networth');
+          if (localNetWorth) {
+            const netWorthObj = JSON.parse(localNetWorth);
+            if (netWorthObj && netWorthObj.history && netWorthObj.history.length > 0) {
+              const latest = netWorthObj.history[netWorthObj.history.length - 1];
+              const value = parseFloat(latest.netWorth);
+              if (!Number.isNaN(value)) {
+                netWorth = value;
+              }
+            }
           }
         }
         
@@ -1133,19 +1181,68 @@
             const totalSaved = savings.reduce((sum, goal) => sum + (parseFloat(goal.saved) || 0), 0);
             if (totalTarget > 0) {
               savingsProgress = (totalSaved / totalTarget) * 100;
+            } else if (savingsProgress === null) {
+              savingsProgress = 0;
             }
+          }
+        }
+
+        if (savingsProgress === null) {
+          const localSavings = localStorage.getItem('local_test_savings');
+          if (localSavings) {
+            const savings = JSON.parse(localSavings);
+            if (Array.isArray(savings) && savings.length > 0) {
+              const totalTarget = savings.reduce((sum, goal) => sum + (parseFloat(goal.target) || 0), 0);
+              const totalSaved = savings.reduce((sum, goal) => sum + (parseFloat(goal.saved) || 0), 0);
+              if (totalTarget > 0) {
+                savingsProgress = (totalSaved / totalTarget) * 100;
+              } else {
+                savingsProgress = 0;
+              }
+            }
+          }
+        }
+
+        if (typeof window.getLocalTestData === 'function') {
+          try {
+            const stats = window.getLocalTestData('userStats');
+            if (stats) {
+              if (netWorth === null && typeof stats.netWorth === 'number') {
+                netWorth = stats.netWorth;
+              }
+              if (totalDebt === null && typeof stats.totalDebt === 'number') {
+                totalDebt = stats.totalDebt;
+              }
+              if (creditUtilization === null && typeof stats.creditUtilization === 'number') {
+                creditUtilization = stats.creditUtilization;
+              }
+              if (savingsProgress === null && typeof stats.savingsProgress === 'number') {
+                savingsProgress = stats.savingsProgress;
+              }
+            }
+          } catch (testDataError) {
+            console.warn('Unable to read local test stats:', testDataError);
           }
         }
         
         // Update the profile stats display
-        document.getElementById('profileNetWorth').textContent = 
-          netWorth !== 0 ? `$${netWorth.toLocaleString()}` : '-';
-        document.getElementById('profileTotalDebt').textContent = 
-          totalDebt !== 0 ? `$${totalDebt.toLocaleString()}` : '-';
-        document.getElementById('profileCreditUtilization').textContent = 
-          creditUtilization !== 0 ? `${creditUtilization.toFixed(1)}%` : '-';
-        document.getElementById('profileSavings').textContent = 
-          savingsProgress !== 0 ? `${savingsProgress.toFixed(1)}%` : '-';
+        const netWorthElement = document.getElementById('profileNetWorth');
+        const totalDebtElement = document.getElementById('profileTotalDebt');
+        const creditUtilElement = document.getElementById('profileCreditUtilization');
+        const savingsElement = document.getElementById('profileSavings');
+
+        if (netWorthElement) {
+          netWorthElement.textContent = Number.isFinite(netWorth) ? `$${Math.round(netWorth).toLocaleString()}` : '-';
+        }
+        if (totalDebtElement) {
+          totalDebtElement.textContent = Number.isFinite(totalDebt) ? `$${Math.round(totalDebt).toLocaleString()}` : '-';
+        }
+        if (creditUtilElement) {
+          creditUtilElement.textContent = Number.isFinite(creditUtilization) ? `${creditUtilization.toFixed(1)}%` : '-';
+        }
+        if (savingsElement) {
+          savingsElement.textContent = Number.isFinite(savingsProgress) ? `${savingsProgress.toFixed(1)}%` : '-';
+        }
         
         console.log('Profile stats updated:', {
           netWorth,
@@ -1167,6 +1264,10 @@
     // Make functions globally available
     window.openProfileModal = openProfileModal;
     window.updateProfileStats = updateProfileStats;
+    window.toggleDarkModeSetting = toggleDarkModeSetting;
+    window.toggleNotifications = toggleNotifications;
+    window.toggleAutoSave = toggleAutoSave;
+    window.toggleShowTips = toggleShowTips;
 
     // Add event listener for advanced settings button as backup
     document.addEventListener('DOMContentLoaded', function() {
@@ -2110,22 +2211,17 @@ Keep this file secure as it contains sensitive financial information.
     }
 
     .logout-btn {
-      width: 100%;
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: white;
-      border: none;
-      padding: 1rem 1.5rem;
-      border-radius: 0.75rem;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.15);
     }
 
     .logout-btn:hover {
