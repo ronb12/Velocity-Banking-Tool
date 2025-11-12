@@ -2092,21 +2092,21 @@
         cursorY += insightsBoxHeight + 28;
 
         addSectionTitle('Executive Overview', 'Narrative summary of current financial posture');
-        const overviewNarrative = [
+        const overviewBullets = [
           metrics.netWorth !== null
-            ? `Overall net worth stands at ${formatCurrency(metrics.netWorth)}, reflecting ${metrics.netWorthChange !== null ? `${metrics.netWorthChange >= 0 ? 'an increase' : 'a decrease'} of ${formatCurrency(Math.abs(metrics.netWorthChange))} since the prior period.` : 'the latest consolidated balances across assets and liabilities.'}`
-            : 'Net worth insights are pending; add balance history to unlock trend analysis.',
+            ? `Net worth is ${formatCurrency(metrics.netWorth)}${metrics.netWorthChange !== null ? ` (${metrics.netWorthChange >= 0 ? '+' : ''}${formatCurrency(metrics.netWorthChange)} since last period).` : '.'}`
+            : 'Net worth will appear once asset and debt history is recorded.',
           metrics.netCashFlow !== null
-            ? `Net cash flow this period is ${formatCurrency(metrics.netCashFlow)}, derived from ${formatCurrency(metrics.incomeTotal)} in income against ${formatCurrency(metrics.expenseActual)} of actual spending.`
-            : 'Cash flow metrics require active budget or income entries; update the budget tracker to activate this insight.',
+            ? `Cash flow this period: ${formatCurrency(metrics.incomeTotal)} income minus ${formatCurrency(metrics.expenseActual)} spending = ${formatCurrency(metrics.netCashFlow)}.`
+            : 'Add income and expenses in the budget tracker to see cash flow.',
           metrics.creditUtilization !== null
-            ? `Revolving credit utilization is ${formatPercent(metrics.creditUtilization)}, with ${formatCurrency(metrics.creditBalance)} outstanding against ${formatCurrency(metrics.creditLimit)} in aggregate limits.`
-            : 'Connect revolving credit accounts to view utilization health.',
+            ? `Credit utilization: ${formatPercent(metrics.creditUtilization)} (${formatCurrency(metrics.creditBalance)} used of ${formatCurrency(metrics.creditLimit)} in limits).`
+            : 'Link credit accounts to monitor utilization.',
           metrics.savingsProgress !== null
-            ? `Savings goals are ${formatPercent(metrics.savingsProgress)} funded, with ${formatCurrency(metrics.savingsSaved)} saved toward ${formatCurrency(metrics.savingsTarget)} of total targets.`
-            : 'Savings progress will appear once goals include both targets and contributions.'
+            ? `Savings progress: ${formatCurrency(metrics.savingsSaved)} saved toward ${formatCurrency(metrics.savingsTarget)} (${formatPercent(metrics.savingsProgress)} complete).`
+            : 'Create savings goals to track progress toward targets.'
         ];
-        addParagraph(overviewNarrative.join(' '));
+        addBulletList(overviewBullets);
 
         addSectionTitle('Data Coverage', 'Overview of datasets included in this export');
         const friendlyLabel = (key) => ({
@@ -2186,7 +2186,7 @@
         if (expenseHighlights.length) {
           addBulletList(expenseHighlights);
         } else {
-          addParagraph('No expense items found. Add budget categories to monitor spending.');
+          addParagraph('No expense items found. Enter income and expenses in the budget tracker to build this section.');
         }
 
         addSectionTitle('Savings Goal Progress', 'Milestones toward your target balances');
