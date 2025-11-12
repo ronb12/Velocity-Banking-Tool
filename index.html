@@ -1481,7 +1481,7 @@
         } else if (format === 'csv') {
           exportAsCSV(exportData);
         } else if (format === 'pdf') {
-          exportAsPDF(exportData);
+          await exportAsPDF(exportData);
         }
         
         showNotification(`Data exported successfully as ${format.toUpperCase()}!`, 'success');
@@ -1597,58 +1597,95 @@
       URL.revokeObjectURL(url);
     }
     
-    function exportAsPDF(data) {
-      // Create a simple text-based PDF report
-      let reportContent = `
-BRADLEY'S FINANCIAL TOOLS - DATA EXPORT REPORT
-Generated: ${new Date().toLocaleString()}
-Version: ${data.exportInfo.version}
-Format: ${data.exportInfo.format.toUpperCase()}
-
-===============================================
-
-USER SETTINGS:
-- Dark Mode: ${data.userSettings.darkMode ? 'Enabled' : 'Disabled'}
-- Theme: ${data.userSettings.theme || 'Not set'}
-- Notifications: ${data.userSettings.notificationsEnabled ? 'Enabled' : 'Disabled'}
-- Auto-save: ${data.userSettings.autoSaveEnabled ? 'Enabled' : 'Disabled'}
-- Show Tips: ${data.userSettings.showTipsEnabled ? 'Enabled' : 'Disabled'}
-
-===============================================
-
-FINANCIAL DATA SUMMARY:
-`;
-      
-      // Add summary of each data type
-      Object.entries(data.financialData).forEach(([dataType, dataArray]) => {
-        if (Array.isArray(dataArray)) {
-          reportContent += `\n${dataType.toUpperCase()}: ${dataArray.length} records\n`;
-        } else if (typeof dataArray === 'object') {
-          reportContent += `\n${dataType.toUpperCase()}: ${Object.keys(dataArray).length} fields\n`;
+    async function exportAsPDF(data) {
+      try {
+        let jsPDFInstance = null;
+        if (window.jspdf && window.jspdf.jsPDF) {
+          jsPDFInstance = window.jspdf.jsPDF;
+        } else {
+          const module = await import('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+          if (module && module.jsPDF) {
+            jsPDFInstance = module.jsPDF;
+          } else if (module && module.default && module.default.jsPDF) {
+            jsPDFInstance = module.default.jsPDF;
+          }
         }
-      });
-      
-      reportContent += `
-===============================================
 
-DETAILED DATA:
-${JSON.stringify(data.financialData, null, 2)}
+        if (!jsPDFInstance) {
+          throw new Error('Unable to load jsPDF library');
+        }
 
-===============================================
+        const doc = new jsPDFInstance();
+        const lineHeight = 8;
+        let cursorY = 20;
 
-This export contains all your financial data from Bradley's Financial Tools.
-Keep this file secure as it contains sensitive financial information.
-      `;
-      
-      const blob = new Blob([reportContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `bradley-financial-report-${new Date().toISOString().split('T')[0]}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+        const addSectionTitle = (title) => {
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(title, 14, cursorY);
+          cursorY += lineHeight;
+          doc.setDrawColor(100, 116, 139);
+          doc.line(14, cursorY - 5, 196, cursorY - 5);
+          doc.setFont('helvetica', 'normal');
+        };
+
+        const addParagraph = (text, fontSize = 11) => {
+          doc.setFontSize(fontSize);
+          const lines = doc.splitTextToSize(text, 180);
+          lines.forEach(line => {
+            if (cursorY > 270) {
+              doc.addPage();
+              cursorY = 20;
+            }
+            doc.text(line, 14, cursorY);
+            cursorY += lineHeight;
+          });
+        };
+
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Bradley's Financial Tools", 14, cursorY);
+        cursorY += lineHeight;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Comprehensive Data Export Report", 14, cursorY);
+        cursorY += lineHeight * 2;
+
+        addParagraph(`Generated: ${new Date().toLocaleString()}`);
+        addParagraph(`Version: ${data.exportInfo.version}`);
+        addParagraph(`Format: ${data.exportInfo.format.toUpperCase()}`);
+        cursorY += lineHeight;
+
+        addSectionTitle('User Settings');
+        addParagraph(`Dark Mode: ${data.userSettings.darkMode ? 'Enabled' : 'Disabled'}`);
+        addParagraph(`Theme: ${data.userSettings.theme || 'Not set'}`);
+        addParagraph(`Notifications: ${data.userSettings.notificationsEnabled ? 'Enabled' : 'Disabled'}`);
+        addParagraph(`Auto-save: ${data.userSettings.autoSaveEnabled ? 'Enabled' : 'Disabled'}`);
+        addParagraph(`Show Tips: ${data.userSettings.showTipsEnabled ? 'Enabled' : 'Disabled'}`);
+        cursorY += lineHeight;
+
+        addSectionTitle('Financial Data Summary');
+        Object.entries(data.financialData).forEach(([dataType, dataContent]) => {
+          if (Array.isArray(dataContent)) {
+            addParagraph(`${dataType}: ${dataContent.length} records`);
+          } else if (dataContent && typeof dataContent === 'object') {
+            addParagraph(`${dataType}: ${Object.keys(dataContent).length} fields`);
+          }
+        });
+        cursorY += lineHeight;
+
+        addSectionTitle('Detailed Data');
+        const detailedData = JSON.stringify(data.financialData, null, 2);
+        addParagraph(detailedData, 9);
+
+        cursorY += lineHeight;
+        addParagraph("This export contains all of your financial data from Bradley's Financial Tools. Please handle this report securely as it contains sensitive information.", 10);
+
+        doc.save(`bradley-financial-report-${new Date().toISOString().split('T')[0]}.pdf`);
+      } catch (error) {
+        console.error('PDF export failed:', error);
+        showNotification('PDF export failed. Please try again.', 'error');
+      }
     }
 
     // Make test functions globally available
