@@ -1454,6 +1454,49 @@
     }
 
     // Data Export Functions
+    let jsPDFLoaderPromise = null;
+
+    async function loadJsPDF() {
+      if (window.jspdf && window.jspdf.jsPDF) {
+        return window.jspdf.jsPDF;
+      }
+
+      if (jsPDFLoaderPromise) {
+        return jsPDFLoaderPromise;
+      }
+
+      jsPDFLoaderPromise = new Promise((resolve, reject) => {
+        const existingScript = document.querySelector('script[data-jspdf="true"]');
+        if (existingScript) {
+          existingScript.addEventListener('load', () => {
+            if (window.jspdf && window.jspdf.jsPDF) {
+              resolve(window.jspdf.jsPDF);
+            } else {
+              reject(new Error('jsPDF loaded but constructor missing'));
+            }
+          });
+          existingScript.addEventListener('error', () => reject(new Error('Failed to load jsPDF script')));
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+        script.async = true;
+        script.dataset.jspdf = 'true';
+        script.onload = () => {
+          if (window.jspdf && window.jspdf.jsPDF) {
+            resolve(window.jspdf.jsPDF);
+          } else {
+            reject(new Error('jsPDF loaded but constructor missing'));
+          }
+        };
+        script.onerror = () => reject(new Error('Failed to load jsPDF script'));
+        document.head.appendChild(script);
+      });
+
+      return jsPDFLoaderPromise;
+    }
+
     async function exportAllData(format) {
       try {
         showNotification('Preparing data export...', 'info');
@@ -1599,23 +1642,12 @@
     
     async function exportAsPDF(data) {
       try {
-        let jsPDFInstance = null;
-        if (window.jspdf && window.jspdf.jsPDF) {
-          jsPDFInstance = window.jspdf.jsPDF;
-        } else {
-          const module = await import('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
-          if (module && module.jsPDF) {
-            jsPDFInstance = module.jsPDF;
-          } else if (module && module.default && module.default.jsPDF) {
-            jsPDFInstance = module.default.jsPDF;
-          }
-        }
-
-        if (!jsPDFInstance) {
+        const jsPDFConstructor = await loadJsPDF();
+        if (!jsPDFConstructor) {
           throw new Error('Unable to load jsPDF library');
         }
 
-        const doc = new jsPDFInstance();
+        const doc = new jsPDFConstructor();
         const lineHeight = 8;
         let cursorY = 20;
 
