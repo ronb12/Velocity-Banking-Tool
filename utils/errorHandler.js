@@ -45,129 +45,207 @@ class ErrorHandler {
   
   // Generic notification display
   static showNotification(message, type = 'info', duration = 3000) {
-    // Remove existing notifications
-    const existing = document.querySelectorAll('.notification');
-    existing.forEach(n => n.remove());
-    
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-      <div class="notification-content">
-        <span class="notification-icon">${this.getIcon(type)}</span>
-        <span class="notification-message">${message}</span>
-        <button class="notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
-      </div>
-    `;
-    
-    // Add styles if not already present
-    if (!document.querySelector('#notification-styles')) {
+    if (!document.querySelector('#toast-styles')) {
       const style = document.createElement('style');
-      style.id = 'notification-styles';
+      style.id = 'toast-styles';
       style.textContent = `
-        .notification {
+        .toast-stack {
           position: fixed;
-          top: 20px;
-          right: 20px;
-          z-index: 10000;
-          max-width: 400px;
-          padding: 16px;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          animation: slideInRight 0.3s ease;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .notification-content {
+          top: 24px;
+          right: 24px;
           display: flex;
-          align-items: center;
-          gap: 12px;
+          flex-direction: column;
+          gap: 14px;
+          z-index: 11000;
+          pointer-events: none;
         }
-        
-        .notification-icon {
-          font-size: 20px;
-          flex-shrink: 0;
+
+        .toast {
+          width: min(360px, calc(100vw - 32px));
+          background: rgba(15, 23, 42, 0.88);
+          backdrop-filter: blur(16px);
+          border-radius: 16px;
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          padding: 18px 20px;
+          color: #e2e8f0;
+          box-shadow: 0 16px 40px rgba(15, 23, 42, 0.35);
+          transform: translateY(-16px);
+          opacity: 0;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+          pointer-events: auto;
+          position: relative;
+          overflow: hidden;
         }
-        
-        .notification-message {
-          flex: 1;
-          font-size: 14px;
-          line-height: 1.4;
+
+        .toast.visible {
+          transform: translateY(0);
+          opacity: 1;
         }
-        
-        .notification-close {
-          background: none;
-          border: none;
-          font-size: 18px;
-          cursor: pointer;
-          padding: 0;
-          width: 24px;
-          height: 24px;
+
+        .toast::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0));
+          pointer-events: none;
+        }
+
+        .toast-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 4px;
-          transition: background-color 0.2s;
+          font-size: 20px;
+          flex-shrink: 0;
         }
-        
-        .notification-close:hover {
-          background-color: rgba(0, 0, 0, 0.1);
+
+        .toast-body {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
         }
-        
-        .notification.success {
-          background: #d4edda;
-          color: #155724;
-          border-left: 4px solid #28a745;
+
+        .toast-body strong {
+          font-size: 0.95rem;
+          letter-spacing: 0.02em;
         }
-        
-        .notification.error {
-          background: #f8d7da;
-          color: #721c24;
-          border-left: 4px solid #dc3545;
+
+        .toast-body p {
+          margin: 0;
+          font-size: 0.85rem;
+          color: #cbd5f5;
+          line-height: 1.45;
         }
-        
-        .notification.warning {
-          background: #fff3cd;
-          color: #856404;
-          border-left: 4px solid #ffc107;
+
+        .toast-close {
+          background: rgba(148, 163, 184, 0.18);
+          border: none;
+          color: #cbd5f5;
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s ease;
         }
-        
-        .notification.info {
-          background: #d1ecf1;
-          color: #0c5460;
-          border-left: 4px solid #17a2b8;
+
+        .toast-close:hover {
+          background: rgba(148, 163, 184, 0.32);
         }
-        
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
+
+        .toast.toast-success .toast-icon { background: rgba(34, 197, 94, 0.18); color: #34d399; }
+        .toast.toast-error .toast-icon { background: rgba(248, 113, 113, 0.18); color: #f87171; }
+        .toast.toast-warning .toast-icon { background: rgba(250, 204, 21, 0.18); color: #facc15; }
+        .toast.toast-info .toast-icon { background: rgba(96, 165, 250, 0.18); color: #60a5fa; }
+
+        .toast-progress {
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          height: 3px;
+          background: currentColor;
+          width: 0%;
+          opacity: 0.85;
         }
-        
+
+        .toast.toast-success { color: #d1fae5; }
+        .toast.toast-error { color: #fee2e2; }
+        .toast.toast-warning { color: #fef9c3; }
+        .toast.toast-info { color: #dbeafe; }
+
+        @keyframes toastProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+
         @media (max-width: 480px) {
-          .notification {
-            right: 10px;
-            left: 10px;
-            max-width: none;
+          .toast-stack {
+            left: 50%;
+            right: auto;
+            transform: translateX(-50%);
+            top: 16px;
+          }
+
+          .toast {
+            width: min(92vw, 360px);
           }
         }
       `;
       document.head.appendChild(style);
     }
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after duration
-    setTimeout(() => {
-      if (notification.parentElement) {
-        notification.style.animation = 'slideInRight 0.3s ease reverse';
-        setTimeout(() => notification.remove(), 300);
+
+    let stack = document.querySelector('.toast-stack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.className = 'toast-stack';
+      document.body.appendChild(stack);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <div class="toast-content" style="display:flex;gap:14px;align-items:flex-start;position:relative;z-index:1;">
+        <div class="toast-icon">${this.getIcon(type)}</div>
+        <div class="toast-body">
+          <strong>${this.getTitle(type)}</strong>
+          <p>${message}</p>
+        </div>
+        <button class="toast-close" aria-label="Dismiss notification">×</button>
+      </div>
+      <div class="toast-progress"></div>
+    `;
+
+    stack.prepend(toast);
+
+    const progress = toast.querySelector('.toast-progress');
+    let remaining = duration;
+    let start = performance.now();
+
+    requestAnimationFrame(() => {
+      toast.classList.add('visible');
+      if (progress) {
+        progress.style.animation = `toastProgress ${duration}ms linear forwards`;
       }
-    }, duration);
+    });
+
+    const finalizeRemoval = () => {
+      toast.remove();
+      if (!stack.children.length) stack.remove();
+    };
+
+    const removeToast = () => {
+      clearTimeout(hideTimer);
+      toast.classList.remove('visible');
+      setTimeout(finalizeRemoval, 220);
+    };
+
+    let hideTimer = setTimeout(removeToast, duration);
+
+    toast.querySelector('.toast-close').addEventListener('click', removeToast);
+
+    toast.addEventListener('mouseenter', () => {
+      clearTimeout(hideTimer);
+      const elapsed = performance.now() - start;
+      remaining = Math.max(0, remaining - elapsed);
+      if (progress) progress.style.animationPlayState = 'paused';
+    });
+
+    toast.addEventListener('mouseleave', () => {
+      start = performance.now();
+      if (progress) {
+        progress.style.animation = 'none';
+        // Force reflow to restart animation
+        void progress.offsetWidth;
+        progress.style.animation = `toastProgress ${remaining}ms linear forwards`;
+        progress.style.animationPlayState = 'running';
+      }
+      hideTimer = setTimeout(removeToast, remaining);
+    });
   }
   
   // Get icon for notification type
@@ -179,6 +257,16 @@ class ErrorHandler {
       info: 'ℹ️'
     };
     return icons[type] || 'ℹ️';
+  }
+  
+  static getTitle(type) {
+    const titles = {
+      success: 'Success',
+      error: 'Something went wrong',
+      warning: 'Heads up',
+      info: 'FYI'
+    };
+    return titles[type] || 'Notice';
   }
   
   // Log error for debugging
