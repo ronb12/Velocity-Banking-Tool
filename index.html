@@ -1806,7 +1806,7 @@
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
         const marginX = 56;
-        const marginY = 64;
+        const marginY = 120;
         let cursorY = marginY;
 
         const colors = {
@@ -1819,23 +1819,24 @@
 
         const addHeader = () => {
           doc.setFillColor(...colors.primary);
-          doc.rect(0, 0, pageWidth, 70, 'F');
+          const headerHeight = 90;
+          doc.rect(0, 0, pageWidth, headerHeight, 'F');
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(22);
           doc.setTextColor(255, 255, 255);
-          doc.text("Bradley's Finance Hub", marginX, 45);
+          doc.text("Bradley's Finance Hub", marginX, 44);
           doc.setFontSize(12);
           doc.setFont('helvetica', 'normal');
-          doc.text("Personal Financial Intelligence Suite", marginX, 63);
+          doc.text("Personal Financial Intelligence Suite", marginX, 62);
           if (data.account) {
             const displayName = data.account.displayName || 'Client';
             const email = data.account.email || '';
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
-            doc.text(displayName, pageWidth - marginX, 42, { align: 'right' });
+            doc.text(displayName, pageWidth - marginX, 40, { align: 'right' });
             doc.setFont('helvetica', 'normal');
             if (email) {
-              doc.text(email, pageWidth - marginX, 57, { align: 'right' });
+              doc.text(email, pageWidth - marginX, 56, { align: 'right' });
             }
           }
           doc.setTextColor(...colors.text);
