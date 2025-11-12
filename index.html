@@ -2091,6 +2091,23 @@
         doc.text(`Version: ${data.exportInfo.version}`, marginX + 300, cursorY + 60);
         cursorY += insightsBoxHeight + 28;
 
+        addSectionTitle('Executive Overview', 'Narrative summary of current financial posture');
+        const overviewNarrative = [
+          metrics.netWorth !== null
+            ? `Overall net worth stands at ${formatCurrency(metrics.netWorth)}, reflecting ${metrics.netWorthChange !== null ? `${metrics.netWorthChange >= 0 ? 'an increase' : 'a decrease'} of ${formatCurrency(Math.abs(metrics.netWorthChange))} since the prior period.` : 'the latest consolidated balances across assets and liabilities.'}`
+            : 'Net worth insights are pending; add balance history to unlock trend analysis.',
+          metrics.netCashFlow !== null
+            ? `Net cash flow this period is ${formatCurrency(metrics.netCashFlow)}, derived from ${formatCurrency(metrics.incomeTotal)} in income against ${formatCurrency(metrics.expenseActual)} of actual spending.`
+            : 'Cash flow metrics require active budget or income entries; update the budget tracker to activate this insight.',
+          metrics.creditUtilization !== null
+            ? `Revolving credit utilization is ${formatPercent(metrics.creditUtilization)}, with ${formatCurrency(metrics.creditBalance)} outstanding against ${formatCurrency(metrics.creditLimit)} in aggregate limits.`
+            : 'Connect revolving credit accounts to view utilization health.',
+          metrics.savingsProgress !== null
+            ? `Savings goals are ${formatPercent(metrics.savingsProgress)} funded, with ${formatCurrency(metrics.savingsSaved)} saved toward ${formatCurrency(metrics.savingsTarget)} of total targets.`
+            : 'Savings progress will appear once goals include both targets and contributions.'
+        ];
+        addParagraph(overviewNarrative.join(' '));
+
         addSectionTitle('Data Coverage', 'Overview of datasets included in this export');
         const friendlyLabel = (key) => ({
           debts: 'Debt Accounts',
@@ -2102,12 +2119,12 @@
           activityLogs: 'Activity Logs'
         })[key] || key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-        const datasetRows = Object.entries(datasetCounts)
-          .filter(([, value]) => value !== undefined && value !== null)
-          .map(([key, value]) => [friendlyLabel(key), `${value} record${value === 1 ? '' : 's'}`]);
+        const datasetBullets = Object.entries(datasetCounts)
+          .filter(([key, value]) => key !== 'totalDatasets' && value !== undefined && value !== null)
+          .map(([key, value]) => `${friendlyLabel(key)} · ${value} record${value === 1 ? '' : 's'}`);
 
-        if (datasetRows.length) {
-          addTable(['Dataset', 'Records'], datasetRows);
+        if (datasetBullets.length) {
+          addBulletList(datasetBullets);
         } else {
           addParagraph('No datasets were detected for this account. Use the JSON export for raw data if needed.');
         }
@@ -2137,15 +2154,15 @@
           const topDebts = debts
             .slice()
             .sort((a, b) => (parseFloat(b.balance) || 0) - (parseFloat(a.balance) || 0))
-            .slice(0, 6)
-            .map(debt => [
-              debt.name || 'Account',
-              formatCurrency(debt.balance),
-              debt.interestRate !== undefined ? `${Number(debt.interestRate).toFixed(2)}%` : '—',
-              formatCurrency(debt.minPayment),
-              (debt.type || 'N/A').toString().toUpperCase()
-            ]);
-          addTable(['Account', 'Balance', 'Rate', 'Min Payment', 'Type'], topDebts);
+            .slice(0, 4)
+            .map(debt => {
+              const name = debt.name || 'Account';
+              const rate = debt.interestRate !== undefined ? `${Number(debt.interestRate).toFixed(2)}% APR` : 'rate unavailable';
+              const payment = debt.minPayment ? ` · $${Number(debt.minPayment).toFixed(2)} minimum payment` : '';
+              const type = debt.type ? ` · ${debt.type.toString().toUpperCase()}` : '';
+              return `${name}: ${formatCurrency(debt.balance)} outstanding (${rate}${payment}${type})`;
+            });
+          addBulletList(topDebts);
         } else {
           addParagraph('No debt records were found. Add credit or loan accounts to monitor repayment progress.');
         }
@@ -2154,22 +2171,20 @@
         const allExpenses = budgets.flatMap(record => Array.isArray(record.expenses) ? record.expenses : []);
         const allIncomes = budgets.flatMap(record => Array.isArray(record.incomes) ? record.incomes : (Array.isArray(record.income) ? record.income : []));
 
-        addKeyValue('Total Scheduled Income', formatCurrency(metrics.incomeTotal));
-        addKeyValue('Actual Spending', formatCurrency(metrics.expenseActual));
-        addKeyValue('Net Cash Flow', formatCurrency(metrics.netCashFlow));
+        addParagraph(`Scheduled income totals ${formatCurrency(metrics.incomeTotal)} while actual spending reached ${formatCurrency(metrics.expenseActual)}. Net cash flow stands at ${formatCurrency(metrics.netCashFlow)}.`);
 
-        if (allExpenses.length) {
-          const topExpenses = allExpenses
-            .slice()
-            .sort((a, b) => (parseFloat(b.spent ?? b.amount ?? 0) || 0) - (parseFloat(a.spent ?? a.amount ?? 0) || 0))
-            .slice(0, 6)
-            .map(exp => [
-              exp.category || exp.name || 'Expense',
-              formatCurrency(exp.budgeted ?? exp.amount),
-              formatCurrency(exp.spent ?? exp.amount),
-              exp.paidFrom || '—'
-            ]);
-          addTable(['Category', 'Budgeted', 'Actual', 'Paid From'], topExpenses);
+        const expenseHighlights = allExpenses
+          .slice()
+          .sort((a, b) => (parseFloat(b.spent ?? b.amount ?? 0) || 0) - (parseFloat(a.spent ?? a.amount ?? 0) || 0))
+          .slice(0, 4)
+          .map(exp => {
+            const spent = formatCurrency(exp.spent ?? exp.amount ?? 0);
+            const budgeted = exp.budgeted ? ` vs ${formatCurrency(exp.budgeted)} budgeted` : '';
+            const paidFrom = exp.paidFrom ? ` · Paid from ${exp.paidFrom}` : '';
+            return `${exp.category || exp.name || 'Expense'}: ${spent}${budgeted}${paidFrom}`;
+          });
+        if (expenseHighlights.length) {
+          addBulletList(expenseHighlights);
         } else {
           addParagraph('No expense items found. Add budget categories to monitor spending.');
         }
@@ -2183,21 +2198,16 @@
               const progressB = (parseFloat(b.saved ?? 0) || 0) / (parseFloat(b.target ?? 1) || 1);
               return progressB - progressA;
             })
-            .slice(0, 6)
+            .slice(0, 4)
             .map(goal => {
               const saved = parseFloat(goal.saved ?? goal.current ?? 0) || 0;
               const target = parseFloat(goal.target ?? 0) || 0;
               const progress = target > 0 ? `${((saved / target) * 100).toFixed(1)}%` : '—';
-              return [
-                goal.name || 'Goal',
-                goal.category || '—',
-                formatCurrency(saved),
-                formatCurrency(target),
-                progress,
-                goal.targetDate ? formatDate(goal.targetDate) : '—'
-              ];
+              const category = goal.category ? `${goal.category} · ` : '';
+              const targetDate = goal.targetDate ? ` · Target date ${formatDate(goal.targetDate)}` : '';
+              return `${goal.name || 'Goal'}: ${category}${formatCurrency(saved)} saved of ${formatCurrency(target)} (${progress})${targetDate}`;
             });
-          addTable(['Goal', 'Category', 'Saved', 'Target', 'Progress', 'Target Date'], savingsRows);
+          addBulletList(savingsRows);
         } else {
           addParagraph('No savings goals recorded. Create goals to visualize growth toward major milestones.');
         }
@@ -2207,14 +2217,14 @@
           const historyRows = netWorthHistory
             .slice()
             .sort((a, b) => new Date(a.date || a.timestamp) - new Date(b.date || b.timestamp))
-            .slice(-6)
-            .map(entry => [
-              formatDate(entry.date || entry.timestamp),
-              formatCurrency(entry.netWorth),
-              formatCurrency(entry.assets ?? entry.totalAssets),
-              formatCurrency(entry.liabilities ?? entry.totalLiabilities)
-            ]);
-          addTable(['Date', 'Net Worth', 'Assets', 'Liabilities'], historyRows);
+            .slice(-4)
+            .map(entry => {
+              const date = formatDate(entry.date || entry.timestamp);
+              const assets = formatCurrency(entry.assets ?? entry.totalAssets);
+              const liabilities = formatCurrency(entry.liabilities ?? entry.totalLiabilities);
+              return `${date}: Net worth ${formatCurrency(entry.netWorth)} (Assets ${assets} · Liabilities ${liabilities})`;
+            });
+          addBulletList(historyRows);
         } else {
           addParagraph('Net worth history will appear once two or more monthly positions are recorded.');
         }
@@ -2225,12 +2235,12 @@
             .slice()
             .sort((a, b) => new Date(b.timestamp || b.date || 0) - new Date(a.timestamp || a.date || 0))
             .slice(0, 6)
-            .map(activity => [
-              formatDate(activity.timestamp || activity.date),
-              (activity.type || 'activity').toString().replace(/_/g, ' ').toUpperCase(),
-              activity.text || activity.description || '—'
-            ]);
-          addTable(['Date', 'Type', 'Description'], activityRows);
+            .map(activity => {
+              const date = formatDate(activity.timestamp || activity.date);
+              const type = (activity.type || 'activity').toString().replace(/_/g, ' ').toUpperCase();
+              return `${date} · ${type} · ${activity.text || activity.description || 'No description provided'}`;
+            });
+          addBulletList(activityRows);
         } else {
           addParagraph('Activity feed will populate as actions are recorded across the platform.');
         }
