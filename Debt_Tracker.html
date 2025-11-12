@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-  <title>Debt Tracker – Final Fixed</title>
+  <title>Debt Tracker</title>
 
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -91,6 +91,11 @@
       background-color: #e6f7f0 !important;
       font-weight: bold;
       color: #2e8b57;
+    }
+    .priority-error {
+      background-color: #fdecea !important;
+      color: #b71c1c !important;
+      font-weight: bold;
     }
     button {
       margin: 5px;
@@ -190,10 +195,10 @@
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
 
-  <h1>Debt Tracker – Final Fixed</h1>
+  <h1>Debt Tracker</h1>
 
   <label for="strategyToggle"><strong>Payoff Strategy:</strong></label>
-  <select id="strategyToggle" onchange="calculateSummary()">
+  <select id="strategyToggle">
     <option value="avalanche">Avalanche (Highest Interest First)</option>
     <option value="snowball">Snowball (Smallest Balance First)</option>
   </select>
@@ -263,9 +268,40 @@ const db = firebase.firestore();
 const tableBody = document.querySelector("#debtTable tbody");
 const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
+const STORAGE_KEYS = {
+  strategy: 'debtTracker:strategy',
+  extra: 'debtTracker:extraPayment'
+};
+
 // Initialize activity logger
 window.db = db;
 window.auth = auth;
+
+function formatCurrency(value) {
+  const num = Number(value);
+  const safe = Number.isFinite(num) ? num : 0;
+  return safe.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatPercent(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '0.00%';
+  return `${num.toFixed(2)}%`;
+}
+
+function formatMonths(months) {
+  if (!Number.isFinite(months) || months <= 0) return '0 months';
+  const yrs = Math.floor(months / 12);
+  const mos = months % 12;
+  if (yrs === 0) return `${months} month${months === 1 ? '' : 's'}`;
+  return mos ? `${yrs} yr ${mos} mo` : `${yrs} yr${yrs === 1 ? '' : 's'}`;
+}
+
+function resetRowState(row) {
+  row.classList.remove('priority-urgent', 'priority-medium', 'priority-low', 'priority-error');
+  const priorityCell = row.querySelector('.priority');
+  if (priorityCell) priorityCell.innerText = '-';
+}
 
 function addDebt(name = '', balance = '', rate = '', payment = '', limit = '', type = 'credit') {
   const row = document.createElement("tr");
@@ -300,97 +336,344 @@ function addDebt(name = '', balance = '', rate = '', payment = '', limit = '', t
 }
 
 function calculateSummary() {
-  let totalBalance = 0, totalPayment = 0, totalInterest = 0, totalLimit = 0;
-  let creditBalance = 0, creditLimit = 0;
-  let maxMonths = 0;
-  let worstCFI = 0, worstIndex = 0, highestRate = 0, highIndex = 0;
-
   const rows = Array.from(tableBody.querySelectorAll("tr"));
   const strategy = document.getElementById("strategyToggle").value;
+  const extraInput = document.getElementById("extraPayment");
+  let extraPayment = parseFloat(extraInput.value);
+  if (!Number.isFinite(extraPayment) || extraPayment < 0) extraPayment = 0;
 
-  rows.sort((a, b) => {
-    const aBal = parseFloat(a.querySelectorAll("input")[2].value) || 0;
-    const bBal = parseFloat(b.querySelectorAll("input")[2].value) || 0;
+  const sortedRows = rows.slice().sort((a, b) => {
+    const aBalance = parseFloat(a.querySelectorAll("input")[2].value) || 0;
+    const bBalance = parseFloat(b.querySelectorAll("input")[2].value) || 0;
     const aRate = parseFloat(a.querySelectorAll("input")[3].value) || 0;
     const bRate = parseFloat(b.querySelectorAll("input")[3].value) || 0;
-    return strategy === "snowball" ? aBal - bBal : bRate - aRate;
+    if (strategy === 'snowball') {
+      if (Math.abs(aBalance - bBalance) > 0.01) return aBalance - bBalance;
+      return bRate - aRate;
+    }
+    if (Math.abs(bRate - aRate) > 0.01) return bRate - aRate;
+    return aBalance - bBalance;
   });
 
-  tableBody.innerHTML = "";
-  rows.forEach(row => tableBody.appendChild(row));
+  sortedRows.forEach(row => tableBody.appendChild(row));
 
-  rows.forEach((row, i) => {
+  let totalBalance = 0;
+  let totalPayment = 0;
+  let creditBalance = 0;
+  let creditLimit = 0;
+
+  const debts = sortedRows.map((row, index) => {
     const inputs = row.querySelectorAll("input");
-    const type = row.querySelector("select").value;
-    const limit = parseFloat(inputs[1].value) || 0;
-    const balance = parseFloat(inputs[2].value) || 0;
-    const rate = parseFloat(inputs[3].value) || 0;
-    const payment = parseFloat(inputs[4].value) || 0;
+    const select = row.querySelector("select");
+    const debt = {
+      index,
+      row,
+      name: (inputs[0].value || '').trim() || `Debt ${index + 1}`,
+      type: select.value,
+      limit: parseFloat(inputs[1].value) || 0,
+      balance: parseFloat(inputs[2].value) || 0,
+      rate: parseFloat(inputs[3].value) || 0,
+      payment: parseFloat(inputs[4].value) || 0,
+      warnings: [],
+      blocking: false
+    };
 
-    totalBalance += balance;
-    totalPayment += payment;
-    totalLimit += limit;
-
-    if (type === 'credit' && limit > 0) {
-      creditBalance += balance;
-      creditLimit += limit;
+    if (debt.balance < 0) {
+      debt.warnings.push('Balance cannot be negative');
+      debt.balance = 0;
+    }
+    if (debt.rate < 0) {
+      debt.warnings.push('Rate cannot be negative');
+      debt.rate = 0;
+    }
+    if (debt.payment < 0) {
+      debt.warnings.push('Payment cannot be negative');
+      debt.payment = 0;
+    }
+    if (debt.balance > 0 && debt.payment === 0) {
+      debt.warnings.push('Enter a payment above $0');
+      debt.blocking = true;
     }
 
-    if (balance > 0 && rate > 0 && payment > 0) {
-      const r = rate / 100 / 12;
-      const months = Math.ceil(-Math.log(1 - r * balance / payment) / Math.log(1 + r));
-      const cfi = (balance / payment).toFixed(2);
-      const interest = (payment * months) - balance;
-
-      row.querySelector(".monthsLeft").innerText = months;
-      row.querySelector(".cfi").innerText = cfi;
-      row.querySelector(".interest").innerText = "$" + interest.toFixed(2);
-      row.querySelector(".priority").innerText =
-        cfi < 20 ? "🔥 Urgent" : cfi < 50 ? "⚠️ Medium" : "✅ Low";
-      row.className = cfi < 20 ? 'priority-urgent' : cfi < 50 ? 'priority-medium' : 'priority-low';
-
-      totalInterest += interest;
-      if (months > maxMonths) maxMonths = months;
-      if (cfi > worstCFI) { worstCFI = cfi; worstIndex = i; }
-      if (rate > highestRate) { highestRate = rate; highIndex = i; }
+    const monthlyRate = debt.rate > 0 ? debt.rate / 100 / 12 : 0;
+    if (debt.balance > 0 && monthlyRate > 0 && debt.payment > 0 && debt.payment <= debt.balance * monthlyRate) {
+      debt.warnings.push('Increase the payment to cover monthly interest');
+      debt.blocking = true;
     }
+
+    if (debt.type === 'credit' && debt.limit <= 0 && debt.balance > 0) {
+      debt.warnings.push('Add a credit limit to calculate utilization');
+    }
+
+    totalBalance += debt.balance;
+    totalPayment += Math.max(0, debt.payment);
+    if (debt.type === 'credit') {
+      creditBalance += debt.balance;
+      creditLimit += Math.max(0, debt.limit);
+    }
+
+    resetRowState(row);
+    return debt;
   });
 
-  const utilization = creditLimit > 0 ? (creditBalance / creditLimit * 100).toFixed(2) : "0.00";
-  document.getElementById("summaryText").innerText =
-    `Total Debt: $${totalBalance.toFixed(2)} | Total Monthly Payments: $${totalPayment.toFixed(2)} | Total Interest: $${totalInterest.toFixed(2)} | Total Limit: $${creditLimit.toFixed(2)} | Credit Utilization: ${utilization}%`;
+  const hasBlocking = debts.some(d => d.blocking);
+  let simulation = null;
+  let baselineSimulation = null;
 
-  generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, maxMonths);
+  if (!hasBlocking && debts.length) {
+    simulation = simulatePayoff(debts, extraPayment, strategy);
+    if (simulation.error) {
+      const problematic = debts.find(d => d.index === simulation.debtIndex);
+      if (problematic) {
+        problematic.warnings.push(simulation.message);
+        problematic.blocking = true;
+      }
+    } else if (extraPayment > 0) {
+      baselineSimulation = simulatePayoff(debts, 0, strategy);
+      if (baselineSimulation && baselineSimulation.error) baselineSimulation = null;
+    }
+  }
+
+  const summaryElement = document.getElementById("summaryText");
+  const utilization = creditLimit > 0 ? ((creditBalance / creditLimit) * 100) : 0;
+
+  if (!simulation || simulation.error || hasBlocking) {
+    debts.forEach(debt => applyRowStatus(debt, null));
+    const warningPrefix = debts.some(d => d.blocking) ? '⚠️ ' : '';
+    summaryElement.innerText = `${warningPrefix}Total Debt: ${formatCurrency(totalBalance)} | Monthly Minimums: ${formatCurrency(totalPayment)} | Revolving Limit: ${formatCurrency(creditLimit)} | Credit Utilization: ${formatPercent(utilization)}`;
+    generateAdvisor({ debts, simulation: null, baselineSimulation: null, extraPayment, strategy });
+    return;
+  }
+
+  debts.forEach(debt => {
+    const result = simulation.debts.find(d => d.index === debt.index);
+    applyRowStatus(debt, result);
+  });
+
+  markPrioritizedDebt({ debts, simulation, strategy });
+
+  const summaryParts = [
+    `Total Debt: ${formatCurrency(totalBalance)}`,
+    `Monthly Minimums: ${formatCurrency(totalPayment)}`,
+    extraPayment > 0 ? `Monthly w/ Extra: ${formatCurrency(totalPayment + extraPayment)}` : null,
+    `Total Interest (modeled): ${formatCurrency(simulation.totalInterest)}`,
+    `Revolving Limit: ${formatCurrency(creditLimit)} | Credit Utilization: ${formatPercent(utilization)}`
+  ].filter(Boolean);
+
+  const projectedDate = new Date();
+  projectedDate.setMonth(projectedDate.getMonth() + simulation.maxMonths);
+  summaryParts.push(`Projected Debt-Free: ${projectedDate.toLocaleDateString()}`);
+
+  if (baselineSimulation && extraPayment > 0) {
+    const monthsSaved = Math.max(0, baselineSimulation.maxMonths - simulation.maxMonths);
+    const interestSaved = Math.max(0, baselineSimulation.totalInterest - simulation.totalInterest);
+    if (monthsSaved > 0 || interestSaved > 0) {
+      summaryParts.push(`Extra $${extraPayment.toFixed(2)}/mo saves ~${monthsSaved} month${monthsSaved === 1 ? '' : 's'} & ${formatCurrency(interestSaved)} interest`);
+    }
+  }
+
+  summaryElement.innerText = summaryParts.join(' | ');
+  generateAdvisor({ debts, simulation, baselineSimulation, extraPayment, strategy });
 }
-function generateAdvisor(rows, worstIndex, worstCFI, highIndex, highestRate, maxMonths) {
+
+function applyRowStatus(debt, simulationResult) {
+  const row = debt.row;
+  const monthsCell = row.querySelector(".monthsLeft");
+  const cfiCell = row.querySelector(".cfi");
+  const interestCell = row.querySelector(".interest");
+  const priorityCell = row.querySelector(".priority");
+
+  resetRowState(row);
+
+  if (debt.warnings.length) {
+    monthsCell.innerText = '-';
+    cfiCell.innerText = '-';
+    interestCell.innerText = '-';
+    priorityCell.innerText = `⚠️ ${debt.warnings[0]}`;
+    row.classList.add('priority-error');
+    return;
+  }
+
+  if (!simulationResult) {
+    monthsCell.innerText = '-';
+    cfiCell.innerText = '-';
+    interestCell.innerText = '-';
+    priorityCell.innerText = '-';
+    return;
+  }
+
+  const cfi = debt.payment > 0 ? (debt.balance / debt.payment).toFixed(2) : '-';
+  monthsCell.innerText = simulationResult.months;
+  cfiCell.innerText = debt.balance > 0 && debt.payment > 0 ? cfi : '-';
+  interestCell.innerText = formatCurrency(simulationResult.totalInterest);
+
+  const months = simulationResult.months;
+  if (months >= 60) {
+    row.classList.add('priority-urgent');
+    priorityCell.innerText = '🔥 Focus Now';
+  } else if (months >= 24) {
+    row.classList.add('priority-medium');
+    priorityCell.innerText = '⚠️ Monitor';
+  } else {
+    row.classList.add('priority-low');
+    priorityCell.innerText = '✅ On Track';
+  }
+}
+
+function simulatePayoff(debts, extraPayment, strategy) {
+  const clones = debts.map(debt => ({
+    index: debt.index,
+    name: debt.name,
+    balance: Math.max(0, debt.balance),
+    rate: Math.max(0, debt.rate),
+    payment: Math.max(0, debt.payment),
+    months: 0,
+    totalInterest: 0
+  }));
+
+  const MAX_MONTHS = 1200;
+  let monthCounter = 0;
+
+  while (clones.some(d => d.balance > 0.01)) {
+    if (monthCounter++ > MAX_MONTHS) {
+      return { error: 'iterationLimit', message: 'Could not compute payoff. Check your payments.' };
+    }
+
+    let extraPool = extraPayment;
+    const active = clones.filter(d => d.balance > 0.01);
+    if (!active.length) break;
+
+    active.sort((a, b) => {
+      if (strategy === 'snowball') {
+        if (Math.abs(a.balance - b.balance) > 0.01) return a.balance - b.balance;
+        return b.rate - a.rate;
+      }
+      if (Math.abs(b.rate - a.rate) > 0.01) return b.rate - a.rate;
+      return a.balance - b.balance;
+    });
+
+    for (let idx = 0; idx < active.length; idx++) {
+      const debt = active[idx];
+      const monthlyRate = debt.rate / 100 / 12;
+      const interest = debt.balance * monthlyRate;
+      let payment = debt.payment;
+
+      if (extraPool > 0) {
+        payment += extraPool;
+      }
+
+      if (debt.balance > 0.01 && payment <= interest + 0.01) {
+        return {
+          error: 'insufficientPayment',
+          debtIndex: debt.index,
+          message: 'Increase the payment to cover the monthly interest.'
+        };
+      }
+
+      const required = debt.balance + interest;
+      if (payment > required) {
+        const leftover = payment - required;
+        payment = required;
+        extraPool = leftover;
+      } else {
+        extraPool = 0;
+      }
+
+      const principal = payment - interest;
+      debt.balance = Math.max(0, debt.balance - principal);
+      debt.totalInterest += interest;
+      debt.months += 1;
+    }
+  }
+
+  const maxMonths = clones.reduce((max, debt) => Math.max(max, debt.months), 0);
+  const totalInterest = clones.reduce((sum, debt) => sum + debt.totalInterest, 0);
+  return { debts: clones, maxMonths, totalInterest };
+}
+
+function generateAdvisor({ debts, simulation, baselineSimulation, extraPayment, strategy }) {
   const box = document.getElementById("aiAdvisor");
-  const extra = parseFloat(document.getElementById("extraPayment").value) || 0;
-  if (rows.length === 0) {
+  if (!debts.length) {
     box.innerHTML = "💡 Add some debts above to see intelligent recommendations appear here.";
     return;
   }
 
-  let html = "";
-  if (worstCFI > 50) {
-    const worstName = rows[worstIndex].querySelector("input").value;
-    html += `<div style="color:#dc3545;">⚠️ <strong>${worstName}</strong> will take longest to pay off (${Math.ceil(worstCFI)} months). 
-      <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${worstIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
+  if (!simulation || simulation.error) {
+    box.innerHTML = "⚠️ Fix the highlighted debts above to see payoff recommendations.";
+    return;
   }
 
-  const highName = rows[highIndex].querySelector("input").value;
-  html += `<div style="color:#007bff;">💸 Focus on <strong>${highName}</strong> — highest rate at <strong>${highestRate.toFixed(2)}%</strong>. 
-    <button onclick="amortizeRow(document.querySelectorAll('#debtTable tbody tr')[${highIndex}].querySelector('button'))">🔍 Analyze</button></div>`;
-
-  if (extra > 0) {
-    const savedMonths = Math.floor(maxMonths * 0.15);
-    html += `<div style="color:#28a745;">📈 With $${extra}/mo extra, you could save <strong>${savedMonths} months</strong>.</div>`;
+  const active = simulation.debts.filter(d => d.months > 0);
+  if (!active.length) {
+    box.innerHTML = "✅ All debts are marked as paid off.";
+    return;
   }
 
-  const projectedDate = new Date();
-  projectedDate.setMonth(projectedDate.getMonth() + maxMonths);
-  html += `<div style="margin-top: 10px;">📅 Estimated debt-free date: <strong>${projectedDate.toLocaleDateString()}</strong></div>`;
+  const longest = active.reduce((max, debt) => debt.months > max.months ? debt : max, active[0]);
+  const prioritizedDebt = (() => {
+    if (strategy === 'snowball') {
+      return debts[0] || active[0];
+    }
+    return active.slice().sort((a, b) => b.rate - a.rate || b.balance - a.balance)[0];
+  })();
+  const targetName = debts[prioritizedDebt.index]?.name || prioritizedDebt.name || 'Your top priority';
+  const targetRate = Number(prioritizedDebt.rate || debts[prioritizedDebt.index]?.rate || 0).toFixed(2);
 
+  let html = '';
+  if (strategy === 'snowball') {
+    html += `<div style="color:#0d6efd;">💸 Focus on <strong>${targetName}</strong> first — it's the smallest balance and will disappear fastest.</div>`;
+  } else {
+    html += `<div style="color:#0d6efd;">💸 Focus on <strong>${targetName}</strong> first — it's carrying the highest rate at ${targetRate}%.</div>`;
+  }
+  html += `<div style="color:#dc3545;">⏳ ${debts[longest.index]?.name || 'One account'} takes about ${formatMonths(longest.months)} to clear. Consider directing extra funds here once the top priority is gone.</div>`;
+
+  if (extraPayment > 0 && baselineSimulation) {
+    const monthsSaved = Math.max(0, baselineSimulation.maxMonths - simulation.maxMonths);
+    const interestSaved = Math.max(0, baselineSimulation.totalInterest - simulation.totalInterest);
+    html += `<div style="color:#198754;">⚡ Adding $${extraPayment.toFixed(2)} each month trims roughly ${monthsSaved} month${monthsSaved === 1 ? '' : 's'} and saves about ${formatCurrency(interestSaved)} in interest.</div>`;
+  } else if (extraPayment <= 0) {
+    html += `<div style="color:#198754;">⚡ Try entering an extra payment above to see how quickly the payoff accelerates.</div>`;
+  }
+
+  html += `<div style="margin-top:10px;color:#6f42c1;">📅 Estimated debt-free date: <strong>${(function(){const date = new Date(); date.setMonth(date.getMonth() + simulation.maxMonths); return date.toLocaleDateString();})()}</strong> (${formatMonths(simulation.maxMonths)} to go).</div>`;
   box.innerHTML = html;
+}
+
+function markPrioritizedDebt({ debts, simulation, strategy }) {
+  if (!simulation || !simulation.debts) return;
+
+  const eligible = simulation.debts.filter(d => {
+    const debt = debts[d.index];
+    return debt && !debt.blocking && !debt.warnings.length && d.balance > 0.01;
+  });
+  if (!eligible.length) return;
+
+  const prioritized = (() => {
+    if (strategy === 'snowball') {
+      return eligible.slice().sort((a, b) => {
+        if (Math.abs(a.balance - b.balance) > 0.01) return a.balance - b.balance;
+        return b.rate - a.rate;
+      })[0];
+    }
+    return eligible.slice().sort((a, b) => {
+      if (Math.abs(b.rate - a.rate) > 0.01) return b.rate - a.rate;
+      return a.balance - b.balance;
+    })[0];
+  })();
+
+  const debt = debts[prioritized.index];
+  if (!debt) return;
+
+  const row = debt.row;
+  if (row.classList.contains('priority-error')) return;
+
+  row.classList.remove('priority-urgent', 'priority-medium', 'priority-low');
+  row.classList.add('priority-urgent');
+  const label = strategy === 'snowball'
+    ? '🎯 Focus First (Snowball)'
+    : '🎯 Focus First (Avalanche)';
+  const priorityCell = row.querySelector('.priority');
+  if (priorityCell) priorityCell.innerText = label;
 }
 
 async function saveDebts() {
@@ -493,6 +776,40 @@ function loadLocalDebts() {
   calculateSummary();
   return true;
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const strategySelect = document.getElementById('strategyToggle');
+  const extraInput = document.getElementById('extraPayment');
+
+  const savedStrategy = localStorage.getItem(STORAGE_KEYS.strategy);
+  if (savedStrategy && Array.from(strategySelect.options).some(opt => opt.value === savedStrategy)) {
+    strategySelect.value = savedStrategy;
+  }
+
+  const savedExtra = localStorage.getItem(STORAGE_KEYS.extra);
+  if (savedExtra !== null && savedExtra !== '') {
+    const parsed = parseFloat(savedExtra);
+    if (!Number.isNaN(parsed)) {
+      extraInput.value = parsed;
+    }
+  }
+
+  strategySelect.addEventListener('change', () => {
+    localStorage.setItem(STORAGE_KEYS.strategy, strategySelect.value);
+    calculateSummary();
+  });
+
+  extraInput.addEventListener('input', () => {
+    if (extraInput.value === '') {
+      localStorage.removeItem(STORAGE_KEYS.extra);
+    } else {
+      localStorage.setItem(STORAGE_KEYS.extra, extraInput.value);
+    }
+    calculateSummary();
+  });
+
+  calculateSummary();
+});
 
 auth.onAuthStateChanged(user => {
   if (user) loadDebts();
