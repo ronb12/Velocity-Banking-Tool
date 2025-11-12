@@ -1207,16 +1207,16 @@
           try {
             const stats = window.getLocalTestData('userStats');
             if (stats) {
-              if (netWorth === null && typeof stats.netWorth === 'number') {
+              if (typeof stats.netWorth === 'number') {
                 netWorth = stats.netWorth;
               }
-              if (totalDebt === null && typeof stats.totalDebt === 'number') {
+              if (typeof stats.totalDebt === 'number') {
                 totalDebt = stats.totalDebt;
               }
-              if (creditUtilization === null && typeof stats.creditUtilization === 'number') {
+              if (typeof stats.creditUtilization === 'number') {
                 creditUtilization = stats.creditUtilization;
               }
-              if (savingsProgress === null && typeof stats.savingsProgress === 'number') {
+              if (typeof stats.savingsProgress === 'number') {
                 savingsProgress = stats.savingsProgress;
               }
             }
