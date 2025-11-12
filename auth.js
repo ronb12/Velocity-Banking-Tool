@@ -1,5 +1,6 @@
 // Import Firebase services from firebase-config.js
 import { auth, db } from './firebase-config.js';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
 // Session management
@@ -12,6 +13,10 @@ let lockoutUntil = null;
 const SESSION_TIMEOUT = window.CONFIG?.app?.sessionTimeout || 30 * 60 * 1000; // 30 minutes
 const MAX_LOGIN_ATTEMPTS = window.CONFIG?.security?.maxLoginAttempts || 5;
 const LOCKOUT_DURATION = window.CONFIG?.security?.lockoutDuration || 15 * 60 * 1000; // 15 minutes
+const ALLOW_UNVERIFIED_LOCAL_LOGIN = Boolean(window.CONFIG?.security?.allowUnverifiedLocalLogin) &&
+  ['localhost', '127.0.0.1'].includes(window.location.hostname);
+console.log('[Auth] Allow unverified local login:', ALLOW_UNVERIFIED_LOCAL_LOGIN, 'Host:', window.location.hostname);
+const authPromiseResolvers = [];
 
 // Start session timer
 function startSessionTimer() {
@@ -47,20 +52,21 @@ function extendSession() {
 }
 
 // Enhanced logout function
-function logout() {
+async function logout() {
   clearTimeout(sessionTimer);
   currentUser = null;
   loginAttempts = 0;
   lockoutUntil = null;
   
-  auth.signOut().then(() => {
+  try {
+    await signOut(auth);
     // Clear any stored data
     localStorage.removeItem('userSession');
     sessionStorage.clear();
     window.location.href = "login.html";
-  }).catch((error) => {
+  } catch (error) {
     ErrorHandler.handleFirebaseError(error);
-  });
+  }
 }
 
 // Check if user is locked out
@@ -94,12 +100,17 @@ function resetLoginAttempts() {
 // Enhanced login function
 async function login(email, password) {
   if (isLockedOut()) {
-    return false;
+    console.warn('[Auth login] User is locked out. email:', email);
+    return null;
   }
   
   try {
-    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+    console.log('[Auth login] Attempting sign-in for', email);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     resetLoginAttempts();
+    authPromiseResolvers.forEach(resolve => resolve(userCredential.user));
+    authPromiseResolvers.length = 0;
+    console.log('[Auth login] Sign-in successful for', email);
     return userCredential.user;
   } catch (error) {
     if (error.code === 'auth/user-not-found' || 
@@ -107,6 +118,7 @@ async function login(email, password) {
         error.code === 'auth/invalid-email') {
       handleFailedLogin();
     }
+    console.error('[Auth login] Sign-in failed:', error.code, error.message);
     ErrorHandler.handleFirebaseError(error);
     return null;
   }
@@ -115,10 +127,12 @@ async function login(email, password) {
 // Enhanced registration function
 async function register(email, password, displayName = '') {
   try {
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     if (displayName) {
-      await userCredential.user.updateProfile({ displayName });
+      await updateProfile(userCredential.user, { displayName });
     }
+    authPromiseResolvers.forEach(resolve => resolve(userCredential.user));
+    authPromiseResolvers.length = 0;
     return userCredential.user;
   } catch (error) {
     ErrorHandler.handleFirebaseError(error);
@@ -142,10 +156,20 @@ auth.onAuthStateChanged(async user => {
   currentUser = user;
   
   if (user) {
+    console.log('[Auth] User signed in:', user.email, 'Verified:', user.emailVerified);
     // Check if email is verified
-    if (!user.emailVerified) {
-      auth.signOut();
+    if (!user.emailVerified && !ALLOW_UNVERIFIED_LOCAL_LOGIN) {
+      await signOut(auth);
       window.location.href = "login.html?error=Please verify your email first";
+      return;
+    }
+    
+    // Redirect authenticated users away from auth-only pages
+    const authPages = ['login.html', 'register.html', 'reset.html'];
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    if (authPages.includes(currentPage)) {
+      console.log('[Auth] Redirecting authenticated user away from auth page.');
+      window.location.replace('index.html');
       return;
     }
     
@@ -176,6 +200,7 @@ auth.onAuthStateChanged(async user => {
       await updateDoc(userRef, { lastLogin: new Date().toISOString() });
     }
   } else {
+    console.log('[Auth] User signed out');
     // Update UI for logged out user
     document.querySelectorAll('.auth-required').forEach(element => {
       element.style.display = 'none';
@@ -205,5 +230,6 @@ export {
   login,
   register,
   isLockedOut,
-  resetLoginAttempts
+  resetLoginAttempts,
+  authPromiseResolvers
 }; 

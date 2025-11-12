@@ -796,6 +796,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let userId = "";
+const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 // Initialize activity logger
 window.db = db;
@@ -1066,12 +1067,56 @@ async function saveBudget() {
   }
 }
 
+function getLocalBudgetData() {
+  const local = (window.getLocalTestData && window.getLocalTestData('budget')) || window.LOCAL_TEST_DATA?.budget;
+  if (local) return JSON.parse(JSON.stringify(local));
+  try {
+    const stored = localStorage.getItem('local_test_budget');
+    return stored ? JSON.parse(stored) : null;
+  } catch (err) {
+    console.warn('Unable to read local budget data:', err);
+    return null;
+  }
+}
+
+function populateBudgetFromLocal(data) {
+  if (!data) return false;
+  document.querySelector("#incomeTable tbody").innerHTML = "";
+  document.querySelector("#expenseTable tbody").innerHTML = "";
+  document.getElementById("monthlyNotes").value = data.notes || '';
+
+  if (Array.isArray(data.income)) {
+    data.income.forEach(inc => addIncome(inc.source || '', inc.amount || 0));
+  }
+
+  if (Array.isArray(data.expenses)) {
+    data.expenses.forEach(exp => addExpense(exp.category || 'Other', exp.name || '', exp.budgeted || 0, exp.due || '', exp.spent || 0, exp.paidFrom || ''));
+  }
+
+  if (data.month) {
+    document.getElementById("monthSelect").value = data.month;
+  }
+
+  calculateBudget();
+  if (window.ErrorHandler) {
+    window.ErrorHandler.showSuccess('Loaded local sample budget data.');
+  }
+  return true;
+}
+
     // Load Budget function
 async function loadBudget() {
   const loadingIndicator = document.getElementById("loadingIndicator");
   loadingIndicator.style.display = "block";
       
       console.log('Load Budget button clicked');
+      
+      if (IS_LOCALHOST) {
+        const local = getLocalBudgetData();
+        populateBudgetFromLocal(local);
+        loadingIndicator.style.display = "none";
+        return;
+      }
       
       try {
         // Get the selected month
@@ -1125,6 +1170,8 @@ async function loadBudget() {
           if (window.ErrorHandler) {
             window.ErrorHandler.showSuccess(`Budget loaded successfully for ${selectedMonth || 'current month'}!`);
           }
+        } else if (IS_LOCALHOST && populateBudgetFromLocal(getLocalBudgetData())) {
+          console.log('Loaded local sample budget for offline testing.');
         } else {
           console.log('No data found for month:', selectedMonth);
           // Recalculate budget with empty data
@@ -1136,9 +1183,13 @@ async function loadBudget() {
       } catch (error) {
         console.error('Error loading budget:', error);
         if (window.ErrorHandler) {
-          window.ErrorHandler.handleFirebaseError(error);
+          if (!(IS_LOCALHOST && populateBudgetFromLocal(getLocalBudgetData()))) {
+            window.ErrorHandler.handleFirebaseError(error);
+          }
         } else {
-          alert('Error loading budget: ' + error.message);
+          if (!(IS_LOCALHOST && populateBudgetFromLocal(getLocalBudgetData()))) {
+            alert('Error loading budget: ' + error.message);
+          }
         }
       } finally {
         loadingIndicator.style.display = "none";

@@ -383,6 +383,74 @@
     let allActivities = [];
     let refreshInterval;
     let lastRefreshTime = null;
+    const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+    function clone(value) {
+      return JSON.parse(JSON.stringify(value));
+    }
+
+    function getStoredLocalActivities() {
+      try {
+        const raw = localStorage.getItem('local_test_activity');
+        if (raw) return JSON.parse(raw);
+      } catch (err) {
+        console.warn('Unable to read local activity data:', err);
+      }
+      const data = (window.getLocalTestData && window.getLocalTestData('activityLogs')) || window.LOCAL_TEST_DATA?.activityLogs || [];
+      return clone(data);
+    }
+
+    function setStoredLocalActivities(items) {
+      try {
+        localStorage.setItem('local_test_activity', JSON.stringify(items));
+      } catch (err) {
+        console.warn('Unable to persist local activity data:', err);
+      }
+    }
+
+    function renderLocalActivityFeed(showNewIndicator = false) {
+      const container = document.getElementById('activityFeed');
+      const loading = document.getElementById('loading');
+      const activities = getStoredLocalActivities();
+      loading.style.display = 'none';
+
+      allActivities = activities.map(item => ({ ...item }));
+      updateStats();
+
+      if (!allActivities.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 4em; margin-bottom: 20px;">📝</div>
+            <h3>No activities yet</h3>
+            <p>Start using the financial tools to see your activity feed here!</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      allActivities.forEach((activity, index) => {
+        const isNew = showNewIndicator && index < 3;
+        const typeClass = getActivityTypeClass(activity.type);
+        const timeFormatted = formatTime(activity.timestamp);
+
+        html += `
+          <div class="entry ${isNew ? 'new' : ''}">
+            <div class="entry-left">
+              <div class="entry-icon">${activity.icon || '📝'}</div>
+              <div>
+                <div class="entry-text">${activity.text || 'Activity logged'}</div>
+                ${activity.type ? `<span class="entry-type ${typeClass}">${activity.type.replace('_', ' ')}</span>` : ''}
+              </div>
+            </div>
+            <div class="entry-time">${timeFormatted}</div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      lastRefreshTime = new Date();
+    }
 
     function getActivityTypeClass(type) {
       const typeMap = {
@@ -447,6 +515,11 @@
       const loading = document.getElementById('loading');
       
       loading.style.display = 'block';
+
+      if (IS_LOCALHOST) {
+        renderLocalActivityFeed(showNewIndicator);
+        return;
+      }
       
       try {
         const q = query(
@@ -512,6 +585,12 @@
     }
 
     function startAutoRefresh() {
+      if (IS_LOCALHOST) {
+        refreshInterval = setInterval(() => {
+          renderLocalActivityFeed(true);
+        }, 30000);
+        return;
+      }
       refreshInterval = setInterval(() => {
         const user = auth.currentUser;
         if (user) {
@@ -528,16 +607,30 @@
 
     window.refreshFeed = () => {
       const user = auth.currentUser;
-      if (user) {
+      if (user && !IS_LOCALHOST) {
         loadActivityFeed(user, true);
+      } else if (IS_LOCALHOST) {
+        renderLocalActivityFeed(true);
       }
     };
 
     window.clearOldActivities = async () => {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user && !IS_LOCALHOST) return;
       
       if (confirm('Clear activities older than 30 days? This action cannot be undone.')) {
+        if (IS_LOCALHOST) {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const retained = getStoredLocalActivities().filter(activity => {
+            const activityTime = activity.timestamp?.seconds ? new Date(activity.timestamp.seconds * 1000) : new Date(activity.timestamp || Date.now());
+            return activityTime >= thirtyDaysAgo;
+          });
+          setStoredLocalActivities(retained);
+          alert(`Cleared ${allActivities.length - retained.length} old activities`);
+          renderLocalActivityFeed();
+          return;
+        }
         try {
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -565,6 +658,9 @@
     auth.onAuthStateChanged(user => {
       if (user) {
         loadActivityFeed(user);
+        startAutoRefresh();
+      } else if (IS_LOCALHOST) {
+        renderLocalActivityFeed();
         startAutoRefresh();
       } else {
         document.getElementById('activityFeed').innerHTML = `

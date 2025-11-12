@@ -25,7 +25,8 @@ const CONFIG = {
     minPasswordLength: 8,
     maxLoginAttempts: 5,
     lockoutDuration: 15 * 60 * 1000, // 15 minutes
-    enableRateLimiting: true
+    enableRateLimiting: true,
+    allowUnverifiedLocalLogin: true
   },
   
   // Feature Flags
@@ -37,9 +38,31 @@ const CONFIG = {
   }
 };
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = CONFIG;
-} else {
+(() => {
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CONFIG;
+    return;
+  }
+
   window.CONFIG = CONFIG;
-}
+
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    const host = window.location && window.location.hostname;
+    if (host && (host === 'localhost' || host === '127.0.0.1')) {
+      const existing = document.querySelector('script[data-local-test-data="true"]');
+      if (!existing) {
+        const script = document.createElement('script');
+        script.src = 'local-test-data.js';
+        script.defer = true;
+        script.dataset.localTestData = 'true';
+        document.head.appendChild(script);
+      }
+    }
+  } catch (err) {
+    console.warn('Unable to load local test data helper:', err);
+  }
+})();

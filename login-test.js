@@ -1,10 +1,11 @@
 // Import Firebase services
 import { auth } from './firebase-config.js';
+import { signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 
 // Test credentials
 const testUser = {
-    email: 'test1@example.com',
-    password: 'Test123!'
+    email: 'testuser@BFH.com',
+    password: 'test1234'
 };
 
 // Test results
@@ -18,7 +19,7 @@ let results = {
 async function testLogin() {
     try {
         console.log('Attempting login...');
-        const userCredential = await auth.signInWithEmailAndPassword(testUser.email, testUser.password);
+        const userCredential = await signInWithEmailAndPassword(auth, testUser.email, testUser.password);
         results.login = {
             success: true,
             user: userCredential.user.email
@@ -40,7 +41,7 @@ async function testLogin() {
 async function testLogout() {
     try {
         console.log('Attempting logout...');
-        await auth.signOut();
+        await signOut(auth);
         results.logout = {
             success: true
         };

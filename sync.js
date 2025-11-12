@@ -5,49 +5,55 @@
 import { auth, db } from './firebase-config.js';
 import { doc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
+const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
 // Auto-listeners for dashboard tiles
-auth.onAuthStateChanged(async user => {
-  if (!user) return window.location.href = "login.html";
+if (!IS_LOCALHOST) {
+  auth.onAuthStateChanged(async user => {
+    if (!user) return window.location.href = "login.html";
 
-  if (window.location.pathname.includes("index.html")) {
-    const networthRef = doc(db, "networth", user.uid);
-    const budgetRef = doc(db, "budgets", user.uid + "_" + new Date().toISOString().slice(0,7));
-    const debtsRef = doc(db, "debts", user.uid);
+    if (window.location.pathname.includes("index.html")) {
+      const networthRef = doc(db, "networth", user.uid);
+      const budgetRef = doc(db, "budgets", user.uid + "_" + new Date().toISOString().slice(0,7));
+      const debtsRef = doc(db, "debts", user.uid);
 
-    onSnapshot(networthRef, docSnap => {
-      if (docSnap.exists() && document.getElementById("netWorthTile")) {
-        const data = docSnap.data();
-        const assets = data.assets || [];
-        const liabilities = data.liabilities || [];
-        const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
-        const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
-        document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
-      }
-    });
+      onSnapshot(networthRef, docSnap => {
+        if (docSnap.exists() && document.getElementById("netWorthTile")) {
+          const data = docSnap.data();
+          const assets = data.assets || [];
+          const liabilities = data.liabilities || [];
+          const totalAssets = assets.reduce((sum, a) => sum + a.value, 0);
+          const totalLiabilities = liabilities.reduce((sum, l) => sum + l.value, 0);
+          document.getElementById("netWorthTile").innerText = `🧮 Total Net Worth: $${(totalAssets - totalLiabilities).toFixed(2)}`;
+        }
+      });
 
-    onSnapshot(budgetRef, docSnap => {
-      if (docSnap.exists() && document.getElementById("monthlyBudgetTile")) {
-        const data = docSnap.data();
-        const income = (data.incomes || []).reduce((sum, i) => sum + i.amount, 0);
-        const expenses = (data.expenses || []).reduce((sum, e) => sum + e.budgeted, 0);
-        document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
-        document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
-      }
-    });
+      onSnapshot(budgetRef, docSnap => {
+        if (docSnap.exists() && document.getElementById("monthlyBudgetTile")) {
+          const data = docSnap.data();
+          const income = (data.incomes || []).reduce((sum, i) => sum + i.amount, 0);
+          const expenses = (data.expenses || []).reduce((sum, e) => sum + e.budgeted, 0);
+          document.getElementById("monthlyBudgetTile").innerText = `💰 Monthly Budget: $${income.toFixed(2)}`;
+          document.getElementById("remainingToBudgetTile").innerText = `📉 Remaining to Budget: $${(income - expenses).toFixed(2)}`;
+        }
+      });
 
-    onSnapshot(debtsRef, docSnap => {
-      const debtTile = document.getElementById("debtSummaryTile");
-      if (docSnap.exists() && debtTile) {
-        const data = docSnap.data();
-        const totalDebt = (data.debts || []).reduce((sum, d) => sum + (Number(d.balance) || 0), 0);
-        debtTile.innerText = `📊 Total Debt: $${totalDebt.toFixed(2)}`;
-      }
-    });
-  }
-});
+      onSnapshot(debtsRef, docSnap => {
+        const debtTile = document.getElementById("debtSummaryTile");
+        if (docSnap.exists() && debtTile) {
+          const data = docSnap.data();
+          const totalDebt = (data.debts || []).reduce((sum, d) => sum + (Number(d.balance) || 0), 0);
+          debtTile.innerText = `📊 Total Debt: $${totalDebt.toFixed(2)}`;
+        }
+      });
+    }
+  });
+} else {
+  console.log('[Sync] Firestore listeners disabled on localhost; using local data only.');
+}
 
 // Credit Utilization Monitor for Dashboard
-if (typeof firebase !== 'undefined' && typeof db !== 'undefined') {
+if (!IS_LOCALHOST && typeof firebase !== 'undefined' && typeof db !== 'undefined') {
   firebase.auth().onAuthStateChanged(user => {
     if (!user) return;
     doc(db, 'users', user.uid).onSnapshot(doc => {

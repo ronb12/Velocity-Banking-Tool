@@ -269,6 +269,25 @@
         </div>
       </div>
       
+      <div class="profile-metrics">
+        <div class="profile-metric">
+          <span class="metric-label">Net Worth</span>
+          <span class="metric-value" id="profileNetWorth">-</span>
+        </div>
+        <div class="profile-metric">
+          <span class="metric-label">Credit Utilization</span>
+          <span class="metric-value" id="profileCreditUtilization">-</span>
+        </div>
+        <div class="profile-metric">
+          <span class="metric-label">Total Debt</span>
+          <span class="metric-value" id="profileTotalDebt">-</span>
+        </div>
+        <div class="profile-metric">
+          <span class="metric-label">Savings Progress</span>
+          <span class="metric-value" id="profileSavings">-</span>
+        </div>
+      </div>
+      
       <div class="profile-settings">
         <h3>Settings</h3>
         <div class="settings-group">
@@ -425,6 +444,9 @@
     window.login = login;
     window.register = register;
 
+    const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const USE_FIRESTORE = !IS_LOCALHOST;
+
     // Load theme from storage on page load
     if (localStorage.getItem('theme') === 'dark') {
       document.body.classList.add('dark');
@@ -446,10 +468,56 @@
     setFallback('debtSummaryValue', 'No data yet');
     setFallback('savingsValue', 'No data yet');
 
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      });
+    }
+
+    function applyLocalDashboardData() {
+      const localData = (window.getLocalTestData && window.getLocalTestData()) || window.LOCAL_TEST_DATA;
+      if (!localData) return;
+
+      const stats = localData.userStats || {};
+      const creditElement = document.getElementById('creditUtilizationValue');
+      if (creditElement && typeof stats.creditUtilization === 'number') {
+        creditElement.textContent = `${stats.creditUtilization.toFixed(1)}%`;
+        creditElement.style.color = stats.creditUtilization < 30 ? '#22c55e' : stats.creditUtilization < 50 ? '#f59e42' : '#ef4444';
+      }
+
+      const netWorthElement = document.getElementById('netWorthValue');
+      if (netWorthElement && typeof stats.netWorth === 'number') {
+        netWorthElement.textContent = formatCurrency(stats.netWorth);
+        netWorthElement.style.color = stats.netWorth >= 0 ? '#22c55e' : '#ef4444';
+      }
+
+      const debtElement = document.getElementById('debtSummaryValue');
+      if (debtElement && typeof stats.totalDebt === 'number') {
+        debtElement.textContent = formatCurrency(stats.totalDebt);
+        debtElement.style.color = stats.totalDebt > 0 ? '#ef4444' : '#22c55e';
+      }
+
+      const savingsElement = document.getElementById('savingsValue');
+      if (savingsElement && typeof stats.savingsProgress === 'number') {
+        savingsElement.textContent = `${stats.savingsProgress.toFixed(1)}% of goals`;
+        savingsElement.style.color = stats.savingsProgress >= 100 ? '#22c55e' : stats.savingsProgress >= 50 ? '#f59e42' : '#ef4444';
+      }
+
+      try {
+        updateProfileStats();
+      } catch (error) {
+        console.warn('Profile stats update skipped:', error);
+      }
+    }
+
     // Enhanced data loading with error handling
     auth.onAuthStateChanged(async user => {
       if (user) {
-        try {
+        if (USE_FIRESTORE) {
+          try {
           const userRef = doc(db, 'users', user.uid);
           
           // First, ensure the user document exists
@@ -573,8 +641,12 @@
               }
             });
           }
-        } catch (error) {
-          ErrorHandler.handleFirebaseError(error);
+          } catch (error) {
+            ErrorHandler.handleFirebaseError(error);
+          }
+        } else {
+          console.log('Firestore disabled in local environment; using default dashboard placeholders.');
+      applyLocalDashboardData();
         }
       } else {
         // Reset to default state
@@ -605,6 +677,7 @@
         if (profileModal) {
           profileModal.style.display = 'flex';
           console.log('Modal display set to flex');
+          updateProfileStats();
           
           
           // Debug: Check if avatar elements exist
@@ -629,24 +702,26 @@
     });
 
     // Sync profile modal with Firebase
-    auth.onAuthStateChanged(async user => {
-      if (user) {
-        document.getElementById('profileName').textContent = user.displayName || 'User';
-        document.getElementById('profileEmail').textContent = user.email;
-        const userRef = doc(db, 'users', user.uid);
-        onSnapshot(userRef, docSnap => {
-          const data = docSnap.data() || {};
-          document.getElementById('profileNetWorth').textContent =
-            data.netWorth !== undefined ? `$${Number(data.netWorth).toLocaleString()}` : '-';
-          document.getElementById('profileCreditUtilization').textContent =
-            data.creditUtilization !== undefined ? `${data.creditUtilization}%` : '-';
-          document.getElementById('profileTotalDebt').textContent =
-            data.totalDebt !== undefined ? `$${Number(data.totalDebt).toLocaleString()}` : '-';
-          document.getElementById('profileSavings').textContent =
-            data.savingsProgress !== undefined ? `${data.savingsProgress}%` : '-';
-        });
-      }
-    });
+    if (USE_FIRESTORE) {
+      auth.onAuthStateChanged(async user => {
+        if (user) {
+          document.getElementById('profileName').textContent = user.displayName || 'User';
+          document.getElementById('profileEmail').textContent = user.email;
+          const userRef = doc(db, 'users', user.uid);
+          onSnapshot(userRef, docSnap => {
+            const data = docSnap.data() || {};
+            document.getElementById('profileNetWorth').textContent =
+              data.netWorth !== undefined ? `$${Number(data.netWorth).toLocaleString()}` : '-';
+            document.getElementById('profileCreditUtilization').textContent =
+              data.creditUtilization !== undefined ? `${data.creditUtilization}%` : '-';
+            document.getElementById('profileTotalDebt').textContent =
+              data.totalDebt !== undefined ? `$${Number(data.totalDebt).toLocaleString()}` : '-';
+            document.getElementById('profileSavings').textContent =
+              data.savingsProgress !== undefined ? `${data.savingsProgress}%` : '-';
+          });
+        }
+      });
+    }
 
     // Educational Tips Functions
     function updateTipDisplay() {
@@ -988,6 +1063,7 @@
       if (profileModal) {
         profileModal.style.display = 'flex';
         console.log('Profile modal opened successfully');
+        updateProfileStats();
         
         
         // Debug: Check if avatar elements exist
@@ -1003,6 +1079,17 @@
     // Function to update profile stats with current data
     function updateProfileStats() {
       console.log('Updating profile stats...');
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const nameEl = document.getElementById('profileName');
+        const emailEl = document.getElementById('profileEmail');
+        if (nameEl) {
+          nameEl.textContent = currentUser.displayName || 'User';
+        }
+        if (emailEl) {
+          emailEl.textContent = currentUser.email || 'Email';
+        }
+      }
       
       // Get current financial data from localStorage or calculate from current state
       let netWorth = 0;
@@ -1546,6 +1633,10 @@ Keep this file secure as it contains sensitive financial information.
     async function gatherUserData(userId) {
       const userData = {};
       
+      if (!USE_FIRESTORE) {
+        throw new Error('Firestore disabled in local environment');
+      }
+      
       try {
         // Get debts
         try {
@@ -1751,12 +1842,50 @@ Keep this file secure as it contains sensitive financial information.
       gap: 1.2rem;
       margin-bottom: 1.5rem;
     }
+    .profile-metrics {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .profile-metric {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .metric-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .metric-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
     .profile-avatar-large {
       width: 64px;
       height: 64px;
       border-radius: 50%;
       object-fit: cover;
       box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+    }
+    body.dark .profile-metric {
+      background: #2f3a5a;
+      border-color: #3f4a6c;
+    }
+    body.dark .metric-label {
+      color: #cbd5f5;
+    }
+    body.dark .metric-value {
+      color: #f8fafc;
     }
     .profile-header h2 {
       margin: 0 0 0.2rem 0;

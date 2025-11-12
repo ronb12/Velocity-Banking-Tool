@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Debt Tracker – Final Fixed</title>
 
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -261,6 +261,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const tableBody = document.querySelector("#debtTable tbody");
+const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 // Initialize activity logger
 window.db = db;
@@ -405,17 +406,22 @@ async function saveDebts() {
       minPayment: parseFloat(row.cells[5].querySelector("input").value) || 0
     }));
     
-    console.log('Saving debts to Firestore:', debts);
-    await db.collection("debts").doc(auth.currentUser.uid).set({ debts });
-    
-    // Log activity
-    if (window.activityLogger) {
-      const totalDebts = debts.length;
-      const totalBalance = debts.reduce((sum, debt) => sum + debt.balance, 0);
-      window.activityLogger.logActivity('debt_updated', `Updated debt portfolio: ${totalDebts} debts totaling $${totalBalance.toFixed(2)}`, '✏️');
+    if (IS_LOCALHOST) {
+      localStorage.setItem('local_test_debts', JSON.stringify(debts));
+      alert("Debts saved locally for testing.");
+    } else {
+      console.log('Saving debts to Firestore:', debts);
+      await db.collection("debts").doc(auth.currentUser.uid).set({ debts });
+      
+      // Log activity
+      if (window.activityLogger) {
+        const totalDebts = debts.length;
+        const totalBalance = debts.reduce((sum, debt) => sum + debt.balance, 0);
+        window.activityLogger.logActivity('debt_updated', `Updated debt portfolio: ${totalDebts} debts totaling $${totalBalance.toFixed(2)}`, '✏️');
+      }
+      
+      alert("Debts saved successfully!");
     }
-    
-    alert("Debts saved successfully!");
   } catch (error) {
     alert("Error saving debts: " + error.message);
   } finally {
@@ -424,6 +430,11 @@ async function saveDebts() {
 }
 
 async function loadDebts() {
+  if (IS_LOCALHOST) {
+    if (loadLocalDebts()) {
+      return;
+    }
+  }
   const loadingIndicator = document.getElementById("loadingIndicator");
   loadingIndicator.style.display = "block";
   try {
@@ -440,18 +451,61 @@ async function loadDebts() {
         addDebt(debt.name, debt.balance, debt.interestRate, debt.minPayment, debt.limit, debt.type || 'credit');
       });
       calculateSummary();
+    } else if (IS_LOCALHOST && loadLocalDebts()) {
+      console.log('Loaded local demo debts for offline testing.');
     }
   } catch (error) {
-    alert("Error loading debts: " + error.message);
+    console.error('Error loading debts:', error);
+    if (!(IS_LOCALHOST && loadLocalDebts())) {
+      alert("Error loading debts: " + error.message);
+    }
   } finally {
     loadingIndicator.style.display = "none";
   }
+}
+
+function getLocalDebtsData() {
+  const data = (window.getLocalTestData && window.getLocalTestData('debts')) || window.LOCAL_TEST_DATA?.debts;
+  if (Array.isArray(data) && data.length) {
+    return data.map(item => ({
+      name: item.name,
+      type: item.type || 'credit',
+      limit: item.limit || 0,
+      balance: item.balance || 0,
+      interestRate: item.interestRate || 0,
+      minPayment: item.minPayment || 0
+    }));
+  }
+  try {
+    const stored = localStorage.getItem('local_test_debts');
+    return stored ? JSON.parse(stored) : [];
+  } catch (err) {
+    console.warn('Unable to read local debt data:', err);
+    return [];
+  }
+}
+
+function loadLocalDebts() {
+  const sampleDebts = getLocalDebtsData();
+  if (!sampleDebts.length) return false;
+  document.querySelector("#debtTable tbody").innerHTML = "";
+  sampleDebts.forEach(debt => addDebt(debt.name, debt.balance, debt.interestRate, debt.minPayment, debt.limit, debt.type || 'credit'));
+  calculateSummary();
+  return true;
 }
 
 auth.onAuthStateChanged(user => {
   if (user) loadDebts();
   else calculateSummary();
 });
+
+if (IS_LOCALHOST) {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!sessionStorage.getItem('local_debts_seeded') && loadLocalDebts()) {
+      sessionStorage.setItem('local_debts_seeded', 'true');
+    }
+  });
+}
 
 function removeRow(btn) {
   btn.closest("tr").remove();

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="sync.js" defer></script>
+  <script type="module" src="sync.js"></script>
   
   <!-- PWA Scrolling Fix -->
   <script>
@@ -45,7 +45,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Debt Tracker – Full Featured</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Net Worth Tracker</title>
@@ -148,6 +148,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
     let userId = "";
+const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
     auth.onAuthStateChanged(user => {
       if (!user) return window.location.href = "login.html";
@@ -202,20 +203,84 @@
         liabilities.push({ name, value });
       });
 
+      if (IS_LOCALHOST) {
+        const assetTotal = assets.reduce((sum, item) => sum + (item.value || 0), 0);
+        const liabilityTotal = liabilities.reduce((sum, item) => sum + (item.value || 0), 0);
+        const netWorthValue = assetTotal - liabilityTotal;
+        const month = new Date().toISOString().slice(0, 7);
+
+        const existing = getLocalNetWorthData() || {};
+        const history = Array.isArray(existing.history) ? existing.history.filter(entry => entry.date !== month) : [];
+        history.push({ date: month, netWorth: netWorthValue });
+
+        const payload = {
+          assets,
+          liabilities,
+          history
+        };
+
+        localStorage.setItem('local_test_networth', JSON.stringify(payload));
+        localStorage.setItem('netWorth', JSON.stringify({ history }));
+        alert('Net worth saved locally for testing.');
+        calculateNetWorth();
+        return;
+      }
+
       db.collection("networth").doc(userId).set({ assets, liabilities, timestamp: new Date() });
     }
 
     async function loadData() {
-      const doc = await db.collection("networth").doc(userId).get();
-      if (!doc.exists) return;
+      if (IS_LOCALHOST) {
+        populateLocalNetWorth();
+        return;
+      }
+      try {
+        const doc = await db.collection("networth").doc(userId).get();
+        if (!doc.exists) {
+          if (IS_LOCALHOST && populateLocalNetWorth()) {
+            console.log('Loaded local sample net worth data.');
+          }
+          return;
+        }
 
-      const data = doc.data();
+        const data = doc.data();
+        document.querySelector("#assetsTable tbody").innerHTML = "";
+        document.querySelector("#liabilitiesTable tbody").innerHTML = "";
+
+        data.assets.forEach(a => addRow("assetsTable", a.name, a.value));
+        data.liabilities.forEach(l => addRow("liabilitiesTable", l.name, l.value));
+        calculateNetWorth();
+      } catch (error) {
+        console.error('Error loading net worth data:', error);
+        if (!(IS_LOCALHOST && populateLocalNetWorth())) {
+          alert('Error loading net worth data: ' + error.message);
+        }
+      }
+    }
+
+    function getLocalNetWorthData() {
+      const data = (window.getLocalTestData && window.getLocalTestData('netWorth')) || window.LOCAL_TEST_DATA?.netWorth;
+      if (data) return JSON.parse(JSON.stringify(data));
+      try {
+        const stored = localStorage.getItem('local_test_networth');
+        return stored ? JSON.parse(stored) : null;
+      } catch (err) {
+        console.warn('Unable to read local net worth data:', err);
+        return null;
+      }
+    }
+
+    function populateLocalNetWorth() {
+      const data = getLocalNetWorthData();
+      if (!data) return false;
+
       document.querySelector("#assetsTable tbody").innerHTML = "";
       document.querySelector("#liabilitiesTable tbody").innerHTML = "";
 
-      data.assets.forEach(a => addRow("assetsTable", a.name, a.value));
-      data.liabilities.forEach(l => addRow("liabilitiesTable", l.name, l.value));
+      (data.assets || []).forEach(asset => addRow("assetsTable", asset.name || '', asset.value || 0));
+      (data.liabilities || []).forEach(liability => addRow("liabilitiesTable", liability.name || '', liability.value || 0));
       calculateNetWorth();
+      return true;
     }
   </script>
 </body>

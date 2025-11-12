@@ -1,0 +1,27 @@
+{
+  "name": "bradley's-finance-hub",
+  "version": "1.0.0",
+  "description": "A comprehensive, AI-powered personal finance dashboard built with Firebase and modern web technologies. This advanced toolkit helps users master their money using velocity banking principles, debt payoff automation, budgeting, and net worth tracking — all in one intuitive, accessible, and secure app.",
+  "main": "app-updater.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ronb12/Velocity-Banking-Tool.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ronb12/Velocity-Banking-Tool/issues"
+  },
+  "homepage": "https://github.com/ronb12/Velocity-Banking-Tool#readme",
+  "dependencies": {
+    "puppeteer": "^24.29.1"
+  }
+}

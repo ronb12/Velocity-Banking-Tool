@@ -384,6 +384,100 @@
     import { collection, query, where, orderBy, getDocs, updateDoc, doc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     let allNotifications = [];
+    const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+    function clone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function getStoredLocalNotifications() {
+      try {
+        const raw = localStorage.getItem('local_test_notifications');
+        if (raw) return JSON.parse(raw);
+      } catch (err) {
+        console.warn('Unable to read local notifications:', err);
+      }
+      const data = (window.getLocalTestData && window.getLocalTestData('notifications')) || window.LOCAL_TEST_DATA?.notifications || [];
+      return clone(data);
+    }
+
+    function setStoredLocalNotifications(items) {
+      try {
+        localStorage.setItem('local_test_notifications', JSON.stringify(items));
+      } catch (err) {
+        console.warn('Unable to persist local notifications:', err);
+      }
+    }
+
+    function normalizeTimestamp(entry) {
+      if (!entry || !entry.timestamp) return 'Just now';
+      if (typeof entry.timestamp === 'number') {
+        return new Date(entry.timestamp).toLocaleString();
+      }
+      if (entry.timestamp.seconds) {
+        return new Date(entry.timestamp.seconds * 1000).toLocaleString();
+      }
+      return new Date(entry.timestamp).toLocaleString();
+    }
+
+    function renderLocalNotifications(filter = 'all') {
+      const container = document.getElementById("notifications");
+      const loading = document.getElementById("loading");
+      const records = getStoredLocalNotifications();
+      loading.style.display = "none";
+
+      allNotifications = records.map(record => ({
+        ...record
+      }));
+
+      updateStats();
+
+      if (allNotifications.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 4em; margin-bottom: 20px;">🔔</div>
+            <h3>No notifications found</h3>
+            <p>You're all caught up! New notifications will appear here.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const filtered = allNotifications.filter(notif => {
+        if (filter === 'unread') return !notif.read;
+        if (filter === 'read') return notif.read;
+        return true;
+      });
+
+      container.innerHTML = '';
+
+      filtered.forEach(notif => {
+        const div = document.createElement('div');
+        div.className = `notification ${notif.read ? '' : 'unread'}`;
+        const type = getNotificationType(notif.message || '');
+        const icon = getNotificationIcon(notif.message || '');
+        const time = normalizeTimestamp(notif);
+
+        div.innerHTML = `
+          <div class="notification-header">
+            <div>
+              <span class="notification-type ${type}">${type.replace('type-', '')}</span>
+              <div class="notification-message">
+                <span style="font-size: 1.2em; margin-right: 8px;">${icon}</span>
+                ${notif.message || 'Notification'}
+              </div>
+            </div>
+          </div>
+          <div class="notification-time">${time}</div>
+          <div class="notification-actions">
+            ${!notif.read ? `<button class="btn btn-primary" onclick="markAsRead('${notif.id}')">✅ Mark as Read</button>` : ''}
+            <button class="btn btn-secondary" onclick="deleteNotification('${notif.id}')">🗑️ Delete</button>
+          </div>
+        `;
+
+        container.appendChild(div);
+      });
+    }
 
     function showToast(msg, type = 'success') {
       const toast = document.getElementById("toast");
@@ -442,6 +536,11 @@
       
       container.innerHTML = "";
       loading.style.display = "block";
+
+      if (IS_LOCALHOST) {
+        renderLocalNotifications(filter);
+        return;
+      }
       
       try {
         let q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('timestamp', 'desc'));
@@ -521,7 +620,19 @@
 
     window.markAsRead = async function(id) {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user && !IS_LOCALHOST) return;
+
+      if (IS_LOCALHOST) {
+        const notifications = getStoredLocalNotifications();
+        const index = notifications.findIndex(notif => notif.id === id);
+        if (index >= 0) {
+          notifications[index].read = true;
+          setStoredLocalNotifications(notifications);
+          showToast('Notification marked as read', 'success');
+          renderLocalNotifications(document.getElementById('notifFilter').value);
+        }
+        return;
+      }
       
       try {
         const notifRef = doc(db, 'users', user.uid, 'notifications', id);
@@ -536,9 +647,16 @@
 
     window.deleteNotification = async function(id) {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user && !IS_LOCALHOST) return;
       
       if (confirm('Are you sure you want to delete this notification?')) {
+        if (IS_LOCALHOST) {
+          const notifications = getStoredLocalNotifications().filter(notif => notif.id !== id);
+          setStoredLocalNotifications(notifications);
+          showToast('Notification deleted', 'success');
+          renderLocalNotifications(document.getElementById('notifFilter').value);
+          return;
+        }
         try {
           const notifRef = doc(db, 'users', user.uid, 'notifications', id);
           await deleteDoc(notifRef);
@@ -553,7 +671,15 @@
 
     window.markAllAsRead = async function() {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user && !IS_LOCALHOST) return;
+      
+      if (IS_LOCALHOST) {
+        const notifications = getStoredLocalNotifications().map(notif => ({ ...notif, read: true }));
+        setStoredLocalNotifications(notifications);
+        showToast(`${notifications.length} notifications marked as read`, 'success');
+        renderLocalNotifications(document.getElementById('notifFilter').value);
+        return;
+      }
       
       try {
         const unreadNotifications = allNotifications.filter(n => !n.read);
@@ -573,9 +699,15 @@
 
     window.clearAllNotifications = async function() {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user && !IS_LOCALHOST) return;
       
       if (confirm('Are you sure you want to delete ALL notifications? This action cannot be undone.')) {
+        if (IS_LOCALHOST) {
+          setStoredLocalNotifications([]);
+          showToast('All notifications cleared', 'success');
+          renderLocalNotifications(document.getElementById('notifFilter').value);
+          return;
+        }
         try {
           const q = query(collection(db, 'users', user.uid, 'notifications'));
           const snapshot = await getDocs(q);
@@ -596,11 +728,14 @@
     document.getElementById('notifFilter').addEventListener('change', () => {
       const user = auth.currentUser;
       if (user) loadNotifications(user);
+      if (IS_LOCALHOST) renderLocalNotifications(document.getElementById('notifFilter').value);
     });
 
     auth.onAuthStateChanged(user => {
       if (user) {
         loadNotifications(user);
+      } else if (IS_LOCALHOST) {
+        renderLocalNotifications(document.getElementById('notifFilter').value);
       } else {
         document.getElementById("notifications").innerHTML = `
           <div class="empty-state">

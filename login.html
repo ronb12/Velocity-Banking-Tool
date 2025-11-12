@@ -18,7 +18,8 @@
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: #f8fafc;
+      background: linear-gradient(135deg, rgba(17, 24, 39, 0.88), rgba(37, 99, 235, 0.75)),
+                  url('https://images.pexels.com/photos/4386326/pexels-photo-4386326.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1600&w=2400') center/cover fixed no-repeat;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -28,7 +29,7 @@
     }
 
     .login-container {
-      background: white;
+      background: rgba(255, 255, 255, 0.92);
       padding: 2.5rem;
       border-radius: 1rem;
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
@@ -226,6 +227,16 @@
       }
     });
 
+    const DEFAULT_TEST_EMAIL = 'testuser@BFH.com';
+    const DEFAULT_TEST_PASSWORD = 'test1234';
+    const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const ALLOW_UNVERIFIED_LOCAL_LOGIN = isLocalhost;
+
+    if (isLocalhost) {
+      document.getElementById('email').value = DEFAULT_TEST_EMAIL;
+      document.getElementById('password').value = DEFAULT_TEST_PASSWORD;
+    }
+
     let loginAttempts = 0;
     const MAX_LOGIN_ATTEMPTS = 5;
     const LOCKOUT_DURATION = 15 * 60 * 1000;
@@ -263,27 +274,41 @@
         await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
         
         // Use enhanced login function
-        const user = await login(email, password);
+        console.log('Submitting credentials for', email);
+        const userRecord = await authLogin(email, password);
         
-        if (user) {
+        if (!userRecord) {
+          console.warn('Login attempt returned null userRecord; aborting redirect.');
+          ErrorHandler.showError('Login failed. Please check your credentials and try again.');
+          return;
+        }
+        
+        if (!userRecord.emailVerified && !ALLOW_UNVERIFIED_LOCAL_LOGIN) {
+          ErrorHandler.showWarning('Please verify your email before signing in.');
+          return;
+        }
+        
+        if (userRecord) {
           // Reset login attempts on successful login
           loginAttempts = 0;
           localStorage.removeItem('loginAttempts');
           document.getElementById('loginAttempts').textContent = '';
           
+          console.log('Login successful for', email);
           ErrorHandler.showSuccess('Login successful! Redirecting...');
           setTimeout(() => {
-            window.location.href = 'index.html';
-          }, 1000);
+            window.location.replace('index.html');
+          }, 500);
         }
         
       } catch (error) {
+        console.error('Login attempt failed:', error.code || error.name, error.message);
         if (error.message.includes('email')) {
           showFieldError('emailError', error.message);
         } else if (error.message.includes('password')) {
           showFieldError('passwordError', error.message);
         } else {
-          ErrorHandler.handleValidationError(error);
+          ErrorHandler.handleFirebaseError(error);
         }
       } finally {
         // Reset button state

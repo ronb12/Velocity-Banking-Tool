@@ -1,4 +1,7 @@
 // Activity Logging Utility
+const IS_LOCALHOST = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
 class ActivityLogger {
   constructor() {
     this.db = null;
@@ -15,6 +18,10 @@ class ActivityLogger {
 
   // Log activity to Firestore
   async logActivity(activityType, description, icon = '📝', metadata = {}) {
+    if (IS_LOCALHOST) {
+      return;
+    }
+
     if (!this.isInitialized || !this.auth.currentUser) {
       console.warn('ActivityLogger not initialized or user not authenticated');
       return;
@@ -36,7 +43,9 @@ class ActivityLogger {
       
       console.log('Activity logged:', activityData);
     } catch (error) {
-      console.error('Failed to log activity:', error);
+      if (!IS_LOCALHOST) {
+        console.error('Failed to log activity:', error);
+      }
     }
   }
 

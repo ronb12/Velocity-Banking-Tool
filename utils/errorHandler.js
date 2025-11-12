@@ -217,7 +217,7 @@ class ErrorHandler {
   static async reportError(errorEntry) {
     try {
       // This would integrate with services like Sentry, LogRocket, etc.
-      console.log('Error reported:', errorEntry);
+      console.log('Error reported:', JSON.stringify(errorEntry, null, 2));
     } catch (e) {
       console.error('Failed to report error:', e);
     }
