@@ -75,6 +75,8 @@
       line-height: 1.6;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
+      max-width: 1280px;
+      margin: 0 auto;
     }
     
     /* PWA-specific fixes */
@@ -211,6 +213,89 @@
       letter-spacing: 0.5px;
     }
     
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      min-width: 120px;
+      text-transform: uppercase;
+    }
+    
+    .status-badge.neutral {
+      background: rgba(0, 123, 255, 0.12);
+      color: #0d6efd;
+    }
+    
+    .status-badge.positive {
+      background: rgba(25, 135, 84, 0.15);
+      color: #198754;
+    }
+    
+    .status-badge.negative {
+      background: rgba(220, 53, 69, 0.15);
+      color: #dc3545;
+    }
+    
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+    }
+    
+    .modal-overlay.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 24px;
+      max-width: 640px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(15, 23, 42, 0.25);
+      position: relative;
+    }
+    
+    .modal-content h3 {
+      margin-bottom: 18px;
+      color: #0d6efd;
+      text-align: center;
+    }
+    
+    .modal-content canvas {
+      width: 100% !important;
+      max-height: 320px;
+    }
+    
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      border: none;
+      background: rgba(148, 163, 184, 0.2);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 700;
+      color: #475569;
+      transition: background 0.2s ease;
+    }
+    
+    .modal-close:hover {
+      background: rgba(148, 163, 184, 0.35);
+    }
+    
     .section {
       background: white;
       border-radius: 12px;
@@ -256,6 +341,10 @@
       white-space: nowrap;
     }
     
+    .over-allocated {
+      background: rgba(220, 53, 69, 0.08);
+    }
+    
     .btn-primary {
       background: #007bff;
       color: white;
@@ -282,11 +371,32 @@
       color: white;
     }
     
+    .section .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    
+    .section .controls .btn {
+      flex: 1 1 220px;
+      min-width: 170px;
+      justify-content: center;
+    }
+    
+    .budget-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+    }
+    
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 20px;
       font-size: 0.9rem;
+      min-width: 720px;
     }
     
     th, td {
@@ -334,9 +444,17 @@
       min-width: 100px;
     }
     
-    /* Make actions column narrower and ensure buttons fit */
+    /* Status column */
     #expenseTable th:nth-child(8),
     #expenseTable td:nth-child(8) {
+      width: 14%;
+      min-width: 150px;
+      text-align: center;
+    }
+    
+    /* Make actions column narrower and ensure buttons fit */
+    #expenseTable th:nth-child(9),
+    #expenseTable td:nth-child(9) {
       width: 6%;
       min-width: 60px;
       text-align: center;
@@ -453,9 +571,70 @@
       font-weight: bold;
     }
     
+    .income-row-over {
+      background: rgba(255, 193, 7, 0.15);
+    }
+    
+    .insights {
+      background: rgba(13, 110, 253, 0.08);
+      border-left: 4px solid #0d6efd;
+      padding: 16px;
+      border-radius: 10px;
+      color: #0b2f6a;
+      line-height: 1.6;
+    }
+    
+    .insights strong {
+      color: #0d6efd;
+    }
+    
+    #spendingChart {
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    
+    .mobile-quick-actions {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 12px;
+      z-index: 1000;
+    }
+    
+    .mobile-quick-actions button {
+      padding: 12px 18px;
+      border-radius: 999px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      border: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .mobile-quick-actions .btn-income {
+      background: #198754;
+      color: #fff;
+    }
+    
+    .mobile-quick-actions .btn-expense {
+      background: #0d6efd;
+      color: #fff;
+    }
+    
     @media (max-width: 768px) {
+      body {
+        padding: 0 12px;
+      }
       .container {
-        padding: 15px;
+        padding: 15px 12px;
+      }
+      
+      .header {
+        padding: 22px 18px;
       }
       
       .header h1 {
@@ -465,6 +644,7 @@
       .month-selector {
         flex-direction: column;
         gap: 10px;
+        align-items: stretch;
       }
       
       .month-selector input[type="month"] {
@@ -486,13 +666,26 @@
         gap: 15px;
       }
       
-      .controls {
+      .section .controls {
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
+      }
+      
+      .section .controls .btn {
+        width: 100%;
+      }
+      
+      .budget-table-wrapper {
+        margin: 0 -6px;
+        padding: 0 6px;
       }
       
       table {
         font-size: 0.8rem;
+        min-width: 640px;
+      }
+      .mobile-quick-actions {
+        display: flex;
       }
       
       th, td {
@@ -594,19 +787,30 @@
       }
       
       .section {
-        padding: 15px;
+        padding: 16px;
       }
       
       .section-title {
         font-size: 1.1rem;
       }
       
+      .budget-table-wrapper {
+        margin: 0 -8px;
+        padding: 0 8px;
+      }
+      
       table {
         font-size: 0.75rem;
+        min-width: 560px;
       }
       
       th, td {
         padding: 6px 4px;
+      }
+      
+      .section .controls .btn {
+        font-size: 0.85rem;
+        padding: 10px 14px;
       }
       
       .btn {
@@ -645,6 +849,11 @@
         padding: 4px 8px;
         min-height: 28px;
       }
+      .mobile-quick-actions {
+        display: flex;
+        width: calc(100% - 24px);
+        max-width: 480px;
+      }
     }
     
     /* Extra small screens (320px and below) */
@@ -659,6 +868,7 @@
       
       table {
         font-size: 0.7rem;
+        min-width: 520px;
       }
       
       th, td {
@@ -707,12 +917,23 @@
         <div class="summary-label">Remaining</div>
       </div>
     </div>
+  
+  <div class="section">
+    <div class="section-header">
+      <h3 class="section-title">🧭 Zero-Based Assistant</h3>
+      <button class="btn btn-outline" onclick="toggleBreakdownModal(true)">📊 View Spending Breakdown</button>
+    </div>
+    <div id="allocationInsights" class="insights">
+      Enter your income and expenses to see actionable tips here.
+    </div>
+  </div>
     
     <div class="section">
       <div class="section-header">
         <h3 class="section-title">💰 Income</h3>
         <button class="btn btn-primary" onclick="addIncome()">+ Add Income</button>
       </div>
+      <div class="budget-table-wrapper">
       <table id="incomeTable">
         <thead>
           <tr>
@@ -724,6 +945,7 @@
         </thead>
         <tbody></tbody>
       </table>
+      </div>
     </div>
     
     <div class="section">
@@ -731,6 +953,8 @@
         <h3 class="section-title">💳 Expenses</h3>
         <button class="btn btn-primary" onclick="addExpense()">+ Add Expense</button>
       </div>
+      <div class="budget-table-wrapper">
+      <div class="budget-table-wrapper">
       <table id="expenseTable">
         <thead>
           <tr>
@@ -741,11 +965,14 @@
             <th>Remaining</th>
             <th>Due Date</th>
             <th>Paid From</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
+      </div>
+      </div>
       </div>
 
     <div class="section">
@@ -776,6 +1003,19 @@
   </div>
 </div>
 
+<div class="mobile-quick-actions">
+  <button class="btn-income" onclick="addIncome(); focusNewestRow('#incomeTable');">➕ Income</button>
+  <button class="btn-expense" onclick="addExpense(); focusNewestRow('#expenseTable');">➕ Expense</button>
+</div>
+
+<div class="modal-overlay" id="breakdownModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="toggleBreakdownModal(false)">✖</button>
+    <h3>📊 Spending Breakdown</h3>
+    <canvas id="spendingChart" height="260"></canvas>
+  </div>
+</div>
+
   <div id="loadingIndicator" class="loading" style="display: none !important;">
     <div class="spinner"></div>
   <p>Loading...</p>
@@ -797,6 +1037,19 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let userId = "";
 const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const formatCurrency = (value) => {
+  const num = Number(value) || 0;
+  const absolute = Math.abs(num).toFixed(2);
+  return `${num < 0 ? '-' : ''}$${absolute}`;
+};
+
+const CHART_COLORS = [
+  '#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#343a40'
+];
+
+let spendingChartInstance = null;
+let lastCategoryTotals = {};
 
 // Initialize activity logger
 window.db = db;
@@ -871,7 +1124,6 @@ function addIncome(source = "", amount = 0) {
   `;
       
       calculateBudget();
-  updatePaidFromDropdowns();
 }
 
     // Add Expense function
@@ -906,11 +1158,11 @@ function addIncome(source = "", amount = 0) {
             <option value="${paidFrom}" ${paidFrom ? 'selected' : ''}>${paidFrom || ''}</option>
           </select>
         </td>
+        <td class="status-cell"><span class="status-badge neutral">On Track</span></td>
         <td><button class="btn btn-outline" onclick="this.closest('tr').remove(); calculateBudget()">🗑️ Remove</button></td>
       `;
   
   calculateBudget();
-      updatePaidFromDropdowns();
       
       // Log activity
       if (name && budgeted && window.activityLogger) {
@@ -918,92 +1170,273 @@ function addIncome(source = "", amount = 0) {
       }
 }
 
-    // Update Paid From dropdowns with current income sources
-function updatePaidFromDropdowns() {
-      const incomeSources = Array.from(document.querySelectorAll("#incomeTable tbody tr")).map(
-    row => row.cells[0].querySelector("input").value.trim()
-  ).filter(Boolean);
-
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    const select = row.cells[6].querySelector("select");
-        const currentValue = select.value;
-        
-        select.innerHTML = '<option value="">Select Income Source</option>' +
-          incomeSources.map(source => 
-            `<option value="${source}" ${source === currentValue ? 'selected' : ''}>${source}</option>`
-          ).join('');
-      });
-    }
-    
     // Calculate Budget function
 function calculateBudget() {
-      let incomeTotal = 0;
-      let budgetedTotal = 0;
-      let spentTotal = 0;
-      
-      // Create income map to track allocation
-  const incomeMap = {};
+  let incomeTotal = 0;
+  let budgetedTotal = 0;
+  let spentTotal = 0;
 
-      // Calculate income and initialize income map
-      document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
-        const source = row.cells[0].querySelector("input").value.trim();
-    const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+  const incomeMap = {};
+  const underBudget = [];
+  const overBudget = [];
+  const categoryTotals = {};
+
+  const incomeRows = document.querySelectorAll("#incomeTable tbody tr");
+  incomeRows.forEach(row => {
+    const sourceInput = row.cells[0].querySelector("input");
+    const amountInput = row.cells[1].querySelector("input");
+    const source = sourceInput.value.trim();
+    const amount = parseFloat(amountInput.value) || 0;
     incomeTotal += amount;
-        if (source) {
-          incomeMap[source] = { amount: amount, allocated: 0 };
-        }
+    if (source) {
+      incomeMap[source] = { amount, allocated: 0, row };
+    }
   });
 
-      // Calculate expenses and track allocation
-  document.querySelectorAll("#expenseTable tbody tr").forEach(row => {
-    const budgeted = parseFloat(row.cells[2].querySelector("input").value) || 0;
-    const spent = parseFloat(row.cells[3].querySelector("input").value) || 0;
+  const expenseRows = document.querySelectorAll("#expenseTable tbody tr");
+  expenseRows.forEach(row => {
+    const categorySelect = row.cells[0].querySelector("select");
+    const nameInput = row.cells[1].querySelector("input");
+    const budgetedInput = row.cells[2].querySelector("input");
+    const spentInput = row.cells[3].querySelector("input");
+    const remainingInput = row.cells[4].querySelector("input");
+    const paidFromSelect = row.cells[6].querySelector("select");
+    const statusCell = row.cells[7];
+
+    const category = categorySelect.value || 'Uncategorized';
+    const name = nameInput.value || category;
+    const budgeted = parseFloat(budgetedInput.value) || 0;
+    const spent = parseFloat(spentInput.value) || 0;
     const remaining = budgeted - spent;
-        const paidFrom = row.cells[6].querySelector("select").value;
+    const chartValue = spent > 0.01 ? spent : budgeted;
+    const paidFrom = paidFromSelect.value;
 
     budgetedTotal += budgeted;
     spentTotal += spent;
 
-        // Update remaining cell
-        row.cells[4].querySelector("input").value = remaining.toFixed(2);
-        
-        // Allocate to specific income source if selected
+    remainingInput.value = remaining.toFixed(2);
+
+
+    if (chartValue > 0.01) {
+      categoryTotals[category] = (categoryTotals[category] || 0) + chartValue;
+    }
+
     if (paidFrom && incomeMap[paidFrom]) {
-          incomeMap[paidFrom].allocated += budgeted;
-        }
-      });
-      
-      // No automatic allocation - only allocate when "Paid From" is specifically selected
-      // This ensures "Remaining to Allocate" shows full amounts when no allocation is made
-      
-      // Update income remaining to allocate
-      document.querySelectorAll("#incomeTable tbody tr").forEach(row => {
-        const source = row.cells[0].querySelector("input").value.trim();
-        if (source && incomeMap[source]) {
-          const remainingToAllocate = incomeMap[source].amount - incomeMap[source].allocated;
-          row.cells[2].textContent = `$${remainingToAllocate.toFixed(2)}`;
-        } else {
-          const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
-          row.cells[2].textContent = `$${amount.toFixed(2)}`;
-        }
+      incomeMap[paidFrom].allocated += budgeted;
+    }
+
+    const diff = spent - budgeted;
+    let badgeClass = 'neutral';
+    let badgeText = 'On Track';
+
+    if (budgeted <= 0 && spent <= 0) {
+      badgeText = 'Not Planned';
+    } else if (budgeted <= 0 && spent > 0) {
+      badgeClass = 'negative';
+      badgeText = `Unplanned ${formatCurrency(spent)}`;
+      overBudget.push({ name, over: spent, category });
+    } else if (diff > 0.01) {
+      badgeClass = 'negative';
+      badgeText = `Over by ${formatCurrency(diff)}`;
+      overBudget.push({ name, over: diff, category });
+    } else if (diff < -0.01) {
+      badgeClass = 'positive';
+      badgeText = `Under by ${formatCurrency(Math.abs(diff))}`;
+      underBudget.push({ name, remaining: Math.abs(diff), category });
+    }
+
+    statusCell.innerHTML = `<span class="status-badge ${badgeClass}">${badgeText}</span>`;
+    row.classList.remove('over-allocated');
+  });
+
+  const incomeEntries = Object.entries(incomeMap);
+
+  expenseRows.forEach(row => {
+    const paidFromSelect = row.cells[6].querySelector("select");
+    const currentValue = paidFromSelect.value;
+
+    if (incomeEntries.length) {
+      paidFromSelect.innerHTML = '<option value="">Select Income Source</option>' +
+        incomeEntries.map(([source, info]) => {
+          const remainingAlloc = info.amount - info.allocated;
+          const label = remainingAlloc >= 0
+            ? `${source} (${formatCurrency(remainingAlloc)} left)`
+            : `${source} (Over by ${formatCurrency(Math.abs(remainingAlloc))})`;
+          return `<option value="${source}" ${source === currentValue ? 'selected' : ''}>${label}</option>`;
+        }).join('');
+    } else {
+      paidFromSelect.innerHTML = '<option value="">Select Income Source</option>';
+    }
+
+    if (currentValue && !incomeMap[currentValue]) {
+      paidFromSelect.value = '';
+    }
+
+    const chosen = paidFromSelect.value;
+    if (chosen && incomeMap[chosen]) {
+      const remainingAlloc = incomeMap[chosen].amount - incomeMap[chosen].allocated;
+      row.classList.toggle('over-allocated', remainingAlloc < -0.01);
+    } else {
+      row.classList.remove('over-allocated');
+    }
+  });
+
+  incomeRows.forEach(row => {
+    const source = row.cells[0].querySelector("input").value.trim();
+    const amount = parseFloat(row.cells[1].querySelector("input").value) || 0;
+    const remainingCell = row.cells[2];
+    if (source && incomeMap[source]) {
+      const remainingToAllocate = incomeMap[source].amount - incomeMap[source].allocated;
+      remainingCell.textContent = `${formatCurrency(remainingToAllocate)}`;
+      row.classList.toggle('income-row-over', remainingToAllocate < -0.01);
+    } else {
+      remainingCell.textContent = `${formatCurrency(amount)}`;
+      row.classList.remove('income-row-over');
+    }
   });
 
   const remaining = incomeTotal - budgetedTotal;
-      
-      // Update summary cards
-      document.getElementById("tileIncome").textContent = `$${incomeTotal.toFixed(2)}`;
-      document.getElementById("tileBudgeted").textContent = `$${budgetedTotal.toFixed(2)}`;
-      document.getElementById("tileSpent").textContent = `$${spentTotal.toFixed(2)}`;
-      document.getElementById("tileRemaining").textContent = `$${remaining.toFixed(2)}`;
-      
-      // Update remaining color
-  const remainingElement = document.getElementById("tileRemaining");
-      remainingElement.style.color = remaining < 0 ? "#dc3545" : remaining > 0 ? "#28a745" : "#2c3e50";
 
-      // Show zero-based message
-      document.getElementById("zeroBasedMessage").style.display = 
-        (incomeTotal > 0 && Math.abs(remaining) < 0.01) ? "block" : "none";
+  document.getElementById("tileIncome").textContent = formatCurrency(incomeTotal);
+  document.getElementById("tileBudgeted").textContent = formatCurrency(budgetedTotal);
+  document.getElementById("tileSpent").textContent = formatCurrency(spentTotal);
+  document.getElementById("tileRemaining").textContent = formatCurrency(remaining);
+
+  const remainingElement = document.getElementById("tileRemaining");
+  remainingElement.style.color = remaining < 0 ? "#dc3545" : remaining > 0 ? "#198754" : "#2c3e50";
+
+  const zeroBasedBanner = document.getElementById("zeroBasedMessage");
+  if (incomeTotal > 0 && Math.abs(remaining) < 0.01 && overBudget.length === 0) {
+    zeroBasedBanner.style.display = "block";
+  } else {
+    zeroBasedBanner.style.display = "none";
+  }
+
+  lastCategoryTotals = categoryTotals;
+  updateSpendingChart(categoryTotals);
+  updateZeroBasedAssistant(remaining, underBudget, overBudget, incomeMap);
 }
+
+function updateSpendingChart(categoryTotals) {
+  const canvas = document.getElementById('spendingChart');
+  const modal = document.getElementById('breakdownModal');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  const entries = Object.entries(categoryTotals).filter(([, value]) => value > 0.01);
+  const labels = entries.length ? entries.map(([label]) => label) : ['No Spending'];
+  const data = entries.length ? entries.map(([, value]) => value) : [1];
+  const backgroundColor = labels.map((_, idx) => CHART_COLORS[idx % CHART_COLORS.length]);
+
+  if (!spendingChartInstance) {
+    spendingChartInstance = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Spending',
+          data,
+          backgroundColor,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '64%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              boxWidth: 14,
+              padding: 14
+            }
+          }
+        }
+      }
+    });
+  } else {
+    spendingChartInstance.data.labels = labels;
+    spendingChartInstance.data.datasets[0].data = data;
+    spendingChartInstance.data.datasets[0].backgroundColor = backgroundColor;
+    spendingChartInstance.update();
+  }
+
+  if (modal && modal.classList.contains('active')) {
+    setTimeout(() => spendingChartInstance && spendingChartInstance.resize(), 120);
+  }
+}
+
+function updateZeroBasedAssistant(remaining, underBudget, overBudget, incomeMap) {
+  const container = document.getElementById('allocationInsights');
+  if (!container) return;
+
+  const messages = [];
+
+  if (Math.abs(remaining) < 0.01 && overBudget.length === 0) {
+    messages.push('Everything is balanced. Great job sticking to your zero-based budget!');
+  } else if (remaining > 0.01) {
+    messages.push(`You still have ${formatCurrency(remaining)} that has not been assigned.`);
+    if (underBudget.length) {
+      const target = underBudget[0];
+      messages.push(`Consider increasing <strong>${target.name}</strong> by ${formatCurrency(Math.min(target.remaining, remaining))}.`);
+    } else {
+      messages.push('Add a new savings goal or debt payment to give every dollar a job.');
+    }
+  } else if (remaining < -0.01) {
+    messages.push(`You are over budget by ${formatCurrency(Math.abs(remaining))}.`);
+    if (overBudget.length) {
+      const target = overBudget[0];
+      messages.push(`Reduce <strong>${target.name}</strong> by ${formatCurrency(Math.min(target.over, Math.abs(remaining)))} or shift money from a less important category.`);
+    } else {
+      messages.push('Reduce spending or increase income to cover the difference.');
+    }
+  }
+
+  const overAllocatedIncome = Object.entries(incomeMap)
+    .map(([source, info]) => ({ source, extra: info.amount - info.allocated }))
+    .filter(entry => entry.extra < -0.01);
+  if (overAllocatedIncome.length) {
+    const entry = overAllocatedIncome[0];
+    messages.push(`<strong>${entry.source}</strong> is over-allocated by ${formatCurrency(Math.abs(entry.extra))}. Move one of the linked expenses to a different income source.`);
+  }
+
+  if (!messages.length) {
+    messages.push('Enter your income and expenses to see tailored suggestions.');
+  }
+
+  container.innerHTML = messages.map(message => `<p>${message}</p>`).join('');
+}
+
+function focusNewestRow(tableSelector) {
+  setTimeout(() => {
+    const table = document.querySelector(tableSelector);
+    if (!table || !table.tBodies.length) return;
+    const rows = table.tBodies[0].rows;
+    if (!rows.length) return;
+    const lastRow = rows[rows.length - 1];
+    const field = lastRow.querySelector('input, select, textarea');
+    if (field) {
+      field.focus({ preventScroll: false });
+    }
+  }, 50);
+}
+
+function toggleBreakdownModal(show) {
+  const modal = document.getElementById('breakdownModal');
+  if (!modal) return;
+  if (show) {
+    modal.classList.add('active');
+    updateSpendingChart(lastCategoryTotals);
+  } else {
+    modal.classList.remove('active');
+  }
+}
+
+document.getElementById('breakdownModal')?.addEventListener('click', (event) => {
+  if (event.target.id === 'breakdownModal') {
+    toggleBreakdownModal(false);
+  }
+});
 
     // Save Budget function
 async function saveBudget() {
@@ -1296,128 +1729,4 @@ function exportBudgetToCSV() {
             .header { text-align: center; margin-bottom: 30px; }
             .summary { display: flex; justify-content: space-around; margin-bottom: 30px; }
             .summary-item { text-align: center; padding: 10px; border: 1px solid #ccc; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-            th { background-color: #f5f5f5; }
-            .section { margin-bottom: 30px; }
-            .notes { margin-top: 20px; }
-            @media print { body { margin: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>💰 Bradley's Budget Tracker</h1>
-            <h2>Budget Report - ${selectedMonth}</h2>
-          </div>
-          
-          <div class="summary">
-            <div class="summary-item">
-              <h3>Total Income</h3>
-              <p>${incomeTotal}</p>
-            </div>
-            <div class="summary-item">
-              <h3>Budgeted</h3>
-              <p>${budgetedTotal}</p>
-            </div>
-            <div class="summary-item">
-              <h3>Spent</h3>
-              <p>${spentTotal}</p>
-            </div>
-            <div class="summary-item">
-              <h3>Remaining</h3>
-              <p>${remainingTotal}</p>
-            </div>
-          </div>
-          
-          <div class="section">
-            <h3>💰 Income Sources</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Source</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${incomeRows.map(inc => `
-                  <tr>
-                    <td>${inc.source}</td>
-                    <td>$${parseFloat(inc.amount || 0).toFixed(2)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-          
-          <div class="section">
-            <h3>💳 Expenses</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Category</th>
-                  <th>Bill Name</th>
-                  <th>Budgeted</th>
-                  <th>Spent</th>
-                  <th>Remaining</th>
-                  <th>Due Date</th>
-                  <th>Paid From</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${expenseRows.map(exp => `
-                  <tr>
-                    <td>${exp.category}</td>
-                    <td>${exp.name}</td>
-                    <td>$${parseFloat(exp.budgeted || 0).toFixed(2)}</td>
-                    <td>$${parseFloat(exp.spent || 0).toFixed(2)}</td>
-                    <td>$${parseFloat(exp.remaining || 0).toFixed(2)}</td>
-                    <td>${exp.dueDate || ''}</td>
-                    <td>${exp.paidFrom || ''}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-          
-          ${notes ? `
-          <div class="notes">
-            <h3>📝 Notes</h3>
-            <p>${notes}</p>
-          </div>
-          ` : ''}
-          
-          <div style="margin-top: 30px; text-align: center; color: #666;">
-            <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-          </div>
-        </body>
-        </html>
-      `;
-      
-      // Write content to new window
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Wait for content to load, then print
-      printWindow.onload = function() {
-        printWindow.print();
-        printWindow.close();
-      };
-      
-      if (window.ErrorHandler) {
-        window.ErrorHandler.showSuccess('Budget exported to PDF successfully!');
-  } else {
-        alert('Budget exported to PDF successfully!');
-      }
-    }
-    
-    // Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-      calculateBudget();
-});
-</script>
-
-<footer style="text-align: center; margin-top: 40px; padding: 20px; font-weight: bold; font-size: 14px; color: #555; border-top: 1px solid #e5e7eb;">
-  This is a product of Bradley Virtual Solutions, LLC
-</footer>
-</body>
-</html>
+            table { width: 100%; border-collapse: collapse; marg
