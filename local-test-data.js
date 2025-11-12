@@ -5,7 +5,11 @@
   const host = window.location && window.location.hostname;
   if (!(host === 'localhost' || host === '127.0.0.1')) return;
 
-  const LOCAL_USER_ID = window.LOCAL_TEST_USER_ID || '4NdFPTbkXYNs8hxn3q8One46FwR2';
+  const DEFAULT_TEST_USER_ID = '4NdFPTbkXYNs8hxn3q8One46FwR2';
+  if (!window.LOCAL_TEST_USER_ID) {
+    window.LOCAL_TEST_USER_ID = DEFAULT_TEST_USER_ID;
+  }
+  const LOCAL_USER_ID = window.LOCAL_TEST_USER_ID;
   const now = new Date();
   const currentMonth = now.toISOString().slice(0, 7);
   const timestamp = (offsetDays = 0, offsetHours = 0) => {

@@ -8,6 +8,7 @@ let currentUser = null;
 let sessionTimer = null;
 let loginAttempts = 0;
 let lockoutUntil = null;
+let authStateResolved = false;
 
 // Load configuration
 const SESSION_TIMEOUT = window.CONFIG?.app?.sessionTimeout || 30 * 60 * 1000; // 30 minutes
@@ -15,9 +16,11 @@ const MAX_LOGIN_ATTEMPTS = window.CONFIG?.security?.maxLoginAttempts || 5;
 const LOCKOUT_DURATION = window.CONFIG?.security?.lockoutDuration || 15 * 60 * 1000; // 15 minutes
 const ALLOW_UNVERIFIED_LOCAL_LOGIN = Boolean(window.CONFIG?.security?.allowUnverifiedLocalLogin) &&
   ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const ALLOW_UNVERIFIED_ACCOUNTS = (window.CONFIG?.security?.allowUnverifiedAccounts || []).map(email => email.toLowerCase());
+const ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS = new Set(
+  (window.CONFIG?.security?.allowUnverifiedAccounts || []).map(email => email.toLowerCase())
+);
 console.log('[Auth] Allow unverified local login:', ALLOW_UNVERIFIED_LOCAL_LOGIN, 'Host:', window.location.hostname);
-console.log('[Auth] Allow unverified accounts:', ALLOW_UNVERIFIED_ACCOUNTS);
+console.log('[Auth] Allow unverified accounts:', [...ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS]);
 const authPromiseResolvers = [];
 
 // Start session timer
@@ -158,12 +161,13 @@ auth.onAuthStateChanged(async user => {
   currentUser = user;
   
   if (user) {
+    authStateResolved = true;
     console.log('[Auth] User signed in:', user.email, 'Verified:', user.emailVerified);
     // Check if email is verified
     const emailLower = (user.email || '').toLowerCase();
-    const isAllowedUnverified = ALLOW_UNVERIFIED_ACCOUNTS.includes(emailLower);
+    const isUnverifiedAllowed = ALLOW_UNVERIFIED_LOCAL_LOGIN || ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower);
 
-    if (!user.emailVerified && !ALLOW_UNVERIFIED_LOCAL_LOGIN && !isAllowedUnverified) {
+    if (!user.emailVerified && !isUnverifiedAllowed) {
       await signOut(auth);
       window.location.href = "login.html?error=Please verify your email first";
       return;
@@ -205,6 +209,11 @@ auth.onAuthStateChanged(async user => {
       await updateDoc(userRef, { lastLogin: new Date().toISOString() });
     }
   } else {
+    if (!authStateResolved) {
+      authStateResolved = true;
+      console.log('[Auth] Awaiting persistence restoration...');
+      return;
+    }
     console.log('[Auth] User signed out');
     // Update UI for logged out user
     document.querySelectorAll('.auth-required').forEach(element => {
