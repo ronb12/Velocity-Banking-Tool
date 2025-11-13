@@ -119,8 +119,14 @@ export default defineConfig({
           },
         ],
       },
-      // Disable PWA plugin in development to avoid path issues with spaces
-      disable: process.env.NODE_ENV === 'development' || process.env.DISABLE_PWA === 'true',
+      // Disable PWA plugin in development or when DISABLE_PWA is set
+      // This prevents service worker generation issues with paths containing spaces
+      disable: process.env.NODE_ENV === 'development' || 
+               process.env.DISABLE_PWA === 'true' || 
+               process.env.DISABLE_PWA === true,
+      // Fix path issues with spaces in directory names
+      swDest: 'sw.js',
+      mode: 'production',
     }),
   ],
   server: {

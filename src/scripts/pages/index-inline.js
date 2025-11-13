@@ -33,21 +33,23 @@ import { rateLimiter } from '../core/RateLimiter.js';
 let dashboardDataManager = null;
 
 // Enhanced data loading with error handling
-if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
-  try {
-    dashboardDataManager = new DashboardData(auth, db);
-    const loadData = errorBoundary.wrapAsync(
-      () => dashboardDataManager.loadDashboardData(typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : false),
-      'dashboard_data_load'
-    );
-    await loadData();
-  } catch (error) {
-    logger.error('Failed to initialize dashboard data', { error: error.message });
-    errorBoundary.handleError(error, { context: 'dashboard_initialization' });
+(async function initializeDashboard() {
+  if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
+    try {
+      dashboardDataManager = new DashboardData(auth, db);
+      const loadData = errorBoundary.wrapAsync(
+        () => dashboardDataManager.loadDashboardData(typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : false),
+        'dashboard_data_load'
+      );
+      await loadData();
+    } catch (error) {
+      logger.error('Failed to initialize dashboard data', { error: error.message });
+      errorBoundary.handleError(error, { context: 'dashboard_initialization' });
+    }
+  } else {
+    logger.warn('Auth or DB not available, skipping dashboard data initialization');
   }
-} else {
-  logger.warn('Auth or DB not available, skipping dashboard data initialization');
-}
+})();
 
 // Profile Modal Logic
 const profileButton = document.getElementById('profileButton');
