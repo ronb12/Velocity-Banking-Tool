@@ -28,7 +28,7 @@ const CONFIG = {
     enableRateLimiting: true,
     allowUnverifiedLocalLogin: true,
     allowUnverifiedAccounts: [
-      'testuser@BFH.com',
+      'testuser@bfh.com',
     ]
   },
   
