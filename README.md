@@ -14,19 +14,24 @@ A comprehensive, AI-powered personal finance dashboard built with Firebase and m
 - **Environment Configuration** for secure credential management
 
 ### 💳 **Advanced Financial Tools**
-- **Real-Time Debt Tracker** (with Avalanche/Snowball logic)
+- **Real-Time Debt Tracker** (with Avalanche/Snowball logic, modeled interest calculations, and mobile-responsive design)
 - **Credit Utilization Monitor** with intelligent badge alerts
-- **Monthly Budget Planner** with variance analysis
-- **Net Worth Calculator** with trend tracking
+- **Monthly Budget Planner** with variance analysis, zero-based budgeting assistant, and modal-based spending breakdown
+- **Net Worth Calculator** with comprehensive analytics dashboard, KPI cards, health ratios, modal-based visualizations, and educational content
 - **1099 Tax Estimator** for self-employed users
 - **Savings Goal Tracker** with progress monitoring
-- **Velocity Banking Calculator** for debt optimization with interactive tutorial and example scenarios
+- **Velocity Banking Calculator** for debt optimization with LOC fees, cash-flow timeline, savings dashboard, scenario manager, and risk guardrails
 
 #### 🚀 **Velocity Banking Calculator Features:**
 - **Interactive Tutorial** - Comprehensive guide explaining velocity banking concepts
-- **Pre-loaded Examples** - 4 realistic scenarios (credit card, student loan, car loan, personal loan)
+- **Pre-loaded Examples** - 4 realistic scenarios (credit card, student loan, car loan, personal line of credit)
 - **Smart Input Suggestions** - Real-time recommendations based on debt amount and interest rate
 - **Multiple Strategy Comparison** - Compare minimum payments, extra payments, and velocity banking
+- **LOC Fee Modeling** - Account for draw fees, annual fees, and teaser rates
+- **Cash-Flow Timeline** - Visual chart showing monthly cash flow throughout the payoff period
+- **Savings Dashboard** - KPI cards displaying total savings, interest saved, and time saved
+- **Scenario Manager** - Save, load, run, and clear multiple calculation scenarios
+- **Risk Guardrails** - Automated risk assessment with actionable recommendations
 - **Professional Export** - PDF and CSV export with detailed calculations
 - **Input Validation** - Prevents invalid scenarios and provides helpful error messages
 - **Mobile Optimized** - Touch-friendly interface with responsive design
@@ -251,6 +256,15 @@ open tests/testSuite.html
 
 ## 🚀 Recent Updates
 
+### **v2.1.0 - UI/UX & Feature Enhancements**
+- ✅ **Net Worth Tracker**: Complete redesign with analytics dashboard, KPI cards, health ratios, modal-based visualizations (timeline, asset allocation, liability mix), and educational "What is Net Worth?" modal
+- ✅ **Budget Tracker**: Mobile-responsive design, modal-based spending breakdown chart, variance badges, zero-based budgeting assistant, and enhanced income allocation display
+- ✅ **Debt Tracker**: Mobile-responsive design, enhanced payoff calculations with modeled interest, strategy persistence, and improved AI Advisor
+- ✅ **Velocity Banking Calculator**: Added LOC fee modeling, cash-flow timeline chart, savings dashboard with KPI cards, scenario manager, risk guardrails, and actionable tasks
+- ✅ **Modern Toast Notifications**: Professional, modern notification system with progress bars, icons, and smooth animations
+- ✅ **Professional PDF Reports**: Enhanced dashboard PDF export with executive summary and professional formatting
+- ✅ **Enhanced Login Page**: Beautiful background image with improved visual design
+
 ### **v2.0.0 - Major Enhancement Release**
 - ✅ **AI-Powered Insights**: Smart financial analysis and recommendations
 - ✅ **Enhanced Security**: Rate limiting, input validation, data sanitization
@@ -265,8 +279,8 @@ open tests/testSuite.html
 ## 📦 Future Roadmap
 
 - 📱 **Mobile App**: Native iOS/Android apps via Capacitor
-- 📄 **PDF Export**: Debt summaries, budget reports, financial statements
-- 📈 **Advanced Charts**: Interactive data visualization with Chart.js
+- 📄 **Enhanced PDF Export**: Additional export options for debt summaries and budget reports (Dashboard PDF export ✅ completed)
+- 📈 **Advanced Charts**: Additional interactive data visualizations (Chart.js integration ✅ completed for spending breakdown, net worth timeline, asset allocation, liability mix, and velocity banking cash-flow)
 - 📆 **Smart Reminders**: Calendar-based notifications and alerts
 - 🧑‍💼 **Multi-User Support**: Family accounts and role-based access
 - 🌍 **Internationalization**: Multi-language support
