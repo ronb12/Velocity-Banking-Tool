@@ -4,7 +4,17 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/*.log",
+      "**/.git/**",
+      "**/.git.backup/**",
+      "**/tests/**",
+      "**/test*.html",
+      "**/test*.js",
+      "**/*.md",
+      "**/IMPLEMENTATION_SUMMARY.md",
+      "**/SCREENSHOT_GUIDE.md",
+      "**/README.md"
     ]
   },
   "firestore": {
