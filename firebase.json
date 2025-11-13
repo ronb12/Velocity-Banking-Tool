@@ -15,6 +15,91 @@
       "**/IMPLEMENTATION_SUMMARY.md",
       "**/SCREENSHOT_GUIDE.md",
       "**/README.md"
+    ],
+    "rewrites": [
+      {
+        "source": "/login.html",
+        "destination": "/src/pages/auth/login.html"
+      },
+      {
+        "source": "/register.html",
+        "destination": "/src/pages/auth/register.html"
+      },
+      {
+        "source": "/reset.html",
+        "destination": "/src/pages/auth/reset.html"
+      },
+      {
+        "source": "/Debt_Tracker.html",
+        "destination": "/src/pages/debt/Debt_Tracker.html"
+      },
+      {
+        "source": "/debt-crusher.html",
+        "destination": "/src/pages/debt/debt-crusher.html"
+      },
+      {
+        "source": "/savings_goal_tracker.html",
+        "destination": "/src/pages/savings/savings_goal_tracker.html"
+      },
+      {
+        "source": "/challenge_library.html",
+        "destination": "/src/pages/savings/challenge_library.html"
+      },
+      {
+        "source": "/Velocity_Calculator.html",
+        "destination": "/src/pages/calculators/Velocity_Calculator.html"
+      },
+      {
+        "source": "/1099_calculator.html",
+        "destination": "/src/pages/calculators/1099_calculator.html"
+      },
+      {
+        "source": "/Credit_Score_Estimator.html",
+        "destination": "/src/pages/calculators/Credit_Score_Estimator.html"
+      },
+      {
+        "source": "/budget.html",
+        "destination": "/src/pages/other/budget.html"
+      },
+      {
+        "source": "/income.html",
+        "destination": "/src/pages/other/income.html"
+      },
+      {
+        "source": "/calendar.html",
+        "destination": "/src/pages/other/calendar.html"
+      },
+      {
+        "source": "/net_worth_tracker.html",
+        "destination": "/src/pages/other/net_worth_tracker.html"
+      },
+      {
+        "source": "/activity_feed.html",
+        "destination": "/src/pages/other/activity_feed.html"
+      },
+      {
+        "source": "/notifications.html",
+        "destination": "/src/pages/other/notifications.html"
+      },
+      {
+        "source": "/Mobile_Tracker.html",
+        "destination": "/src/pages/other/Mobile_Tracker.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|html)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      }
     ]
   },
   "firestore": {
