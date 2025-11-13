@@ -8,22 +8,26 @@
   <!-- Theme -->
   <link rel="stylesheet" href="theme.css" />
 
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Firebase & Auth -->
+  <script type="module" src="firebase-config.js"></script>
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="config.js"></script>
+  <script src="local-test-data.js"></script>
+  <script src="utils/errorHandler.js"></script>
+
   <!-- PWA Scrolling Fix -->
   <script>
-    // Fix PWA scrolling issues
     if (window.matchMedia('(display-mode: standalone)').matches) {
       document.addEventListener('DOMContentLoaded', function() {
-        // Force enable scrolling in PWA mode
         document.body.style.overflow = 'auto';
         document.body.style.webkitOverflowScrolling = 'touch';
         document.documentElement.style.overflow = 'auto';
         document.documentElement.style.webkitOverflowScrolling = 'touch';
-        
-        // Prevent overscroll bounce
         document.body.style.overscrollBehavior = 'none';
         document.documentElement.style.overscrollBehavior = 'none';
-        
-        // Ensure proper height
         document.body.style.minHeight = '100vh';
         document.documentElement.style.height = '100%';
       });
@@ -31,259 +35,1819 @@
   </script>
 
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f4f9;
-      margin: 0;
-      padding: 30px 15px;
-      text-align: center;
-    }
-    .container {
-      max-width: 700px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1 { font-size: 2em; margin-bottom: 20px; }
-    .form-group {
-      text-align: left;
-      margin-bottom: 20px;
-    }
-    .form-group label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 5px;
-    }
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px;
-      font-size: 1em;
+    * {
       box-sizing: border-box;
     }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0;
+      padding: 20px 15px;
+      min-height: 100vh;
+      color: #1e293b;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    nav {
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+
+    nav a:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .header {
+      padding: 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 2.5em;
+    }
+
+    .header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .score-display {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .score-gauge-container {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding: 30px;
+      border-radius: 16px;
+      text-align: center;
+      position: relative;
+    }
+
+    .score-gauge {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .score-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 3em;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .score-range {
+      font-size: 1.2em;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .score-range.poor { color: #dc2626; }
+    .score-range.fair { color: #f59e0b; }
+    .score-range.good { color: #10b981; }
+    .score-range.very-good { color: #3b82f6; }
+    .score-range.excellent { color: #8b5cf6; }
+
+    .factor-breakdown {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding: 30px;
+      border-radius: 16px;
+    }
+
+    .factor-breakdown h3 {
+      margin: 0 0 20px 0;
+      font-size: 1.5em;
+    }
+
+    .factor-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .factor-item:last-child {
+      border-bottom: none;
+    }
+
+    .factor-name {
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .factor-bar {
+      flex: 2;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      margin: 0 15px;
+      overflow: hidden;
+    }
+
+    .factor-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #3b82f6);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .factor-value {
+      font-weight: 600;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      color: #1e293b;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .btn-secondary:hover {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .form-section {
+      background: #f8fafc;
+      padding: 25px;
+      border-radius: 16px;
+      margin-bottom: 25px;
+    }
+
+    .form-section h3 {
+      margin: 0 0 20px 0;
+      font-size: 1.4em;
+      color: #1e293b;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #334155;
+      font-size: 1.05em;
+    }
+
+    .form-group input[type="range"],
+    .form-group input[type="number"],
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
     .range-group {
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-    .range-group input[type=range] { flex: 1; }
-    .value-badge {
-      min-width: 50px;
-      text-align: right;
-      font-weight: bold;
-      color: #333;
-    }
-    #scoreOutput {
-      font-size: 2.2em;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-    .scoreColor {
-      padding: 12px;
-      margin-top: 15px;
-      border-radius: 6px;
-    }
-    .poor { background-color: #ffcccc; color: #a60000; }
-    .fair { background-color: #fff0b3; color: #8a6d00; }
-    .good { background-color: #ccffcc; color: #006600; }
-    .excellent { background-color: #d4f1f4; color: #007777; }
-    nav a {
-      display: inline-block;
-      margin-bottom: 20px;
-      text-decoration: none;
-      color: #007bff;
-      font-weight: bold;
-    }
-    footer {
-      margin-top: 40px;
-      font-size: 14px;
-      color: #777;
+      gap: 15px;
     }
 
-    /* 🌙 Dark Mode */
-    body.dark { background: #121212; color: #eee; }
-    body.dark .container { background: #1e1e1e; box-shadow: 0 0 10px rgba(255,255,255,0.1); }
-    body.dark input, body.dark select { background: #333; color: #eee; border: 1px solid #555; }
-    body.dark .value-badge { color: #ccc; }
-    body.dark .poor { background-color: #660000; color: #ffb3b3; }
-    body.dark .fair { background-color: #665500; color: #fff0b3; }
-    body.dark .good { background-color: #005500; color: #ccffcc; }
-    body.dark .excellent { background-color: #004d4d; color: #d4f1f4; }
+    .range-group input[type="range"] {
+      flex: 1;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .range-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .range-group input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .value-badge {
+      min-width: 70px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 1.1em;
+      color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+
+    .help-text {
+      margin: 8px 0 0 0;
+      font-size: 0.9em;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border-radius: 6px;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .recommendations {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      padding: 25px;
+      border-radius: 16px;
+      margin-bottom: 25px;
+      border-left: 4px solid #f59e0b;
+    }
+
+    .recommendations h3 {
+      margin: 0 0 15px 0;
+      color: #92400e;
+      font-size: 1.3em;
+    }
+
+    .recommendation-item {
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .recommendation-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .recommendation-priority {
+      font-weight: 700;
+      color: #f59e0b;
+      min-width: 60px;
+    }
+
+    .recommendation-text {
+      flex: 1;
+      color: #1e293b;
+    }
+
+    .recommendation-impact {
+      font-size: 0.9em;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .scenario-section {
+      background: #f8fafc;
+      padding: 25px;
+      border-radius: 16px;
+      margin-bottom: 25px;
+    }
+
+    .scenario-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .scenario-input {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .scenario-input label {
+      font-weight: 600;
+      font-size: 0.9em;
+      color: #334155;
+    }
+
+    .scenario-input input {
+      padding: 10px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+
+    .scenario-result {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 15px;
+      border: 2px solid #667eea;
+    }
+
+    .history-chart-container {
+      background: #f8fafc;
+      padding: 25px;
+      border-radius: 16px;
+      margin-bottom: 25px;
+    }
+
+    .history-chart-container h3 {
+      margin: 0 0 20px 0;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .comparison-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .comparison-card h4 {
+      margin: 0 0 10px 0;
+      color: #64748b;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .comparison-card .value {
+      font-size: 2em;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 10px 0;
+    }
+
+    .comparison-card .diff {
+      font-size: 0.9em;
+      color: #64748b;
+    }
+
+    .comparison-card .diff.positive {
+      color: #10b981;
+    }
+
+    .comparison-card .diff.negative {
+      color: #ef4444;
+    }
+
+    /* Modal Styles */
+    .modal-shell {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .modal-shell.active {
+      display: flex;
+    }
+
+    .modal-panel {
+      background: white;
+      border-radius: 20px;
+      max-width: 700px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      padding: 25px 30px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.5em;
+    }
+
+    .close-modal {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.2em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .close-modal:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .modal-body {
+      padding: 30px;
+      line-height: 1.7;
+    }
+
+    .modal-body h3 {
+      color: #667eea;
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    .modal-body ul {
+      margin: 15px 0;
+      padding-left: 25px;
+    }
+
+    .modal-body li {
+      margin: 8px 0;
+      color: #334155;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .score-display {
+        grid-template-columns: 1fr;
+      }
+
+      .action-bar {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .scenario-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 1.8em;
+      }
+
+      .content {
+        padding: 20px 15px;
+      }
+
+      .form-section {
+        padding: 20px;
+      }
+    }
+
+    /* Dark Mode */
+    body.dark {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #e2e8f0;
+    }
+
+    body.dark .container {
+      background: #1e293b;
+    }
+
+    body.dark .form-section,
+    body.dark .score-gauge-container,
+    body.dark .factor-breakdown,
+    body.dark .history-chart-container,
+    body.dark .scenario-section {
+      background: #0f172a;
+    }
+
+    body.dark .form-group input,
+    body.dark .form-group select {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-color: #334155;
+    }
+
+    body.dark .comparison-card {
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    body.dark .modal-panel {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
   </style>
 </head>
 
 <body>
-
+  <div class="container">
   <nav>
     <a href="index.html">⬅️ Back to Dashboard</a>
   </nav>
 
-  <div class="container">
+    <div class="header">
     <h1>💳 Credit Score Estimator</h1>
+      <p>Estimate your credit score and discover ways to improve it</p>
+    </div>
 
+    <div class="content">
+      <!-- Score Display -->
+      <div class="score-display">
+        <div class="score-gauge-container">
+          <div class="score-gauge">
+            <canvas id="scoreGauge"></canvas>
+            <div class="score-number" id="scoreNumber">720</div>
+          </div>
+          <div class="score-range" id="scoreRange">Good</div>
+        </div>
+
+        <div class="factor-breakdown">
+          <h3>Factor Breakdown</h3>
+          <div id="factorBreakdown"></div>
+        </div>
+      </div>
+
+      <!-- Action Bar -->
+      <div class="action-bar">
+        <button class="btn" id="syncDataBtn">🔄 Sync from Debt Tracker</button>
+        <button class="btn btn-secondary" id="helpBtn">ℹ️ How Credit Scores Work</button>
+        <button class="btn btn-secondary" id="scenarioBtn">🎯 Scenario Simulator</button>
+        <button class="btn btn-secondary" id="historyBtn">📊 View History</button>
+        <button class="btn btn-secondary" id="compareBtn">📈 Compare Scores</button>
+        <button class="btn btn-secondary" id="exportBtn">💾 Export Report</button>
+        <button class="btn btn-secondary" id="saveBtn">💾 Save Score</button>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="recommendations" id="recommendationsSection" style="display: none;">
+        <h3>🎯 Score Improvement Recommendations</h3>
+        <div id="recommendationsList"></div>
+      </div>
+
+      <!-- Credit Factors Button -->
+      <div style="text-align: center; margin-bottom: 30px;">
+        <button class="btn" id="creditFactorsBtn" style="font-size: 1.1em; padding: 15px 30px;">
+          ⚙️ Adjust Credit Factors
+        </button>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div class="modal-shell" id="helpModal">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h2>Understanding Credit Scores</h2>
+        <button class="close-modal" data-close="helpModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <h3>What is a Credit Score?</h3>
+        <p>A credit score is a number between 300-850 that represents your creditworthiness. Lenders use it to determine if they should lend you money and at what interest rate.</p>
+
+        <h3>Credit Score Ranges</h3>
+        <ul>
+          <li><strong>300-579 (Poor):</strong> Very difficult to get approved for credit. High interest rates if approved.</li>
+          <li><strong>580-669 (Fair):</strong> May qualify for credit but with higher interest rates.</li>
+          <li><strong>670-739 (Good):</strong> Likely to qualify for credit with reasonable rates.</li>
+          <li><strong>740-799 (Very Good):</strong> Excellent approval odds and competitive interest rates.</li>
+          <li><strong>800-850 (Excellent):</strong> Best approval odds and lowest interest rates available.</li>
+        </ul>
+
+        <h3>How Credit Scores are Calculated</h3>
+        <p>Credit scores are based on five main factors:</p>
+        <ul>
+          <li><strong>Payment History (35%):</strong> Whether you pay bills on time. This is the most important factor.</li>
+          <li><strong>Credit Utilization (30%):</strong> How much of your available credit you're using. Keep it below 30%.</li>
+          <li><strong>Credit History Length (15%):</strong> How long you've had credit accounts. Longer is better.</li>
+          <li><strong>Credit Mix (10%):</strong> Having different types of credit (cards, loans, mortgage) shows responsible management.</li>
+          <li><strong>New Credit Inquiries (10%):</strong> How many times you've applied for credit recently. Fewer is better.</li>
+        </ul>
+
+        <h3>Tips to Improve Your Score</h3>
+        <ul>
+          <li>Pay all bills on time, every time</li>
+          <li>Keep credit card balances below 30% of limits (ideally below 10%)</li>
+          <li>Don't close old credit accounts (they help your history length)</li>
+          <li>Limit credit applications (each inquiry can lower your score slightly)</li>
+          <li>Check your credit report regularly for errors</li>
+          <li>Use a mix of credit types responsibly</li>
+        </ul>
+
+        <h3>Important Note</h3>
+        <p>This tool provides an <strong>estimate</strong> only. Your actual credit score may vary. Always check your official credit report from the three major credit bureaus (Equifax, Experian, TransUnion) for your real score.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario Simulator Modal -->
+  <div class="modal-shell" id="scenarioModal">
+    <div class="modal-panel" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>🎯 Scenario Simulator</h2>
+        <button class="close-modal" data-close="scenarioModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-top: 0; color: #64748b;">See how different actions would affect your credit score</p>
+        <div class="scenario-controls">
+          <div class="scenario-input">
+            <label>Pay Down Debt ($)</label>
+            <input type="number" id="scenarioDebtPaydown" value="0" min="0" />
+          </div>
+          <div class="scenario-input">
+            <label>Reduce Utilization To (%)</label>
+            <input type="number" id="scenarioUtilization" value="30" min="0" max="100" />
+          </div>
+          <div class="scenario-input">
+            <label>Add Credit Limit ($)</label>
+            <input type="number" id="scenarioCreditLimit" value="0" min="0" />
+          </div>
+        </div>
+        <button class="btn" id="runScenarioBtn" style="width: 100%; margin-top: 20px;">Calculate Scenario</button>
+        <div class="scenario-result" id="scenarioResult" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Chart Modal -->
+  <div class="modal-shell" id="historyModal">
+    <div class="modal-panel" style="max-width: 800px;">
+      <div class="modal-header">
+        <h2>📊 Score History</h2>
+        <button class="close-modal" data-close="historyModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <canvas id="historyChart" style="max-height: 400px;"></canvas>
+        <p style="text-align: center; color: #64748b; margin-top: 20px; font-size: 0.9em;">
+          Track your credit score over time to see your progress
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Modal -->
+  <div class="modal-shell" id="comparisonModal">
+    <div class="modal-panel" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>📈 Score Comparison</h2>
+        <button class="close-modal" data-close="comparisonModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="comparison-grid" style="margin: 0;">
+          <div class="comparison-card">
+            <h4>Your Score</h4>
+            <div class="value" id="yourScore">720</div>
+          </div>
+          <div class="comparison-card">
+            <h4>National Average</h4>
+            <div class="value">714</div>
+            <div class="diff" id="nationalDiff">+6 points</div>
+          </div>
+          <div class="comparison-card">
+            <h4>Age Group (25-34)</h4>
+            <div class="value">680</div>
+            <div class="diff" id="ageDiff">+40 points</div>
+          </div>
+          <div class="comparison-card">
+            <h4>Excellent Range</h4>
+            <div class="value">750+</div>
+            <div class="diff" id="excellentDiff">-30 points</div>
+          </div>
+        </div>
+        <p style="text-align: center; color: #64748b; margin-top: 20px; font-size: 0.9em;">
+          Compare your estimated score with national averages and benchmarks
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Credit Factors Modal -->
+  <div class="modal-shell" id="creditFactorsModal">
+    <div class="modal-panel" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h2>⚙️ Credit Factors</h2>
+        <button class="close-modal" data-close="creditFactorsModal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section" style="background: transparent; padding: 0;">
     <div class="form-group">
-      <label for="paymentHistory">Payment History (on-time %)</label>
+            <label for="paymentHistory">
+              Payment History (on-time %)
+              <span class="sync-badge" id="paymentHistorySync" style="display: none;">✓ Synced</span>
+            </label>
       <div class="range-group">
         <input type="range" id="paymentHistory" min="0" max="100" value="100" />
         <div class="value-badge" id="paymentHistoryVal">100%</div>
       </div>
-      <p class="help-text">On-time payments are crucial for a good credit score. Aim for 100% on-time payments.</p>
+            <p class="help-text">Weight: 35% - Most important factor. Aim for 100% on-time payments.</p>
     </div>
 
     <div class="form-group">
-      <label for="utilization">Credit Utilization (%)</label>
+            <label for="utilization">
+              Credit Utilization (%)
+              <span class="sync-badge" id="utilizationSync" style="display: none;">✓ Synced from Debt Tracker</span>
+            </label>
       <div class="range-group">
         <input type="range" id="utilization" min="0" max="100" value="30" />
         <div class="value-badge" id="utilizationVal">30%</div>
       </div>
-      <p class="help-text">Keep your credit utilization below 30% to maintain a good score.</p>
+            <p class="help-text">Weight: 30% - Keep below 30% for optimal scores. Below 10% is ideal.</p>
     </div>
 
     <div class="form-group">
       <label for="historyLength">Credit History Length (Years)</label>
-      <input type="number" id="historyLength" min="0" max="30" value="5" />
-      <p class="help-text">A longer credit history can positively impact your score.</p>
+            <input type="number" id="historyLength" min="0" max="50" value="5" />
+            <p class="help-text">Weight: 15% - Longer history is better. Average age of all accounts matters.</p>
     </div>
 
     <div class="form-group">
       <label for="inquiries">Recent Credit Inquiries (last 12 months)</label>
       <input type="number" id="inquiries" min="0" max="30" value="2" />
-      <p class="help-text">Fewer inquiries are better. Limit the number of credit applications.</p>
+            <p class="help-text">Weight: 10% - Fewer is better. Multiple inquiries can hurt your score.</p>
     </div>
 
     <div class="form-group">
-      <label for="creditMix">Do you have mixed credit? (Loans + Cards)</label>
+            <label for="creditMix">Credit Mix (Types of Credit)</label>
       <select id="creditMix">
-        <option value="yes">Yes</option>
-        <option value="no">No</option>
+              <option value="excellent">Excellent (3+ types: Cards, Loans, Mortgage)</option>
+              <option value="good">Good (2 types)</option>
+              <option value="fair">Fair (1 type)</option>
+              <option value="poor">Poor (No credit or only one type)</option>
       </select>
-      <p class="help-text">Having a mix of credit types can improve your score.</p>
+            <p class="help-text">Weight: 10% - Having a mix of credit types shows responsible credit management.</p>
     </div>
 
-    <div id="scoreOutput">Estimated Score: 720</div>
-    <div id="scoreAdvice" class="scoreColor good">Your credit is looking good! Stay consistent.</div>
-
-    <button id="saveScore">Save Score</button>
-    <button id="compareScore">Compare with Average</button>
-    <button id="printScore">Print Score</button>
-
-    <div id="feedback">
-      <h3>Feedback</h3>
-      <textarea id="feedbackText" placeholder="Share your thoughts on this tool..."></textarea>
-      <button id="submitFeedback">Submit Feedback</button>
+          <div class="form-group">
+            <label for="derogatoryMarks">Derogatory Marks (Bankruptcies, Collections, etc.)</label>
+            <select id="derogatoryMarks">
+              <option value="0">None</option>
+              <option value="1">1 mark (7+ years old)</option>
+              <option value="2">1 mark (3-7 years old)</option>
+              <option value="3">1 mark (recent)</option>
+              <option value="4">Multiple marks</option>
+            </select>
+            <p class="help-text">Derogatory marks significantly impact your score. Older marks have less impact.</p>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <p style="margin-top: 15px; font-size: 14px; color: #777;">
-      <strong>Note:</strong> This score is only an estimate. Always check your actual credit report for the most accurate information.
-    </p>
   </div>
 
-  <footer>This is a product of Bradley Virtual Solutions, LLC</footer>
+  <script type="module">
+    import { auth, db } from './firebase-config.js';
+    import { doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
-  <script>
-    const elements = {
-      paymentHistory: document.getElementById("paymentHistory"),
-      utilization: document.getElementById("utilization"),
-      historyLength: document.getElementById("historyLength"),
-      inquiries: document.getElementById("inquiries"),
-      creditMix: document.getElementById("creditMix"),
-      scoreOutput: document.getElementById("scoreOutput"),
-      scoreAdvice: document.getElementById("scoreAdvice"),
-      phVal: document.getElementById("paymentHistoryVal"),
-      utilVal: document.getElementById("utilizationVal")
+    const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    const USE_FIRESTORE = !IS_LOCALHOST;
+
+    // Factor weights (FICO-style)
+    const FACTOR_WEIGHTS = {
+      paymentHistory: 0.35,
+      utilization: 0.30,
+      historyLength: 0.15,
+      creditMix: 0.10,
+      inquiries: 0.10
     };
 
-    function updateValues() {
-      elements.phVal.textContent = `${elements.paymentHistory.value}%`;
-      elements.utilVal.textContent = `${elements.utilization.value}%`;
+    let scoreHistory = [];
+    let scoreGaugeChart = null;
+    let historyChart = null;
+    let currentScore = 720;
 
-      const ph = parseInt(elements.paymentHistory.value);
-      const util = parseInt(elements.utilization.value);
-      const history = parseInt(elements.historyLength.value);
-      const inquiries = parseInt(elements.inquiries.value);
-      const mix = elements.creditMix.value === "yes";
-
-      let score = 850;
-
-      // Payment History
-      if (ph >= 99) score -= 0;
-      else if (ph >= 95) score -= 30;
-      else if (ph >= 90) score -= 60;
-      else score -= 120;
-
-      // Utilization
-      if (util <= 10) score -= 0;
-      else if (util <= 30) score -= 40;
-      else if (util <= 50) score -= 80;
-      else score -= 160;
-
-      // History Length
-      if (history >= 8) score -= 0;
-      else if (history >= 4) score -= 30;
-      else if (history >= 2) score -= 60;
-      else score -= 100;
-
-      // Inquiries
-      if (inquiries <= 2) score -= 0;
-      else if (inquiries <= 5) score -= 30;
-      else if (inquiries <= 10) score -= 60;
-      else score -= 100;
-
-      // Credit Mix
-      if (!mix) score -= 30;
-
-      // Clamp Score
-      score = Math.max(300, Math.min(850, Math.round(score)));
-      elements.scoreOutput.textContent = `Estimated Score: ${score}`;
-
-      // Advice
-      if (score < 580) {
-        elements.scoreAdvice.textContent = "Very Poor – Start by lowering utilization and building payment history.";
-        elements.scoreAdvice.className = "scoreColor poor";
-      } else if (score < 670) {
-        elements.scoreAdvice.textContent = "Fair – You're on your way. Lower inquiries and utilization.";
-        elements.scoreAdvice.className = "scoreColor fair";
-      } else if (score < 740) {
-        elements.scoreAdvice.textContent = "Good – Stay consistent and let history grow.";
-        elements.scoreAdvice.className = "scoreColor good";
+    // Load score history
+    async function loadScoreHistory() {
+      if (USE_FIRESTORE && auth.currentUser) {
+        try {
+          const scoresRef = collection(db, 'creditScores');
+          const q = query(scoresRef, orderBy('timestamp', 'desc'), limit(12));
+          const snapshot = await getDocs(q);
+          scoreHistory = snapshot.docs.map(doc => ({
+            ...doc.data(),
+            id: doc.id
+          })).reverse();
+        } catch (error) {
+          console.warn('Error loading score history:', error);
+          loadLocalHistory();
+        }
       } else {
-        elements.scoreAdvice.textContent = "Excellent – You're in a great position. Keep it up!";
-        elements.scoreAdvice.className = "scoreColor excellent";
+        loadLocalHistory();
+      }
+      return Promise.resolve();
+    }
+
+    function loadLocalHistory() {
+      try {
+        const stored = localStorage.getItem('creditScoreHistory');
+        if (stored) {
+          scoreHistory = JSON.parse(stored);
+        } else if (IS_LOCALHOST) {
+          // Generate sample history data for test user
+          scoreHistory = generateSampleHistory();
+          // Save it so it persists
+          try {
+            localStorage.setItem('creditScoreHistory', JSON.stringify(scoreHistory));
+          } catch (e) {
+            console.warn('Could not save sample history:', e);
+          }
+        } else {
+          scoreHistory = [];
+        }
+      } catch (error) {
+        console.warn('Error loading local history:', error);
+        if (IS_LOCALHOST) {
+          scoreHistory = generateSampleHistory();
+        } else {
+          scoreHistory = [];
+        }
       }
     }
 
-    Object.values(elements).forEach(el => {
-      if (el && (el.tagName === "INPUT" || el.tagName === "SELECT")) {
-        el.addEventListener("input", updateValues);
+    function generateSampleHistory() {
+      const now = new Date();
+      const history = [];
+      
+      // Generate 6 months of history with a positive trend
+      const baseScore = 680; // Starting score
+      const targetScore = 720; // Current score
+      const months = 6;
+      
+      for (let i = months; i >= 0; i--) {
+        const date = new Date(now);
+        date.setMonth(date.getMonth() - i);
+        
+        // Create a gradual upward trend with some variation
+        const progress = (months - i) / months;
+        const variation = (Math.random() - 0.5) * 10; // ±5 points variation
+        const score = Math.round(baseScore + (targetScore - baseScore) * progress + variation);
+        
+        // Clamp score between 300 and 850
+        const clampedScore = Math.max(300, Math.min(850, score));
+        
+        history.push({
+          score: clampedScore,
+          timestamp: date.toISOString(),
+          factors: {
+            paymentHistory: i === 0 ? 100 : Math.max(95, 100 - (months - i) * 2),
+            utilization: i === 0 ? 30 : Math.min(45, 30 + (months - i) * 3),
+            historyLength: 5 + (months - i) * 0.1,
+            inquiries: i === 0 ? 2 : Math.min(4, 2 + (months - i) * 0.3),
+            creditMix: i === 0 ? 'good' : (i < 3 ? 'fair' : 'poor'),
+            derogatoryMarks: 0
+          }
+        });
       }
-    });
+      
+      return history;
+    }
 
-    updateValues();
+    function saveScoreHistory() {
+      const scoreData = {
+        score: currentScore,
+        timestamp: new Date().toISOString(),
+        factors: getCurrentFactors()
+      };
 
-    document.getElementById("saveScore").addEventListener("click", function() {
-      const score = elements.scoreOutput.textContent;
-      localStorage.setItem("savedScore", score);
-      alert("Score saved!");
-    });
+      scoreHistory.push(scoreData);
+      if (scoreHistory.length > 12) {
+        scoreHistory = scoreHistory.slice(-12);
+      }
 
-    document.getElementById("compareScore").addEventListener("click", function() {
-      const averageScore = 700; // Example average score
-      const userScore = parseInt(elements.scoreOutput.textContent.split(": ")[1]);
-      alert(`Your score: ${userScore}\nAverage score: ${averageScore}`);
-    });
+      if (USE_FIRESTORE && auth.currentUser) {
+        try {
+          setDoc(doc(db, 'creditScores', `${auth.currentUser.uid}_${Date.now()}`), scoreData);
+        } catch (error) {
+          console.warn('Error saving to Firestore:', error);
+        }
+      }
 
-    document.getElementById("printScore").addEventListener("click", function() {
-      window.print();
-    });
+      try {
+        localStorage.setItem('creditScoreHistory', JSON.stringify(scoreHistory));
+      } catch (error) {
+        console.warn('Error saving to localStorage:', error);
+      }
+    }
 
-    document.getElementById("submitFeedback").addEventListener("click", function() {
-      const feedback = document.getElementById("feedbackText").value;
-      alert("Thank you for your feedback!");
-      document.getElementById("feedbackText").value = "";
-    });
+    // Get credit utilization from Debt Tracker
+    async function syncFromDebtTracker() {
+      let creditUtilization = null;
+
+      if (USE_FIRESTORE && auth.currentUser) {
+        try {
+          const debtsRef = doc(db, 'debts', auth.currentUser.uid);
+          const debtsDoc = await getDoc(debtsRef);
+          if (debtsDoc.exists()) {
+            const debts = debtsDoc.data().debts || [];
+            const creditCards = debts.filter(d => d.type === 'credit');
+            const totalLimit = creditCards.reduce((sum, d) => sum + (parseFloat(d.limit) || 0), 0);
+            const totalBalance = creditCards.reduce((sum, d) => sum + (parseFloat(d.balance) || 0), 0);
+            if (totalLimit > 0) {
+              creditUtilization = (totalBalance / totalLimit) * 100;
+            }
+          }
+        } catch (error) {
+          console.warn('Error loading from Firestore:', error);
+        }
+      }
+
+      // Try local storage
+      if (creditUtilization === null) {
+        try {
+          const localDebts = JSON.parse(localStorage.getItem('local_test_debts') || '[]');
+          const creditCards = localDebts.filter(d => d.type === 'credit');
+          const totalLimit = creditCards.reduce((sum, d) => sum + (parseFloat(d.limit) || 0), 0);
+          const totalBalance = creditCards.reduce((sum, d) => sum + (parseFloat(d.balance) || 0), 0);
+          if (totalLimit > 0) {
+            creditUtilization = (totalBalance / totalLimit) * 100;
+          }
+        } catch (error) {
+          console.warn('Error loading from localStorage:', error);
+        }
+      }
+
+      // Try local test data
+      if (creditUtilization === null && window.getLocalTestData) {
+        try {
+          const debts = window.getLocalTestData('debts') || [];
+          const creditCards = debts.filter(d => d.type === 'credit');
+          const totalLimit = creditCards.reduce((sum, d) => sum + (parseFloat(d.limit) || 0), 0);
+          const totalBalance = creditCards.reduce((sum, d) => sum + (parseFloat(d.balance) || 0), 0);
+          if (totalLimit > 0) {
+            creditUtilization = (totalBalance / totalLimit) * 100;
+          }
+        } catch (error) {
+          console.warn('Error loading from test data:', error);
+        }
+      }
+
+      if (creditUtilization !== null) {
+        document.getElementById('utilization').value = Math.round(creditUtilization);
+        document.getElementById('utilizationVal').textContent = `${Math.round(creditUtilization)}%`;
+        document.getElementById('utilizationSync').style.display = 'inline-flex';
+        updateScore();
+        if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showSuccess) {
+          ErrorHandler.showSuccess('Credit utilization synced from Debt Tracker!');
+        } else if (window.ErrorHandler && window.ErrorHandler.showSuccess) {
+          window.ErrorHandler.showSuccess('Credit utilization synced from Debt Tracker!');
+        }
+      } else {
+        if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showWarning) {
+          ErrorHandler.showWarning('No credit card data found in Debt Tracker.');
+        } else if (window.ErrorHandler && window.ErrorHandler.showWarning) {
+          window.ErrorHandler.showWarning('No credit card data found in Debt Tracker.');
+        }
+      }
+    }
+
+    // Enhanced FICO-style calculation
+    function calculateScore() {
+      const ph = parseInt(document.getElementById('paymentHistory').value);
+      const util = parseFloat(document.getElementById('utilization').value);
+      const history = parseFloat(document.getElementById('historyLength').value);
+      const inquiries = parseInt(document.getElementById('inquiries').value);
+      const mix = document.getElementById('creditMix').value;
+      const derogatory = parseInt(document.getElementById('derogatoryMarks').value);
+
+      let score = 850;
+
+      // Payment History (35%)
+      if (ph >= 99) score -= 0;
+      else if (ph >= 97) score -= 20;
+      else if (ph >= 95) score -= 40;
+      else if (ph >= 90) score -= 80;
+      else if (ph >= 85) score -= 120;
+      else score -= 180;
+
+      // Utilization (30%)
+      if (util <= 5) score -= 0;
+      else if (util <= 10) score -= 20;
+      else if (util <= 20) score -= 40;
+      else if (util <= 30) score -= 60;
+      else if (util <= 40) score -= 100;
+      else if (util <= 50) score -= 140;
+      else if (util <= 70) score -= 180;
+      else score -= 220;
+
+      // History Length (15%)
+      if (history >= 10) score -= 0;
+      else if (history >= 7) score -= 20;
+      else if (history >= 5) score -= 40;
+      else if (history >= 3) score -= 60;
+      else if (history >= 1) score -= 100;
+      else score -= 150;
+
+      // Credit Mix (10%)
+      if (mix === 'excellent') score -= 0;
+      else if (mix === 'good') score -= 15;
+      else if (mix === 'fair') score -= 30;
+      else score -= 50;
+
+      // Inquiries (10%)
+      if (inquiries === 0) score -= 0;
+      else if (inquiries <= 1) score -= 10;
+      else if (inquiries <= 2) score -= 25;
+      else if (inquiries <= 4) score -= 50;
+      else if (inquiries <= 6) score -= 80;
+      else score -= 120;
+
+      // Derogatory Marks (additional penalty)
+      score -= derogatory * 40;
+
+      return Math.max(300, Math.min(850, Math.round(score)));
+    }
+
+    function getCurrentFactors() {
+      return {
+        paymentHistory: parseInt(document.getElementById('paymentHistory').value),
+        utilization: parseFloat(document.getElementById('utilization').value),
+        historyLength: parseFloat(document.getElementById('historyLength').value),
+        inquiries: parseInt(document.getElementById('inquiries').value),
+        creditMix: document.getElementById('creditMix').value,
+        derogatoryMarks: parseInt(document.getElementById('derogatoryMarks').value)
+      };
+    }
+
+    function getScoreRange(score) {
+      if (score < 580) return { label: 'Poor', class: 'poor', color: '#dc2626' };
+      if (score < 670) return { label: 'Fair', class: 'fair', color: '#f59e0b' };
+      if (score < 740) return { label: 'Good', class: 'good', color: '#10b981' };
+      if (score < 800) return { label: 'Very Good', class: 'very-good', color: '#3b82f6' };
+      return { label: 'Excellent', class: 'excellent', color: '#8b5cf6' };
+    }
+
+    function updateScore() {
+      currentScore = calculateScore();
+      const range = getScoreRange(currentScore);
+
+      // Update score display
+      document.getElementById('scoreNumber').textContent = currentScore;
+      document.getElementById('scoreRange').textContent = range.label;
+      document.getElementById('scoreRange').className = `score-range ${range.class}`;
+
+      // Update gauge chart
+      updateScoreGauge(currentScore, range);
+
+      // Update factor breakdown
+      updateFactorBreakdown();
+
+      // Update recommendations
+      updateRecommendations();
+
+      // Update comparisons
+      updateComparisons();
+    }
+
+    function updateScoreGauge(score, range) {
+      const ctx = document.getElementById('scoreGauge').getContext('2d');
+      
+      if (scoreGaugeChart) {
+        scoreGaugeChart.destroy();
+      }
+
+      const percentage = ((score - 300) / (850 - 300)) * 100;
+
+      scoreGaugeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          datasets: [{
+            data: [percentage, 100 - percentage],
+            backgroundColor: [range.color, '#e2e8f0'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          cutout: '75%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      });
+    }
+
+    function updateFactorBreakdown() {
+      const factors = getCurrentFactors();
+      const container = document.getElementById('factorBreakdown');
+      container.innerHTML = '';
+
+      const factorData = [
+        { name: 'Payment History', value: factors.paymentHistory, max: 100, unit: '%', weight: FACTOR_WEIGHTS.paymentHistory },
+        { name: 'Credit Utilization', value: factors.utilization, max: 100, unit: '%', weight: FACTOR_WEIGHTS.utilization, reverse: true },
+        { name: 'History Length', value: factors.historyLength, max: 20, unit: ' years', weight: FACTOR_WEIGHTS.historyLength },
+        { name: 'Credit Mix', value: getMixScore(factors.creditMix), max: 100, unit: '%', weight: FACTOR_WEIGHTS.creditMix },
+        { name: 'Inquiries', value: Math.max(0, 100 - (factors.inquiries * 10)), max: 100, unit: '%', weight: FACTOR_WEIGHTS.inquiries }
+      ];
+
+      factorData.forEach(factor => {
+        const item = document.createElement('div');
+        item.className = 'factor-item';
+        
+        let displayValue = factor.value;
+        let percentage = (factor.value / factor.max) * 100;
+        if (factor.reverse) {
+          percentage = 100 - percentage;
+        }
+
+        item.innerHTML = `
+          <span class="factor-name">${factor.name}</span>
+          <div class="factor-bar">
+            <div class="factor-bar-fill" style="width: ${percentage}%"></div>
+          </div>
+          <span class="factor-value">${displayValue}${factor.unit}</span>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function getMixScore(mix) {
+      const scores = { excellent: 100, good: 75, fair: 50, poor: 25 };
+      return scores[mix] || 50;
+    }
+
+    function updateRecommendations() {
+      const factors = getCurrentFactors();
+      const recommendations = [];
+      const container = document.getElementById('recommendationsList');
+      container.innerHTML = '';
+
+      // Payment History
+      if (factors.paymentHistory < 100) {
+        recommendations.push({
+          priority: 'High',
+          text: `Improve payment history from ${factors.paymentHistory}% to 100%`,
+          impact: `Could improve score by ${Math.round((100 - factors.paymentHistory) * 0.5)} points`,
+          action: 'Set up automatic payments for all bills'
+        });
+      }
+
+      // Utilization
+      if (factors.utilization > 30) {
+        const targetUtil = 30;
+        const debtToPay = (factors.utilization - targetUtil) / 100;
+        recommendations.push({
+          priority: 'High',
+          text: `Reduce credit utilization from ${factors.utilization.toFixed(1)}% to ${targetUtil}%`,
+          impact: `Could improve score by ${Math.round((factors.utilization - targetUtil) * 1.5)} points`,
+          action: `Pay down approximately $${Math.round(debtToPay * 10000)} in credit card debt`
+        });
+      } else if (factors.utilization > 10) {
+        recommendations.push({
+          priority: 'Medium',
+          text: `Lower utilization from ${factors.utilization.toFixed(1)}% to below 10% for optimal score`,
+          impact: `Could improve score by ${Math.round((factors.utilization - 10) * 1)} points`,
+          action: 'Pay down additional credit card balances'
+        });
+      }
+
+      // History Length
+      if (factors.historyLength < 7) {
+        recommendations.push({
+          priority: 'Low',
+          text: `Build credit history (currently ${factors.historyLength} years)`,
+          impact: `Score will improve naturally as accounts age`,
+          action: 'Keep old accounts open and use them occasionally'
+        });
+      }
+
+      // Inquiries
+      if (factors.inquiries > 2) {
+        recommendations.push({
+          priority: 'Medium',
+          text: `Limit new credit applications (${factors.inquiries} inquiries in last 12 months)`,
+          impact: `Each inquiry can lower score by 5-10 points temporarily`,
+          action: 'Avoid applying for new credit for 6-12 months'
+        });
+      }
+
+      // Credit Mix
+      if (factors.creditMix === 'poor' || factors.creditMix === 'fair') {
+        recommendations.push({
+          priority: 'Low',
+          text: `Diversify credit mix (currently ${factors.creditMix})`,
+          impact: `Could improve score by 10-20 points`,
+          action: 'Consider adding a different type of credit (e.g., installment loan)'
+        });
+      }
+
+      if (recommendations.length === 0) {
+        document.getElementById('recommendationsSection').style.display = 'none';
+        return;
+      }
+
+      document.getElementById('recommendationsSection').style.display = 'block';
+
+      recommendations.forEach(rec => {
+        const item = document.createElement('div');
+        item.className = 'recommendation-item';
+        item.innerHTML = `
+          <span class="recommendation-priority">${rec.priority}</span>
+          <div class="recommendation-text">
+            <strong>${rec.text}</strong>
+            <div class="recommendation-impact">${rec.impact}</div>
+            <div class="recommendation-impact" style="margin-top: 4px; font-weight: 600;">Action: ${rec.action}</div>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function updateComparisons() {
+      const nationalAvg = 714;
+      const ageGroupAvg = 680;
+      const excellentMin = 750;
+
+      document.getElementById('yourScore').textContent = currentScore;
+      
+      const nationalDiff = currentScore - nationalAvg;
+      document.getElementById('nationalDiff').textContent = `${nationalDiff >= 0 ? '+' : ''}${nationalDiff} points`;
+      document.getElementById('nationalDiff').className = `diff ${nationalDiff >= 0 ? 'positive' : 'negative'}`;
+
+      const ageDiff = currentScore - ageGroupAvg;
+      document.getElementById('ageDiff').textContent = `${ageDiff >= 0 ? '+' : ''}${ageDiff} points`;
+      document.getElementById('ageDiff').className = `diff ${ageDiff >= 0 ? 'positive' : 'negative'}`;
+
+      const excellentDiff = currentScore - excellentMin;
+      document.getElementById('excellentDiff').textContent = `${excellentDiff >= 0 ? '+' : ''}${excellentDiff} points`;
+      document.getElementById('excellentDiff').className = `diff ${excellentDiff >= 0 ? 'positive' : 'negative'}`;
+    }
+
+    function showHistory() {
+      const chartCanvas = document.getElementById('historyChart');
+      if (!chartCanvas || scoreHistory.length === 0) {
+        return;
+      }
+
+      const ctx = chartCanvas.getContext('2d');
+      
+      if (historyChart) {
+        historyChart.destroy();
+      }
+
+      const labels = scoreHistory.map((_, i) => {
+        const date = new Date(scoreHistory[i].timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      const scores = scoreHistory.map(s => s.score);
+
+      historyChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Credit Score',
+            data: scores,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              min: 300,
+              max: 850
+            }
+          }
+        }
+      });
+    }
+
+    function runScenario() {
+      const factors = getCurrentFactors();
+      const debtPaydown = parseFloat(document.getElementById('scenarioDebtPaydown').value) || 0;
+      const targetUtil = parseFloat(document.getElementById('scenarioUtilization').value) || factors.utilization;
+      const creditLimitAdd = parseFloat(document.getElementById('scenarioCreditLimit').value) || 0;
+
+      // Calculate new utilization
+      let newUtil = factors.utilization;
+      if (debtPaydown > 0 || creditLimitAdd > 0) {
+        // Simplified calculation - would need actual credit limit data
+        if (debtPaydown > 0) {
+          newUtil = Math.max(0, factors.utilization - (debtPaydown / 10000) * 10);
+        }
+        if (creditLimitAdd > 0) {
+          newUtil = Math.max(0, newUtil - (creditLimitAdd / 10000) * 5);
+        }
+      }
+      if (targetUtil !== factors.utilization) {
+        newUtil = targetUtil;
+      }
+
+      // Calculate scenario score
+      const tempUtil = document.getElementById('utilization').value;
+      document.getElementById('utilization').value = newUtil;
+      const scenarioScore = calculateScore();
+      document.getElementById('utilization').value = tempUtil;
+
+      const diff = scenarioScore - currentScore;
+      const result = document.getElementById('scenarioResult');
+      result.style.display = 'block';
+      result.innerHTML = `
+        <h4 style="margin: 0 0 15px 0; color: #667eea;">Scenario Results</h4>
+        <div style="font-size: 1.2em; margin-bottom: 10px;">
+          <strong>Projected Score:</strong> <span style="color: ${diff >= 0 ? '#10b981' : '#ef4444'}; font-size: 1.5em; font-weight: 700;">${scenarioScore}</span>
+        </div>
+        <div style="font-size: 1.1em; margin-bottom: 10px;">
+          <strong>Change:</strong> <span style="color: ${diff >= 0 ? '#10b981' : '#ef4444'};">${diff >= 0 ? '+' : ''}${diff} points</span>
+        </div>
+        <div style="color: #64748b; font-size: 0.95em;">
+          ${diff > 0 ? 'This scenario would improve your score!' : diff < 0 ? 'This scenario would lower your score.' : 'No significant change expected.'}
+        </div>
+      `;
+    }
+
+    // Load jsPDF library
+    let jsPDFLoaderPromise = null;
+    async function loadJsPDF() {
+      if (window.jspdf && window.jspdf.jsPDF) {
+        return window.jspdf.jsPDF;
+      }
+      if (jsPDFLoaderPromise) {
+        return jsPDFLoaderPromise;
+      }
+      jsPDFLoaderPromise = new Promise((resolve, reject) => {
+        const existingScript = document.querySelector('script[data-jspdf="true"]');
+        if (existingScript) {
+          existingScript.addEventListener('load', () => {
+            if (window.jspdf && window.jspdf.jsPDF) {
+              resolve(window.jspdf.jsPDF);
+      } else {
+              reject(new Error('jsPDF loaded but constructor missing'));
+            }
+          });
+          existingScript.addEventListener('error', () => reject(new Error('Failed to load jsPDF script')));
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+        script.async = true;
+        script.dataset.jspdf = 'true';
+        script.addEventListener('load', () => {
+          if (window.jspdf && window.jspdf.jsPDF) {
+            resolve(window.jspdf.jsPDF);
+          } else {
+            reject(new Error('jsPDF loaded but constructor missing'));
+          }
+        });
+        script.onerror = () => reject(new Error('Failed to load jsPDF script'));
+        document.head.appendChild(script);
+      });
+      return jsPDFLoaderPromise;
+    }
+
+    async function exportReport() {
+      try {
+        const jsPDFConstructor = await loadJsPDF();
+        if (!jsPDFConstructor) {
+          throw new Error('Unable to load jsPDF library');
+        }
+
+        const factors = getCurrentFactors();
+        const range = getScoreRange(currentScore);
+        const doc = new jsPDFConstructor({ unit: 'pt', format: 'letter' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 72;
+        const headerHeight = 90;
+        const topMargin = headerHeight + 30; // Start content well below header
+        let yPos = topMargin;
+
+        // Header
+        doc.setFillColor(102, 126, 234);
+        doc.rect(0, 0, pageWidth, headerHeight, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Credit Score Estimate Report', margin, 45);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 70);
+        
+        yPos = topMargin;
+
+        // Score Display
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Estimated Score: ${currentScore}`, margin, yPos);
+        yPos += 25; // Move to next line for status
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(102, 126, 234);
+        doc.text(`Status: ${range.label}`, margin, yPos);
+        yPos += 30;
+
+        // Factor Breakdown
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Factor Breakdown', margin, yPos);
+        yPos += 25;
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        const factorData = [
+          `Payment History: ${factors.paymentHistory}% (Weight: 35%)`,
+          `Credit Utilization: ${factors.utilization.toFixed(1)}% (Weight: 30%)`,
+          `Credit History Length: ${factors.historyLength} years (Weight: 15%)`,
+          `Credit Inquiries: ${factors.inquiries} (Weight: 10%)`,
+          `Credit Mix: ${factors.creditMix} (Weight: 10%)`,
+          `Derogatory Marks: ${factors.derogatoryMarks}`
+        ];
+
+        factorData.forEach(factor => {
+          // Check if we need a new page
+          if (yPos > pageHeight - 100) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.text(factor, margin + 20, yPos);
+          yPos += 20;
+        });
+
+        yPos += 15;
+
+        // Comparisons
+        // Check if we need a new page
+        if (yPos > pageHeight - 120) {
+          doc.addPage();
+          yPos = margin;
+        }
+        
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Comparisons', margin, yPos);
+        yPos += 25;
+
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'normal');
+        const nationalDiff = currentScore - 714;
+        const ageDiff = currentScore - 680;
+        const excellentDiff = currentScore - 750;
+
+        doc.text(`National Average: 714 (${nationalDiff >= 0 ? '+' : ''}${nationalDiff} points)`, margin + 20, yPos);
+        yPos += 20;
+        doc.text(`Age Group Average (25-34): 680 (${ageDiff >= 0 ? '+' : ''}${ageDiff} points)`, margin + 20, yPos);
+        yPos += 20;
+        doc.text(`Excellent Range: 750+ (${excellentDiff >= 0 ? '+' : ''}${excellentDiff} points)`, margin + 20, yPos);
+        yPos += 25;
+
+        // Footer note
+        // Check if we need a new page
+        if (yPos > pageHeight - 80) {
+          doc.addPage();
+          yPos = margin;
+        }
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        const noteText = 'Note: This is an estimate only. Always check your official credit report for your actual score.';
+        // Split long text if needed
+        const splitNote = doc.splitTextToSize(noteText, pageWidth - (margin * 2));
+        doc.text(splitNote, margin, yPos);
+        yPos += splitNote.length * 15 + 10;
+        doc.text('Generated by Bradley\'s Financial Tools', margin, yPos);
+
+        // Save PDF
+        doc.save(`credit-score-report-${new Date().toISOString().split('T')[0]}.pdf`);
+
+        if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showSuccess) {
+          ErrorHandler.showSuccess('PDF report exported successfully!');
+        } else if (window.ErrorHandler && window.ErrorHandler.showSuccess) {
+          window.ErrorHandler.showSuccess('PDF report exported successfully!');
+        }
+      } catch (error) {
+        console.error('PDF export failed:', error);
+        if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showError) {
+          ErrorHandler.showError('Failed to export PDF. Please try again.');
+        } else if (window.ErrorHandler && window.ErrorHandler.showError) {
+          window.ErrorHandler.showError('Failed to export PDF. Please try again.');
+        } else {
+          alert('Failed to export PDF. Please try again.');
+        }
+      }
+    }
+
+    // Event Listeners - with safety checks
+    function attachEventListeners() {
+      const paymentHistoryEl = document.getElementById('paymentHistory');
+      const utilizationEl = document.getElementById('utilization');
+      
+      if (paymentHistoryEl) {
+        paymentHistoryEl.addEventListener('input', function() {
+          const valEl = document.getElementById('paymentHistoryVal');
+          if (valEl) valEl.textContent = `${this.value}%`;
+          updateScore();
+        });
+      }
+
+      if (utilizationEl) {
+        utilizationEl.addEventListener('input', function() {
+          const valEl = document.getElementById('utilizationVal');
+          if (valEl) valEl.textContent = `${this.value}%`;
+          updateScore();
+        });
+      }
+
+      ['historyLength', 'inquiries', 'creditMix', 'derogatoryMarks'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('input', updateScore);
+          el.addEventListener('change', updateScore);
+        }
+      });
+
+      const syncBtn = document.getElementById('syncDataBtn');
+      if (syncBtn) syncBtn.addEventListener('click', syncFromDebtTracker);
+
+      const helpBtn = document.getElementById('helpBtn');
+      if (helpBtn) {
+        helpBtn.addEventListener('click', () => {
+          const modal = document.getElementById('helpModal');
+          if (modal) modal.classList.add('active');
+        });
+      }
+
+      const scenarioBtn = document.getElementById('scenarioBtn');
+      if (scenarioBtn) {
+        scenarioBtn.addEventListener('click', () => {
+          const modal = document.getElementById('scenarioModal');
+          if (modal) {
+            modal.classList.add('active');
+            // Reset scenario inputs
+            document.getElementById('scenarioDebtPaydown').value = '0';
+            document.getElementById('scenarioUtilization').value = '30';
+            document.getElementById('scenarioCreditLimit').value = '0';
+            document.getElementById('scenarioResult').style.display = 'none';
+          }
+        });
+      }
+
+      const historyBtn = document.getElementById('historyBtn');
+      if (historyBtn) {
+        historyBtn.addEventListener('click', () => {
+          const modal = document.getElementById('historyModal');
+          if (modal) {
+            modal.classList.add('active');
+            // Reload history in case sample data was just generated
+            if (IS_LOCALHOST && scoreHistory.length === 0) {
+              loadLocalHistory();
+            }
+            // Show history chart if we have data
+            setTimeout(() => {
+              if (scoreHistory.length > 0) {
+                showHistory();
+              } else {
+                // Try to generate and show sample data
+                if (IS_LOCALHOST) {
+                  scoreHistory = generateSampleHistory();
+                  showHistory();
+                }
+              }
+            }, 100);
+          }
+        });
+      }
+
+      const compareBtn = document.getElementById('compareBtn');
+      if (compareBtn) {
+        compareBtn.addEventListener('click', () => {
+          const modal = document.getElementById('comparisonModal');
+          if (modal) {
+            modal.classList.add('active');
+            updateComparisons();
+          }
+        });
+      }
+
+      const creditFactorsBtn = document.getElementById('creditFactorsBtn');
+      if (creditFactorsBtn) {
+        creditFactorsBtn.addEventListener('click', () => {
+          const modal = document.getElementById('creditFactorsModal');
+          if (modal) {
+            modal.classList.add('active');
+          }
+        });
+      }
+
+      const exportBtn = document.getElementById('exportBtn');
+      if (exportBtn) exportBtn.addEventListener('click', exportReport);
+
+      const saveBtn = document.getElementById('saveBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          saveScoreHistory();
+          if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showSuccess) {
+            ErrorHandler.showSuccess('Score saved successfully!');
+          } else if (window.ErrorHandler && window.ErrorHandler.showSuccess) {
+            window.ErrorHandler.showSuccess('Score saved successfully!');
+          } else {
+            alert('Score saved successfully!');
+          }
+        });
+      }
+
+      const runScenarioBtn = document.getElementById('runScenarioBtn');
+      if (runScenarioBtn) runScenarioBtn.addEventListener('click', runScenario);
+    }
+
+    // Modal close handlers
+    function attachModalHandlers() {
+      document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const modalId = this.getAttribute('data-close');
+          const modal = document.getElementById(modalId);
+          if (modal) modal.classList.remove('active');
+        });
+      });
+
+      const helpModal = document.getElementById('helpModal');
+      if (helpModal) {
+        helpModal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.remove('active');
+          }
+        });
+      }
+
+      const scenarioModal = document.getElementById('scenarioModal');
+      if (scenarioModal) {
+        scenarioModal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.remove('active');
+          }
+        });
+      }
+
+      const historyModal = document.getElementById('historyModal');
+      if (historyModal) {
+        historyModal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.remove('active');
+          }
+        });
+      }
+
+      const comparisonModal = document.getElementById('comparisonModal');
+      if (comparisonModal) {
+        comparisonModal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.remove('active');
+          }
+        });
+      }
+
+      const creditFactorsModal = document.getElementById('creditFactorsModal');
+      if (creditFactorsModal) {
+        creditFactorsModal.addEventListener('click', function(e) {
+          if (e.target === this) {
+            this.classList.remove('active');
+          }
+        });
+      }
+    }
+
+    // Initialize everything
+    function initializeApp() {
+      attachEventListeners();
+      attachModalHandlers();
+      loadScoreHistory().then(() => {
+        updateScore();
+        if (IS_LOCALHOST) {
+          setTimeout(syncFromDebtTracker, 1000);
+        }
+      });
+    }
+
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeApp);
+    } else {
+      initializeApp();
+    }
   </script>
-
 </body>
 </html>
