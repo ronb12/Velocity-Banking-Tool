@@ -166,12 +166,18 @@ auth.onAuthStateChanged(async user => {
     // Check if email is verified
     const emailLower = (user.email || '').toLowerCase();
     const isUnverifiedAllowed = ALLOW_UNVERIFIED_LOCAL_LOGIN || ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower);
+    
+    console.log('[Auth] Email check - emailLower:', emailLower, 'isUnverifiedAllowed:', isUnverifiedAllowed, 'emailVerified:', user.emailVerified);
+    console.log('[Auth] Allowed accounts:', [...ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS]);
 
     if (!user.emailVerified && !isUnverifiedAllowed) {
+      console.log('[Auth] Email not verified and not in allowed list, signing out');
       await signOut(auth);
       window.location.href = "login.html?error=Please verify your email first";
       return;
     }
+    
+    console.log('[Auth] User authentication check passed, proceeding with login');
     
     // Redirect authenticated users away from auth-only pages
     const authPages = ['login.html', 'register.html', 'reset.html'];
