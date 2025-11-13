@@ -15,11 +15,5 @@ export default {
     '^@components/(.*)$': '<rootDir>/src/scripts/components/$1',
     '^@core/(.*)$': '<rootDir>/src/scripts/core/$1'
   },
-  transform: {},
-  extensionsToTreatAsEsm: ['.js'],
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  }
+  transform: {}
 };

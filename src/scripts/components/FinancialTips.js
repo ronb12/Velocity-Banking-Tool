@@ -25,10 +25,14 @@ export class FinancialTips {
    * Update the tip display
    */
   updateTipDisplay() {
-    if (this.tips.length === 0) return;
+    if (this.tips.length === 0) {
+      return;
+    }
     
     const tip = this.tips[this.currentTipIndex];
-    if (!tip) return;
+    if (!tip) {
+      return;
+    }
 
     const categoryEl = document.getElementById('tipCategory');
     const numberEl = document.getElementById('tipNumber');
@@ -58,7 +62,11 @@ export class FinancialTips {
    * Go to previous tip
    */
   previousTip() {
-    this.currentTipIndex = this.currentTipIndex === 0 ? this.tips.length - 1 : this.currentTipIndex - 1;
+    if (this.currentTipIndex === 0) {
+      this.currentTipIndex = this.tips.length - 1;
+    } else {
+      this.currentTipIndex = this.currentTipIndex - 1;
+    }
     this.updateTipDisplay();
   }
 

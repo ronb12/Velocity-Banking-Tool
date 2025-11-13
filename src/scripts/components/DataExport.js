@@ -170,9 +170,9 @@ export class DataExport {
 
   /**
    * Export data as PDF
-   * @param {Object} data - Data to export
+   * @param {Object} _data - Data to export
    */
-  async exportAsPDF(data) {
+  async exportAsPDF(_data) {
     try {
       const jsPDFConstructor = await this.loadJsPDF();
       if (!jsPDFConstructor) {
