@@ -947,28 +947,48 @@
           if (isOpen) {
             dropdownMenu.style.display = 'none';
             dropdownMenu.style.position = '';
+            dropdownMenu.style.top = '';
+            dropdownMenu.style.left = '';
+            dropdownMenu.style.width = '';
+            dropdownMenu.style.zIndex = '';
+            // Move back to original parent if it was moved
+            if (dropdownMenu.parentElement !== dropdownBtn.parentElement) {
+              dropdownBtn.parentElement.appendChild(dropdownMenu);
+            }
             dropdownBtn.parentElement.classList.remove('open');
           } else {
             // Calculate position relative to button
             const buttonRect = dropdownBtn.getBoundingClientRect();
-            const menuRect = dropdownMenu.getBoundingClientRect();
             
-            // Position menu below button
+            // Move dropdown to body to escape modal stacking context
+            if (dropdownMenu.parentElement !== document.body) {
+              document.body.appendChild(dropdownMenu);
+            }
+            
+            // Position menu below button using fixed positioning
             dropdownMenu.style.position = 'fixed';
-            dropdownMenu.style.top = `${buttonRect.bottom + 8}px`;
-            dropdownMenu.style.left = `${buttonRect.left}px`;
+            dropdownMenu.style.top = `${buttonRect.bottom + window.scrollY + 8}px`;
+            dropdownMenu.style.left = `${buttonRect.left + window.scrollX}px`;
             dropdownMenu.style.width = `${buttonRect.width}px`;
             dropdownMenu.style.display = 'block';
-            dropdownMenu.style.zIndex = '99999';
+            dropdownMenu.style.visibility = 'visible';
+            dropdownMenu.style.opacity = '1';
+            dropdownMenu.style.zIndex = '999999';
+            dropdownMenu.style.pointerEvents = 'auto';
             dropdownBtn.parentElement.classList.add('open');
+            
             console.log('Menu opened, items:', dropdownMenu.children.length);
             console.log('Menu position:', dropdownMenu.style.top, dropdownMenu.style.left);
-            // Force visibility
+            console.log('Menu z-index:', dropdownMenu.style.zIndex);
+            console.log('Menu parent:', dropdownMenu.parentElement.tagName);
+            
+            // Force visibility on all items
             Array.from(dropdownMenu.children).forEach((item, i) => {
               item.style.display = 'flex';
               item.style.visibility = 'visible';
               item.style.opacity = '1';
-              item.style.zIndex = '100000';
+              item.style.zIndex = '1000000';
+              item.style.pointerEvents = 'auto';
               console.log(`Menu item ${i}:`, item.textContent.trim(), 'visible:', item.offsetParent !== null);
             });
           }
@@ -978,6 +998,15 @@
         let closeDropdownHandler = function(e) {
           if (!dropdownMenu.contains(e.target) && !dropdownBtn.contains(e.target)) {
             dropdownMenu.style.display = 'none';
+            dropdownMenu.style.position = '';
+            dropdownMenu.style.top = '';
+            dropdownMenu.style.left = '';
+            dropdownMenu.style.width = '';
+            dropdownMenu.style.zIndex = '';
+            // Move back to original parent if it was moved
+            if (dropdownMenu.parentElement !== dropdownBtn.parentElement) {
+              dropdownBtn.parentElement.appendChild(dropdownMenu);
+            }
             dropdownBtn.parentElement.classList.remove('open');
           }
         };
@@ -2941,25 +2970,22 @@
     
     .theme-dropdown-menu {
       position: fixed !important;
-      top: auto !important;
-      bottom: auto !important;
-      left: auto !important;
-      right: auto !important;
       background: #ffffff !important;
       border: 2px solid var(--border-color) !important;
       border-radius: 0.5rem !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-      z-index: 99999 !important;
+      z-index: 999999 !important;
       max-height: 300px;
       overflow-y: auto !important;
       overflow-x: visible !important;
-      margin-top: 0.25rem;
+      margin-top: 0;
       display: none !important;
       visibility: visible !important;
       opacity: 1 !important;
       min-height: 50px;
       flex-direction: column !important;
       flex-wrap: nowrap !important;
+      pointer-events: auto !important;
     }
     
     .theme-dropdown-menu[style*="block"],
