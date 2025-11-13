@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Bradley's Financial Tools</title>
   <link rel="stylesheet" href="theme.css?v=2.1.0">
+  <link rel="stylesheet" href="src/styles/index-inline.css?v=2.1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -41,7 +42,13 @@
   <script src="app-updater.js"></script>
   
   <!-- PWA Scrolling Fix -->
-  <script>
+  <!-- Inline scripts moved to src/scripts/pages/index-inline.js -->
+    <script type="module" src="src/scripts/pages/index-inline.js"></script>
+    <!--
+    <!-- Inline scripts moved to src/scripts/pages/index-inline.js -->
+    <script type="module" src="src/scripts/pages/index-inline.js"></script>
+    <!--
+        <script>
     // Fix PWA scrolling issues
     if (window.matchMedia('(display-mode: standalone)').matches) {
       document.addEventListener('DOMContentLoaded', function() {
@@ -61,6 +68,8 @@
       });
     }
   </script>
+    -->
+    -->
 </head>
 <body>
   <div class="dashboard">
@@ -355,7 +364,10 @@
             </div>
           </div>
           
-          <script>
+          <!-- Inline scripts moved to src/scripts/pages/index-inline.js -->
+    <script type="module" src="src/scripts/pages/index-inline.js"></script>
+    <!--
+    <script>
             // Auto-initialize theme selector dropdown when settings section becomes visible
             (function() {
               let initAttempts = 0;
@@ -402,6 +414,8 @@
               }
             })();
           </script>
+    -->
+    -->
           
         </div>
       </div>
@@ -2831,7 +2845,14 @@
       return value;
     }
   </script>
-  <style>
+  <!-- Inline styles moved to src/styles/index-inline.css -->
+  <!--
+  <!-- Inline styles moved to src/styles/index-inline.css -->
+    <!--
+    <!-- Inline styles moved to src/styles/index-inline.css -->
+    <link rel="stylesheet" href="src/styles/index-inline.css?v=2.1.0">
+    <!--
+        <style>
     @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
     .spinner { display:inline-block;width:1.2em;height:1.2em;border:2px solid #cbd5e1;border-top:2px solid #2563eb;border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle;}
     /* Profile Modal Styles */
@@ -4033,7 +4054,10 @@
     [data-theme="fun"] .recommendation-action {
       background: var(--bg-card);
     }
-  </style>
+    </style>
+    -->
+    -->
+    -->
   
   <footer style="text-align: center; margin-top: 40px; padding: 20px; font-weight: bold; font-size: 14px; color: var(--text-muted); border-top: 1px solid var(--border-color);">
     This is a product of Bradley Virtual Solutions, LLC
