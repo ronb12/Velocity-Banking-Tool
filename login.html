@@ -230,7 +230,10 @@
     const DEFAULT_TEST_EMAIL = 'testuser@BFH.com';
     const DEFAULT_TEST_PASSWORD = 'test1234';
     const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    const ALLOW_UNVERIFIED_LOCAL_LOGIN = isLocalhost;
+    const ALLOW_UNVERIFIED_LOCAL_LOGIN = Boolean(window.CONFIG?.security?.allowUnverifiedLocalLogin) && isLocalhost;
+    const ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS = new Set(
+      (window.CONFIG?.security?.allowUnverifiedAccounts || []).map(email => email.toLowerCase())
+    );
 
     if (isLocalhost) {
       document.getElementById('email').value = DEFAULT_TEST_EMAIL;
@@ -283,7 +286,11 @@
           return;
         }
         
-        if (!userRecord.emailVerified && !ALLOW_UNVERIFIED_LOCAL_LOGIN) {
+        // Check if unverified login is allowed
+        const emailLower = (userRecord.email || '').toLowerCase();
+        const isUnverifiedAllowed = ALLOW_UNVERIFIED_LOCAL_LOGIN || ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower);
+        
+        if (!userRecord.emailVerified && !isUnverifiedAllowed) {
           ErrorHandler.showWarning('Please verify your email before signing in.');
           return;
         }
