@@ -946,16 +946,29 @@
           console.log('Menu children count:', dropdownMenu.children.length);
           if (isOpen) {
             dropdownMenu.style.display = 'none';
+            dropdownMenu.style.position = '';
             dropdownBtn.parentElement.classList.remove('open');
           } else {
+            // Calculate position relative to button
+            const buttonRect = dropdownBtn.getBoundingClientRect();
+            const menuRect = dropdownMenu.getBoundingClientRect();
+            
+            // Position menu below button
+            dropdownMenu.style.position = 'fixed';
+            dropdownMenu.style.top = `${buttonRect.bottom + 8}px`;
+            dropdownMenu.style.left = `${buttonRect.left}px`;
+            dropdownMenu.style.width = `${buttonRect.width}px`;
             dropdownMenu.style.display = 'block';
+            dropdownMenu.style.zIndex = '99999';
             dropdownBtn.parentElement.classList.add('open');
             console.log('Menu opened, items:', dropdownMenu.children.length);
+            console.log('Menu position:', dropdownMenu.style.top, dropdownMenu.style.left);
             // Force visibility
             Array.from(dropdownMenu.children).forEach((item, i) => {
               item.style.display = 'flex';
               item.style.visibility = 'visible';
               item.style.opacity = '1';
+              item.style.zIndex = '100000';
               console.log(`Menu item ${i}:`, item.textContent.trim(), 'visible:', item.offsetParent !== null);
             });
           }
@@ -2927,15 +2940,16 @@
     }
     
     .theme-dropdown-menu {
-      position: absolute !important;
-      top: calc(100% + 0.5rem) !important;
-      left: 0 !important;
-      right: 0 !important;
+      position: fixed !important;
+      top: auto !important;
+      bottom: auto !important;
+      left: auto !important;
+      right: auto !important;
       background: #ffffff !important;
       border: 2px solid var(--border-color) !important;
       border-radius: 0.5rem !important;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-      z-index: 10000 !important;
+      z-index: 99999 !important;
       max-height: 300px;
       overflow-y: auto !important;
       overflow-x: visible !important;
