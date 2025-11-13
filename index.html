@@ -938,10 +938,13 @@
         console.log('Menu items created:', dropdownMenu.children.length);
         
         // Toggle dropdown on button click
-        dropdownBtn.onclick = (e) => {
+        dropdownBtn.addEventListener('click', function(e) {
           e.stopPropagation();
           e.preventDefault();
-          const isOpen = dropdownMenu.style.display === 'block';
+          console.log('🔵 Dropdown button clicked!');
+          console.log('Button element:', dropdownBtn);
+          console.log('Menu element:', dropdownMenu);
+          const isOpen = dropdownMenu.style.display === 'block' || dropdownMenu.style.display === 'flex';
           console.log('Dropdown button clicked, isOpen:', isOpen);
           console.log('Menu children count:', dropdownMenu.children.length);
           if (isOpen) {
@@ -1027,6 +1030,13 @@
               });
             }, 10);
           }
+        }, { capture: true });
+        
+        // Also add as direct onclick as fallback
+        dropdownBtn.onclick = function(e) {
+          console.log('🔵 Dropdown button onclick fallback triggered!');
+          e.stopPropagation();
+          e.preventDefault();
         };
         
         // Close dropdown when clicking outside
