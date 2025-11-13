@@ -862,13 +862,20 @@
     
     // Initialize theme selector with color swatches (industry standard approach)
     function initializeThemeSelector() {
+      console.log('[Theme Selector] Initializing...', {
+        hasThemeManager: !!window.themeManager,
+        themeManager: window.themeManager
+      });
+      
       if (!window.themeManager) {
+        console.log('[Theme Selector] ThemeManager not available, retrying...');
         setTimeout(initializeThemeSelector, 100);
         return;
       }
       
       const list = document.getElementById('themeSelectorList');
       if (!list) {
+        console.log('[Theme Selector] List element not found, retrying...');
         setTimeout(initializeThemeSelector, 100);
         return;
       }
@@ -877,11 +884,20 @@
       const themes = window.themeManager.getAvailableThemes();
       const currentTheme = window.themeManager.getCurrentTheme();
       
+      console.log('[Theme Selector] Populating themes:', {
+        themes: themes,
+        currentTheme: currentTheme,
+        themesCount: themes.length
+      });
+      
       // Clear and populate list
       list.innerHTML = '';
       themes.forEach(themeId => {
         const info = window.themeManager.getThemeInfo(themeId);
-        if (!info) return;
+        if (!info) {
+          console.warn('[Theme Selector] No info for theme:', themeId);
+          return;
+        }
         
         const isChecked = themeId === currentTheme;
         const color = window.themeManager.getThemeColor(themeId);
@@ -906,6 +922,8 @@
         };
         list.appendChild(item);
       });
+      
+      console.log('[Theme Selector] Initialized successfully, added', list.children.length, 'themes');
     }
     
     // Make openProfileModal globally available
@@ -914,7 +932,10 @@
       if (profileModal) {
         profileModal.style.display = 'flex';
         updateProfileStats();
-        initializeThemeSelector();
+        // Initialize theme selector with a small delay to ensure DOM is ready
+        setTimeout(() => {
+          initializeThemeSelector();
+        }, 100);
       }
     };
     
