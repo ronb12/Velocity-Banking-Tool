@@ -2937,11 +2937,13 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
       z-index: 10000 !important;
       max-height: 300px;
-      overflow-y: auto;
+      overflow-y: auto !important;
+      overflow-x: visible !important;
       margin-top: 0.25rem;
       display: none !important;
       visibility: visible !important;
       opacity: 1 !important;
+      min-height: 50px;
     }
     
     .theme-dropdown-menu[style*="block"],
@@ -2951,17 +2953,31 @@
       opacity: 1 !important;
     }
     
+    /* Ensure parent container doesn't clip the menu */
+    .custom-theme-dropdown {
+      overflow: visible !important;
+    }
+    
+    .profile-settings {
+      overflow: visible !important;
+    }
+    
     .theme-dropdown-item {
-      padding: 0.75rem 1rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
+      padding: 0.75rem 1rem !important;
+      cursor: pointer !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 0.75rem !important;
       color: #1e293b !important;
       background: #ffffff !important;
       transition: background 0.2s;
       border-bottom: 1px solid #f0f0f0;
+      visibility: visible !important;
+      opacity: 1 !important;
+      position: relative !important;
+      z-index: 10001 !important;
+      min-height: 44px;
     }
     
     .theme-dropdown-item:last-child {
