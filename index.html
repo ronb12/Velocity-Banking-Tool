@@ -914,9 +914,11 @@
             <span class="theme-name">${themeInfo.name}</span>
             ${themeId === currentTheme ? '<span class="check-mark">✓</span>' : ''}
           `;
-          menuItem.style.display = 'block';
+          menuItem.style.display = 'flex';
           menuItem.style.visibility = 'visible';
           menuItem.style.opacity = '1';
+          menuItem.style.position = 'relative';
+          menuItem.style.zIndex = '10001';
           menuItem.onclick = (e) => {
             e.stopPropagation();
             console.log('Theme selected:', themeId);
@@ -938,12 +940,24 @@
         // Toggle dropdown on button click
         dropdownBtn.onclick = (e) => {
           e.stopPropagation();
+          e.preventDefault();
           const isOpen = dropdownMenu.style.display === 'block';
-          dropdownMenu.style.display = isOpen ? 'none' : 'block';
-          if (!isOpen) {
-            dropdownBtn.parentElement.classList.add('open');
-          } else {
+          console.log('Dropdown button clicked, isOpen:', isOpen);
+          console.log('Menu children count:', dropdownMenu.children.length);
+          if (isOpen) {
+            dropdownMenu.style.display = 'none';
             dropdownBtn.parentElement.classList.remove('open');
+          } else {
+            dropdownMenu.style.display = 'block';
+            dropdownBtn.parentElement.classList.add('open');
+            console.log('Menu opened, items:', dropdownMenu.children.length);
+            // Force visibility
+            Array.from(dropdownMenu.children).forEach((item, i) => {
+              item.style.display = 'flex';
+              item.style.visibility = 'visible';
+              item.style.opacity = '1';
+              console.log(`Menu item ${i}:`, item.textContent.trim(), 'visible:', item.offsetParent !== null);
+            });
           }
         };
         
@@ -2913,23 +2927,28 @@
     }
     
     .theme-dropdown-menu {
-      position: absolute;
-      top: calc(100% + 0.5rem);
-      left: 0;
-      right: 0;
+      position: absolute !important;
+      top: calc(100% + 0.5rem) !important;
+      left: 0 !important;
+      right: 0 !important;
       background: #ffffff !important;
-      border: 2px solid var(--border-color);
-      border-radius: 0.5rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border: 2px solid var(--border-color) !important;
+      border-radius: 0.5rem !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
       z-index: 10000 !important;
       max-height: 300px;
       overflow-y: auto;
       margin-top: 0.25rem;
-      display: none;
+      display: none !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
     
-    .theme-dropdown-menu[style*="block"] {
+    .theme-dropdown-menu[style*="block"],
+    .theme-dropdown-menu.show {
       display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
     
     .theme-dropdown-item {
