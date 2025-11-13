@@ -26,28 +26,40 @@ describe('StateManager', () => {
   });
 
   test('should notify listeners on state change', () => {
-    const listener = jest.fn();
+    let callCount = 0;
+    let lastNewState = null;
+    let lastPrevState = null;
+    
+    const listener = (newState, prevState) => {
+      callCount++;
+      lastNewState = newState;
+      lastPrevState = prevState;
+    };
+    
     stateManager.subscribe(listener);
     
     stateManager.setState({ user: { id: '123' } });
     
-    expect(listener).toHaveBeenCalledTimes(1);
-    expect(listener).toHaveBeenCalledWith(
-      expect.objectContaining({ user: { id: '123' } }),
-      expect.any(Object)
-    );
+    expect(callCount).toBe(1);
+    expect(lastNewState).toHaveProperty('user');
+    expect(lastNewState.user).toEqual({ id: '123' });
+    expect(lastPrevState).toBeDefined();
   });
 
   test('should allow unsubscribing from state changes', () => {
-    const listener = jest.fn();
+    let callCount = 0;
+    const listener = () => {
+      callCount++;
+    };
+    
     const unsubscribe = stateManager.subscribe(listener);
     
     stateManager.setState({ user: { id: '123' } });
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(callCount).toBe(1);
     
     unsubscribe();
     stateManager.setState({ user: { id: '456' } });
-    expect(listener).toHaveBeenCalledTimes(1); // Should not be called again
+    expect(callCount).toBe(1); // Should not be called again
   });
 
   test('should set user correctly', () => {

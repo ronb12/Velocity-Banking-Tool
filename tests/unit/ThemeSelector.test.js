@@ -9,21 +9,35 @@ describe('ThemeSelector', () => {
   let mockThemeManager;
 
   beforeEach(() => {
+    // Track calls for setTheme
+    let setThemeCalled = false;
+    let setThemeArg = null;
+    
     // Mock themeManager
     mockThemeManager = {
-      getAvailableThemes: jest.fn(() => ['blue', 'pink', 'green']),
-      getCurrentTheme: jest.fn(() => 'blue'),
-      getThemeInfo: jest.fn((themeId) => ({
+      getAvailableThemes: () => ['blue', 'pink', 'green'],
+      getCurrentTheme: () => 'blue',
+      getThemeInfo: (themeId) => ({
         blue: { name: 'Blue', icon: '🔵', color: '#007bff' },
         pink: { name: 'Pink', icon: '🌸', color: '#ff4b91' },
         green: { name: 'Green', icon: '🟢', color: '#28a745' },
-      }[themeId])),
-      getThemeColor: jest.fn((themeId) => ({
+      }[themeId]),
+      getThemeColor: (themeId) => ({
         blue: '#007bff',
         pink: '#ff4b91',
         green: '#28a745',
-      }[themeId])),
-      setTheme: jest.fn(),
+      }[themeId]),
+      setTheme: (themeId) => {
+        setThemeCalled = true;
+        setThemeArg = themeId;
+      },
+      // Helper to check if setTheme was called
+      _setThemeCalled: () => setThemeCalled,
+      _setThemeArg: () => setThemeArg,
+      _reset: () => {
+        setThemeCalled = false;
+        setThemeArg = null;
+      }
     };
 
     window.themeManager = mockThemeManager;
@@ -65,9 +79,11 @@ describe('ThemeSelector', () => {
   });
 
   test('should select theme correctly', () => {
+    mockThemeManager._reset();
     themeSelector.init();
     themeSelector.selectTheme('pink');
-    expect(mockThemeManager.setTheme).toHaveBeenCalledWith('pink');
+    expect(mockThemeManager._setThemeCalled()).toBe(true);
+    expect(mockThemeManager._setThemeArg()).toBe('pink');
   });
 
   test('should toggle dropdown', () => {

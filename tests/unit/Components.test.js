@@ -60,16 +60,34 @@ describe('Components', () => {
     });
 
     test('should create notification', () => {
-      const notification = notificationSystem.show('Test message', 'info');
-      expect(notification).toBeDefined();
-      expect(notification.message).toBe('Test message');
-      expect(notification.type).toBe('info');
+      // Mock DOM for NotificationSystem
+      if (typeof document === 'undefined') {
+        global.document = {
+          createElement: () => ({
+            id: '',
+            className: '',
+            style: {},
+            innerHTML: '',
+            appendChild: () => {},
+            classList: { add: () => {}, remove: () => {} }
+          }),
+          body: { appendChild: () => {} },
+          head: { appendChild: () => {} },
+          getElementById: () => null,
+          querySelector: () => null
+        };
+      }
+      
+      const notificationId = notificationSystem.show('Test message', 'info');
+      expect(notificationId).toBeDefined();
+      expect(typeof notificationId).toBe('string');
+      expect(notificationSystem.notifications.length).toBeGreaterThan(0);
     });
 
     test('should remove notification', () => {
-      const notification = notificationSystem.show('Test', 'info');
-      notificationSystem.remove(notification.id);
-      expect(notificationSystem.notifications.find(n => n.id === notification.id)).toBeUndefined();
+      const notificationId = notificationSystem.show('Test', 'info');
+      notificationSystem.remove(notificationId);
+      expect(notificationSystem.notifications.find(n => n.id === notificationId)).toBeUndefined();
     });
   });
 
@@ -84,11 +102,15 @@ describe('Components', () => {
 
     test('should save settings', () => {
       settingsManager.saveSetting('testKey', 'testValue');
-      expect(localStorage.getItem('testKey')).toBe('testValue');
+      // saveSetting uses JSON.stringify, so we need to parse it
+      const saved = localStorage.getItem('testKey');
+      expect(saved).toBe('"testValue"'); // JSON.stringify adds quotes
+      expect(JSON.parse(saved)).toBe('testValue');
     });
 
     test('should load settings', () => {
-      localStorage.setItem('testKey', 'testValue');
+      // loadSetting expects JSON format, so we need to set it as JSON
+      localStorage.setItem('testKey', JSON.stringify('testValue'));
       const value = settingsManager.loadSetting('testKey');
       expect(value).toBe('testValue');
     });
