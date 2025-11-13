@@ -39,10 +39,18 @@ export class FinancialTips {
     const titleEl = document.getElementById('tipTitle');
     const contentEl = document.getElementById('tipContent');
 
-    if (categoryEl) categoryEl.textContent = tip.category;
-    if (numberEl) numberEl.textContent = `${this.currentTipIndex + 1} of ${this.tips.length}`;
-    if (titleEl) titleEl.textContent = tip.title;
-    if (contentEl) contentEl.textContent = tip.content;
+    if (categoryEl) {
+      categoryEl.textContent = tip.category;
+    }
+    if (numberEl) {
+      numberEl.textContent = `${this.currentTipIndex + 1} of ${this.tips.length}`;
+    }
+    if (titleEl) {
+      titleEl.textContent = tip.title;
+    }
+    if (contentEl) {
+      contentEl.textContent = tip.content;
+    }
     
     // Update navigation dots
     document.querySelectorAll('.nav-dot').forEach((dot, index) => {
