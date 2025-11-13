@@ -335,6 +335,16 @@
               <span class="toggle-slider"></span>
             </label>
           </div>
+          
+          <div class="setting-item theme-selector-item">
+            <label class="setting-label">
+              <span class="setting-icon">🎨</span>
+              <span class="setting-text">Color Theme</span>
+            </label>
+            <div class="theme-selector-grid" id="themeSelectorGrid">
+              <!-- Theme options will be populated by JavaScript -->
+            </div>
+          </div>
         </div>
       </div>
       
@@ -679,6 +689,7 @@
           profileModal.style.display = 'flex';
           console.log('Modal display set to flex');
           updateProfileStats();
+          initializeThemeSelector();
           
           
           // Debug: Check if avatar elements exist
@@ -847,6 +858,46 @@
       
       showNotification(`Tips ${enabled ? 'enabled' : 'disabled'}`, 'success');
     }
+    
+    // Initialize theme selector in profile modal
+    function initializeThemeSelector() {
+      const themeGrid = document.getElementById('themeSelectorGrid');
+      if (!themeGrid || !window.themeManager) return;
+      
+      themeGrid.innerHTML = '';
+      const themes = window.themeManager.getAvailableThemes();
+      const currentTheme = window.themeManager.getCurrentTheme();
+      
+      themes.forEach(themeId => {
+        const themeInfo = window.themeManager.getThemeInfo(themeId);
+        const btn = document.createElement('button');
+        btn.className = `theme-option-btn ${themeId === currentTheme ? 'active' : ''}`;
+        btn.setAttribute('data-theme', themeId);
+        btn.innerHTML = `
+          <span class="theme-icon">${themeInfo.icon}</span>
+          <span class="theme-name">${themeInfo.name}</span>
+        `;
+        btn.onclick = () => {
+          window.themeManager.setTheme(themeId);
+          updateThemeSelector();
+          showNotification(`Theme changed to ${themeInfo.name}`, 'success');
+        };
+        themeGrid.appendChild(btn);
+      });
+    }
+    
+    function updateThemeSelector() {
+      const themeGrid = document.getElementById('themeSelectorGrid');
+      if (!themeGrid || !window.themeManager) return;
+      
+      const currentTheme = window.themeManager.getCurrentTheme();
+      themeGrid.querySelectorAll('.theme-option-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-theme') === currentTheme);
+      });
+    }
+    
+    // Listen for theme changes to update selector
+    window.addEventListener('themechange', updateThemeSelector);
 
     function openAdvancedSettings() {
       console.log('Opening Advanced Settings...');
@@ -2719,7 +2770,81 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.75rem 0;
+      margin-bottom: 1rem;
+    }
+    
+    .theme-selector-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .theme-selector-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    
+    .theme-option-btn {
+      aspect-ratio: 1;
+      border: 2px solid var(--border-color);
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      padding: 0.5rem;
+      background: var(--bg-card);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .theme-option-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--primary-color);
+    }
+    
+    .theme-option-btn.active {
+      border-color: var(--primary-color);
+      border-width: 3px;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
+    }
+    
+    .theme-option-btn .theme-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+    
+    .theme-option-btn .theme-name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-color);
+      text-transform: capitalize;
+    }
+    
+    .theme-option-btn.active .theme-name {
+      color: var(--primary-color);
+    }
+    
+    @media (max-width: 600px) {
+      .theme-selector-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+      }
+      
+      .theme-option-btn .theme-name {
+        font-size: 0.6rem;
+      }
+      
+      .theme-option-btn .theme-icon {
+        font-size: 1.25rem;
+      }
     }
 
     .setting-label {

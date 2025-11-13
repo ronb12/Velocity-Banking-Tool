@@ -6,7 +6,8 @@
 
 class ThemeManager {
   constructor() {
-    this.themes = ['light', 'dark', 'fun', 'auto'];
+    // 8 color themes: blue (default), pink, and 5 more
+    this.themes = ['blue', 'pink', 'green', 'purple', 'orange', 'teal', 'red', 'auto'];
     this.currentTheme = this.loadTheme();
     this.init();
   }
@@ -36,12 +37,8 @@ class ThemeManager {
       return saved;
     }
     
-    // Default to system preference or light
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'auto';
-    }
-    
-    return 'light';
+    // Default to blue theme
+    return 'blue';
   }
 
   saveTheme(theme) {
@@ -51,8 +48,8 @@ class ThemeManager {
   getEffectiveTheme() {
     if (this.currentTheme === 'auto') {
       return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
+        ? 'blue-dark'
+        : 'blue';
     }
     return this.currentTheme;
   }
@@ -92,17 +89,38 @@ class ThemeManager {
 
   getThemeColor(theme) {
     const colors = {
-      light: '#007bff',
-      dark: '#1a1a1a',
-      fun: '#ff4b91'
+      blue: '#007bff',
+      pink: '#ff4b91',
+      green: '#28a745',
+      purple: '#6f42c1',
+      orange: '#fd7e14',
+      teal: '#20c997',
+      red: '#dc3545',
+      'blue-dark': '#1a1a1a'
     };
-    return colors[theme] || colors.light;
+    return colors[theme] || colors.blue;
+  }
+  
+  getThemeInfo(theme) {
+    const themeInfo = {
+      blue: { name: 'Blue', icon: '🔵', color: '#007bff' },
+      pink: { name: 'Pink', icon: '🌸', color: '#ff4b91' },
+      green: { name: 'Green', icon: '🟢', color: '#28a745' },
+      purple: { name: 'Purple', icon: '🟣', color: '#6f42c1' },
+      orange: { name: 'Orange', icon: '🟠', color: '#fd7e14' },
+      teal: { name: 'Teal', icon: '🔷', color: '#20c997' },
+      red: { name: 'Red', icon: '🔴', color: '#dc3545' },
+      auto: { name: 'Auto', icon: '🔄', color: '#6c757d' }
+    };
+    return themeInfo[theme] || themeInfo.blue;
   }
 
   toggleTheme() {
-    const currentIndex = this.themes.indexOf(this.currentTheme);
-    const nextIndex = (currentIndex + 1) % this.themes.length;
-    this.applyTheme(this.themes[nextIndex]);
+    // Cycle through themes (skip auto for quick toggle)
+    const quickThemes = this.themes.filter(t => t !== 'auto');
+    const currentIndex = quickThemes.indexOf(this.currentTheme);
+    const nextIndex = (currentIndex + 1) % quickThemes.length;
+    this.applyTheme(quickThemes[nextIndex]);
   }
 
   setTheme(theme) {
