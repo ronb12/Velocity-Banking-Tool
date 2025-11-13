@@ -938,7 +938,7 @@
         console.log('Menu items created:', dropdownMenu.children.length);
         
         // Toggle dropdown on button click
-        dropdownBtn.addEventListener('click', function(e) {
+        function handleDropdownClick(e) {
           e.stopPropagation();
           e.preventDefault();
           console.log('🔵 Dropdown button clicked!');
@@ -1030,14 +1030,12 @@
               });
             }, 10);
           }
-        }, { capture: true });
+        }
         
-        // Also add as direct onclick as fallback
-        dropdownBtn.onclick = function(e) {
-          console.log('🔵 Dropdown button onclick fallback triggered!');
-          e.stopPropagation();
-          e.preventDefault();
-        };
+        // Add event listener
+        dropdownBtn.addEventListener('click', handleDropdownClick, true);
+        // Also set onclick as fallback
+        dropdownBtn.onclick = handleDropdownClick;
         
         // Close dropdown when clicking outside
         let closeDropdownHandler = function(e) {
