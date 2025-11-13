@@ -867,14 +867,25 @@
     
     // Initialize custom theme selector dropdown in profile modal
     function initializeThemeSelector() {
-      setTimeout(() => {
+      // Try multiple times to ensure elements are available
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      const tryInitialize = () => {
+        attempts++;
         const dropdownBtn = document.getElementById('themeDropdownBtn');
         const dropdownMenu = document.getElementById('themeDropdownMenu');
         const dropdownText = document.getElementById('themeDropdownText');
         
         if (!dropdownBtn || !dropdownMenu || !dropdownText) {
-          console.warn('Theme selector dropdown elements not found');
-          return;
+          if (attempts < maxAttempts) {
+            console.log(`Theme selector elements not found, retrying... (${attempts}/${maxAttempts})`);
+            setTimeout(tryInitialize, 100);
+            return;
+          } else {
+            console.warn('Theme selector dropdown elements not found after', maxAttempts, 'attempts');
+            return;
+          }
         }
         
         if (!window.themeManager) {
@@ -1038,18 +1049,38 @@
           }
         }
         
+        // Remove any existing handlers first to avoid duplicates
+        const newBtn = dropdownBtn.cloneNode(true);
+        dropdownBtn.parentNode.replaceChild(newBtn, dropdownBtn);
+        const freshBtn = document.getElementById('themeDropdownBtn');
+        
         // Add event listener with multiple approaches to ensure it fires
-        dropdownBtn.addEventListener('click', handleDropdownClick, true);
-        dropdownBtn.addEventListener('mousedown', function(e) {
+        freshBtn.addEventListener('click', handleDropdownClick, true);
+        freshBtn.addEventListener('mousedown', function(e) {
           console.log('🔵 Dropdown button mousedown event');
+          e.stopPropagation();
+        }, true);
+        freshBtn.addEventListener('touchstart', function(e) {
+          console.log('🔵 Dropdown button touchstart event');
+          e.stopPropagation();
         }, true);
         // Also set onclick as fallback
-        dropdownBtn.onclick = handleDropdownClick;
+        freshBtn.onclick = handleDropdownClick;
+        
+        // Make button explicitly clickable
+        freshBtn.style.pointerEvents = 'auto';
+        freshBtn.style.cursor = 'pointer';
+        freshBtn.setAttribute('tabindex', '0');
         
         // Debug: Log that handler was attached
         console.log('✅ Dropdown click handler attached to button');
-        console.log('Button element:', dropdownBtn);
-        console.log('Button onclick type:', typeof dropdownBtn.onclick);
+        console.log('Button element:', freshBtn);
+        console.log('Button onclick type:', typeof freshBtn.onclick);
+        console.log('Button pointer-events:', window.getComputedStyle(freshBtn).pointerEvents);
+        
+        // Update references to use fresh button
+        const originalDropdownBtn = dropdownBtn;
+        dropdownBtn = freshBtn;
         
         // Close dropdown when clicking outside
         let closeDropdownHandler = function(e) {
