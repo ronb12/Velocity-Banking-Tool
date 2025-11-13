@@ -884,11 +884,21 @@
           const option = document.createElement('option');
           option.value = themeId;
           option.textContent = `${themeInfo.icon} ${themeInfo.name}`;
+          // Set inline styles to ensure visibility
+          option.style.backgroundColor = '#ffffff';
+          option.style.color = '#1e293b';
+          option.style.padding = '0.75rem 1rem';
+          option.style.fontSize = '0.95rem';
+          option.style.fontWeight = '500';
           if (themeId === currentTheme) {
             option.selected = true;
           }
           themeSelect.appendChild(option);
         });
+        
+        // Force dropdown to show options by ensuring it's visible and has proper size
+        themeSelect.style.minHeight = '40px';
+        themeSelect.style.height = 'auto';
         
         // Add event listener
         themeSelect.addEventListener('change', function(e) {
@@ -2828,23 +2838,14 @@
       box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
     }
     
+    /* Note: Native select option styling is limited by browser
+       Options will use system default styling but should be visible */
     .theme-select-dropdown option {
-      background: #ffffff !important;
+      background-color: #ffffff !important;
       color: #1e293b !important;
-      padding: 0.75rem 1rem !important;
-      font-size: 0.95rem !important;
-      font-weight: 500 !important;
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-    }
-    
-    /* Ensure options are visible when dropdown is open */
-    .theme-select-dropdown:focus option,
-    .theme-select-dropdown option:checked,
-    .theme-select-dropdown option:hover {
-      background: #f0f4f8 !important;
-      color: #1e293b !important;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 500;
     }
     
     /* Dark theme dropdown styling */
@@ -2855,14 +2856,7 @@
     }
     
     [data-theme="blue-dark"] .theme-select-dropdown option {
-      background: #2b2b2b !important;
-      color: #f4f4f9 !important;
-    }
-    
-    [data-theme="blue-dark"] .theme-select-dropdown:focus option,
-    [data-theme="blue-dark"] .theme-select-dropdown option:checked,
-    [data-theme="blue-dark"] .theme-select-dropdown option:hover {
-      background: #3a3a3a !important;
+      background-color: #2b2b2b !important;
       color: #f4f4f9 !important;
     }
 
