@@ -247,7 +247,9 @@
     document.getElementById('loginForm').onsubmit = login;
     document.getElementById('googleLoginBtn').onclick = googleLogin;
 
-    async function login() {
+    async function login(e) {
+      if (e) e.preventDefault();
+      
       const emailInput = document.getElementById('email');
       const passwordInput = document.getElementById('password');
       const rememberMe = document.getElementById('rememberMe').checked;
@@ -260,8 +262,11 @@
       
       try {
         // Validate inputs
+        console.log('[Login] Starting login process...');
         const email = ValidationUtils.validateEmail(emailInput.value);
         const password = passwordInput.value;
+        
+        console.log('[Login] Email validated:', email);
         
         if (!password) {
           showFieldError('passwordError', 'Password is required');
@@ -274,11 +279,14 @@
         btnSpinner.style.display = 'inline';
         
         // Set persistence based on remember me
+        console.log('[Login] Setting persistence...');
         await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+        console.log('[Login] Persistence set');
         
         // Use enhanced login function
         console.log('[Login] Submitting credentials for', email);
         console.log('[Login] Allowed accounts before login:', [...ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS]);
+        console.log('[Login] Calling authLogin function...');
         const userRecord = await authLogin(email, password);
         
         console.log('[Login] authLogin returned:', userRecord ? userRecord.email : 'null');
