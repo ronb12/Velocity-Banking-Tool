@@ -1,149 +1,129 @@
 /**
- * Calculate Summary Metrics Utility
- * Calculates summary statistics from financial data
+ * Calculate Summary Metrics from Financial Data
+ * Provides type-safe financial calculations with JSDoc annotations
+ * 
+ * @typedef {Object} Debt
+ * @property {number} balance - Debt balance
+ * @property {number} [interestRate] - Interest rate percentage
+ * @property {number} [creditLimit] - Credit limit (for credit cards)
+ * @property {string} [type] - Debt type (e.g., 'credit_card', 'loan')
+ * 
+ * @typedef {Object} Savings
+ * @property {number} balance - Savings balance
+ * @property {string} [name] - Savings account name
+ * 
+ * @typedef {Object} Asset
+ * @property {number} value - Asset value
+ * @property {string} [name] - Asset name
+ * 
+ * @typedef {Object} Income
+ * @property {number} amount - Income amount
+ * @property {string} [source] - Income source
+ * 
+ * @typedef {Object} FinancialData
+ * @property {Debt[]} debts - Array of debts
+ * @property {Savings[]} savings - Array of savings accounts
+ * @property {Asset[]} [assets] - Array of assets
+ * @property {Income[]} [income] - Array of income sources
+ * 
+ * @typedef {Object} SummaryMetrics
+ * @property {number} totalDebt - Total debt amount
+ * @property {number} totalSavings - Total savings amount
+ * @property {number} totalAssets - Total assets value
+ * @property {number} totalIncome - Total income amount
+ * @property {number} netWorth - Net worth (assets + savings - debts)
+ * @property {number} creditUtilization - Credit utilization percentage
+ * @property {number} debtToIncomeRatio - Debt to income ratio
+ * 
+ * @param {FinancialData} data - Financial data object
+ * @returns {{metrics: SummaryMetrics, recommendations: string[]}} Summary metrics and recommendations
  */
-
-export function calculateSummaryMetrics(financialData) {
-  const metrics = {
-    totalDebt: 0,
-    creditBalance: 0,
-    creditLimit: 0,
-    creditUtilization: null,
-    netWorth: null,
-    netWorthChange: null,
-    netWorthChangePercent: null,
-    incomeTotal: 0,
-    expenseBudgeted: 0,
-    expenseActual: 0,
-    netCashFlow: null,
-    savingsProgress: null,
-    savingsTarget: 0,
-    savingsSaved: 0
-  };
-
-  const datasetCounts = {};
-
-  const debts = Array.isArray(financialData.debts) ? financialData.debts : [];
-  datasetCounts.debts = debts.length;
-  debts.forEach(debt => {
-    const balance = parseFloat(debt.balance) || 0;
-    metrics.totalDebt += balance;
-    if ((debt.type || '').toLowerCase() === 'credit') {
-      metrics.creditBalance += balance;
-      metrics.creditLimit += parseFloat(debt.limit) || 0;
-    }
-  });
-  if (metrics.creditLimit > 0) {
-    metrics.creditUtilization = (metrics.creditBalance / metrics.creditLimit) * 100;
-  } else if (metrics.creditBalance > 0) {
-    metrics.creditUtilization = 100;
-  } else {
-    metrics.creditUtilization = 0;
+export function calculateSummaryMetrics(data) {
+  // Validate input
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid financial data: data must be an object');
   }
 
-  let netWorthHistory = [];
-  const netWorthRaw = financialData.netWorth;
-  if (Array.isArray(netWorthRaw)) {
-    netWorthHistory = netWorthRaw;
-  } else if (netWorthRaw && typeof netWorthRaw === 'object') {
-    if (Array.isArray(netWorthRaw.history)) {
-      netWorthHistory = netWorthRaw.history;
-    }
-  }
-  datasetCounts.netWorthHistory = netWorthHistory.length;
-  if (netWorthHistory.length) {
-    const ordered = netWorthHistory
-      .slice()
-      .sort((a, b) => new Date(a.date || a.timestamp || 0) - new Date(b.date || b.timestamp || 0));
-    const latest = ordered[ordered.length - 1];
-    const previous = ordered[ordered.length - 2];
-    metrics.netWorth = parseFloat(latest?.netWorth) || 0;
-    if (previous) {
-      const prevValue = parseFloat(previous.netWorth) || 0;
-      const delta = metrics.netWorth - prevValue;
-      metrics.netWorthChange = delta;
-      if (prevValue !== 0) {
-        metrics.netWorthChangePercent = (delta / Math.abs(prevValue)) * 100;
-      }
-    }
-  }
+  // Initialize with safe defaults
+  const debts = Array.isArray(data.debts) ? data.debts : [];
+  const savings = Array.isArray(data.savings) ? data.savings : [];
+  const assets = Array.isArray(data.assets) ? data.assets : [];
+  const income = Array.isArray(data.income) ? data.income : [];
 
-  const savingsGoals = Array.isArray(financialData.savingsGoals) ? financialData.savingsGoals : [];
-  datasetCounts.savingsGoals = savingsGoals.length;
-  const totalSaved = savingsGoals.reduce((sum, goal) => sum + (parseFloat(goal.saved ?? goal.current ?? 0) || 0), 0);
-  const totalTarget = savingsGoals.reduce((sum, goal) => sum + (parseFloat(goal.target ?? 0) || 0), 0);
-  metrics.savingsSaved = totalSaved;
-  metrics.savingsTarget = totalTarget;
-  if (totalTarget > 0) {
-    metrics.savingsProgress = (totalSaved / totalTarget) * 100;
-  }
+  // Calculate totals with validation
+  const totalDebt = debts.reduce((sum, debt) => {
+    const balance = typeof debt.balance === 'number' && !isNaN(debt.balance) ? debt.balance : 0;
+    return sum + Math.max(0, balance); // Ensure non-negative
+  }, 0);
 
-  let budgetRecords = [];
-  if (Array.isArray(financialData.budgets)) {
-    budgetRecords = financialData.budgets;
-  } else if (financialData.budgets && typeof financialData.budgets === 'object') {
-    budgetRecords = Object.values(financialData.budgets);
-  } else if (financialData.budget && typeof financialData.budget === 'object') {
-    budgetRecords = [financialData.budget];
-  }
-  datasetCounts.budgets = budgetRecords.length;
+  const totalSavings = savings.reduce((sum, saving) => {
+    const balance = typeof saving.balance === 'number' && !isNaN(saving.balance) ? saving.balance : 0;
+    return sum + Math.max(0, balance);
+  }, 0);
 
-  budgetRecords.forEach(record => {
-    const incomes = Array.isArray(record.incomes) ? record.incomes : (Array.isArray(record.income) ? record.income : []);
-    incomes.forEach(entry => {
-      metrics.incomeTotal += parseFloat(entry.amount) || 0;
-    });
-    const expenses = Array.isArray(record.expenses) ? record.expenses : [];
-    expenses.forEach(exp => {
-      metrics.expenseBudgeted += parseFloat(exp.budgeted ?? exp.amount ?? 0) || 0;
-      metrics.expenseActual += parseFloat(exp.spent ?? exp.amount ?? 0) || 0;
-    });
-  });
-  metrics.netCashFlow = metrics.incomeTotal - metrics.expenseActual;
+  const totalAssets = assets.reduce((sum, asset) => {
+    const value = typeof asset.value === 'number' && !isNaN(asset.value) ? asset.value : 0;
+    return sum + Math.max(0, value);
+  }, 0);
 
-  const velocityCalculations = Array.isArray(financialData.velocityCalculations) ? financialData.velocityCalculations : [];
-  datasetCounts.velocityCalculations = velocityCalculations.length;
+  const totalIncome = income.reduce((sum, inc) => {
+    const amount = typeof inc.amount === 'number' && !isNaN(inc.amount) ? inc.amount : 0;
+    return sum + Math.max(0, amount);
+  }, 0);
 
-  const taxCalculations = Array.isArray(financialData.taxCalculations) ? financialData.taxCalculations : [];
-  datasetCounts.taxCalculations = taxCalculations.length;
+  // Calculate credit utilization
+  const creditCards = debts.filter(d => d.type === 'credit_card' || d.creditLimit);
+  const totalCreditBalance = creditCards.reduce((sum, card) => {
+    const balance = typeof card.balance === 'number' && !isNaN(card.balance) ? card.balance : 0;
+    return sum + Math.max(0, balance);
+  }, 0);
 
-  const activityLogs = Array.isArray(financialData.activityLogs) ? financialData.activityLogs : [];
-  datasetCounts.activityLogs = activityLogs.length;
+  const totalCreditLimit = creditCards.reduce((sum, card) => {
+    const limit = typeof card.creditLimit === 'number' && !isNaN(card.creditLimit) ? card.creditLimit : 0;
+    return sum + Math.max(0, limit);
+  }, 0);
 
-  if (typeof window !== 'undefined') {
-    try {
-      const localStats = typeof window.getLocalTestData === 'function'
-        ? window.getLocalTestData('userStats')
-        : window.LOCAL_TEST_DATA?.userStats;
-      if (localStats) {
-        if ((metrics.netWorth ?? null) === null || metrics.netWorth === 0) {
-          metrics.netWorth = typeof localStats.netWorth === 'number' ? localStats.netWorth : metrics.netWorth;
-        }
-        if ((metrics.totalDebt ?? null) === null || metrics.totalDebt === 0) {
-          metrics.totalDebt = typeof localStats.totalDebt === 'number' ? localStats.totalDebt : metrics.totalDebt;
-        }
-        if (metrics.creditUtilization === null || Number.isNaN(metrics.creditUtilization)) {
-          if (typeof localStats.creditUtilization === 'number') {
-            metrics.creditUtilization = localStats.creditUtilization;
-          }
-        }
-        if (metrics.savingsProgress === null || Number.isNaN(metrics.savingsProgress)) {
-          if (typeof localStats.savingsProgress === 'number') {
-            metrics.savingsProgress = localStats.savingsProgress;
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Unable to merge local summary stats:', error);
-    }
+  const creditUtilization = totalCreditLimit > 0
+    ? (totalCreditBalance / totalCreditLimit) * 100
+    : 0;
+
+  // Calculate net worth
+  const netWorth = totalAssets + totalSavings - totalDebt;
+
+  // Calculate debt to income ratio
+  const debtToIncomeRatio = totalIncome > 0
+    ? (totalDebt / totalIncome) * 100
+    : totalDebt > 0 ? Infinity : 0;
+
+  // Generate recommendations
+  const recommendations = [];
+
+  if (creditUtilization > 30) {
+    recommendations.push('Your credit utilization is above the recommended 30%. Consider paying down credit card balances.');
   }
 
-  datasetCounts.totalDatasets = Object.values(datasetCounts).reduce((sum, value) => sum + (Number(value) || 0), 0);
+  if (debtToIncomeRatio > 36) {
+    recommendations.push('Your debt-to-income ratio is high. Focus on reducing debt or increasing income.');
+  }
+
+  if (netWorth < 0) {
+    recommendations.push('Your net worth is negative. Create a plan to reduce debt and build savings.');
+  }
+
+  if (totalSavings === 0 && totalDebt > 0) {
+    recommendations.push('Consider building an emergency fund while paying down debt.');
+  }
 
   return {
-    generatedAt: new Date().toISOString(),
-    metrics,
-    datasetCounts
+    metrics: {
+      totalDebt: Math.round(totalDebt * 100) / 100, // Round to 2 decimal places
+      totalSavings: Math.round(totalSavings * 100) / 100,
+      totalAssets: Math.round(totalAssets * 100) / 100,
+      totalIncome: Math.round(totalIncome * 100) / 100,
+      netWorth: Math.round(netWorth * 100) / 100,
+      creditUtilization: Math.round(creditUtilization * 100) / 100,
+      debtToIncomeRatio: Math.round(debtToIncomeRatio * 100) / 100
+    },
+    recommendations
   };
 }
-

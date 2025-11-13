@@ -37,6 +37,11 @@
   <script src="utils/analytics.js"></script>
   <script src="utils/financialInsights.js"></script>
   <script src="utils/themeManager.js"></script>
+  <!-- Core Services - Load early for error handling -->
+  <script type="module" src="src/scripts/core/ErrorBoundary.js"></script>
+  <script type="module" src="src/scripts/core/Logger.js"></script>
+  <script type="module" src="src/scripts/core/InputValidator.js"></script>
+  <script type="module" src="src/scripts/core/RateLimiter.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="sync.js"></script>
   <script src="app-updater.js"></script>

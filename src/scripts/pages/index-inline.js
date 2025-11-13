@@ -18,6 +18,12 @@ import { DashboardData } from './dashboard-data.js';
 import { gatherAllFinancialData } from '../utils/gatherFinancialData.js';
 import { calculateSummaryMetrics } from '../utils/calculateSummaryMetrics.js';
 
+// Import core services
+import { errorBoundary } from '../core/ErrorBoundary.js';
+import { logger } from '../core/Logger.js';
+import { inputValidator } from '../core/InputValidator.js';
+import { rateLimiter } from '../core/RateLimiter.js';
+
 // Note: This code assumes global variables from index.html:
 // - window.auth, window.db, window.themeManager
 // - USE_FIRESTORE, ErrorHandler
@@ -28,10 +34,19 @@ let dashboardDataManager = null;
 
 // Enhanced data loading with error handling
 if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
-  dashboardDataManager = new DashboardData(auth, db);
-  dashboardDataManager.loadDashboardData(typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : false);
+  try {
+    dashboardDataManager = new DashboardData(auth, db);
+    const loadData = errorBoundary.wrapAsync(
+      () => dashboardDataManager.loadDashboardData(typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : false),
+      'dashboard_data_load'
+    );
+    await loadData();
+  } catch (error) {
+    logger.error('Failed to initialize dashboard data', { error: error.message });
+    errorBoundary.handleError(error, { context: 'dashboard_initialization' });
+  }
 } else {
-  console.warn('[Dashboard] Auth or DB not available, skipping dashboard data initialization');
+  logger.warn('Auth or DB not available, skipping dashboard data initialization');
 }
 
 // Profile Modal Logic
@@ -39,33 +54,37 @@ const profileButton = document.getElementById('profileButton');
 const profileModal = document.getElementById('profileModal');
 const closeProfileModal = document.getElementById('closeProfileModal');
 
-console.log('Profile button found:', profileButton);
-console.log('Profile modal found:', profileModal);
+logger.debug('Profile button found', { exists: !!profileButton });
+logger.debug('Profile modal found', { exists: !!profileModal });
 
 if (profileButton) {
   profileButton.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Profile button clicked, opening modal');
+    logger.debug('Profile button clicked, opening modal');
     if (profileModal) {
       profileModal.style.display = 'flex';
-      console.log('Modal display set to flex');
+      logger.debug('Modal display set to flex');
       profileStats.updateProfileStats(typeof auth !== 'undefined' ? auth : null);
       initializeThemeSelector();
       
       // Debug: Check if avatar elements exist
       setTimeout(() => {
-        console.log('Avatar container:', document.querySelector('.avatar-container'));
-        console.log('Avatar upload button:', document.querySelector('.avatar-upload-btn'));
-        console.log('Profile modal visible:', profileModal.style.display);
-        console.log('Profile modal computed style:', window.getComputedStyle(profileModal).display);
+        logger.debug('Avatar elements check', {
+          container: !!document.querySelector('.avatar-container'),
+          uploadButton: !!document.querySelector('.avatar-upload-btn'),
+          modalVisible: profileModal.style.display,
+          computedStyle: window.getComputedStyle(profileModal).display
+        });
       }, 100);
     } else {
-      console.error('Profile modal not found!');
+      logger.error('Profile modal not found');
+      errorBoundary.handleError(new Error('Profile modal not found'), { context: 'profile_modal' });
     }
   });
 } else {
-  console.error('Profile button not found!');
+  logger.error('Profile button not found');
+  errorBoundary.handleError(new Error('Profile button not found'), { context: 'profile_button' });
 }
 
 if (closeProfileModal) {
@@ -85,7 +104,7 @@ window.addEventListener('click', (e) => {
 // Theme Selector Initialization
 function initializeThemeSelector() {
   if (typeof window.themeManager === 'undefined') {
-    console.warn('ThemeManager not available');
+    logger.warn('ThemeManager not available');
     return;
   }
   
@@ -93,7 +112,7 @@ function initializeThemeSelector() {
   const menu = document.getElementById('themeDropdownMenu');
   
   if (!button || !menu) {
-    console.warn('Theme selector elements not found');
+    logger.warn('Theme selector elements not found');
     return;
   }
   
@@ -220,7 +239,16 @@ if (typeof financialTips !== 'undefined') {
 // Data Export
 async function handleExport(format) {
   if (typeof dataExport === 'undefined') {
-    console.error('DataExport component not available');
+    logger.error('DataExport component not available');
+    errorBoundary.handleError(new Error('DataExport component not available'), { context: 'data_export' });
+    return;
+  }
+
+  // Validate format input
+  const validFormats = ['json', 'csv', 'pdf'];
+  if (!validFormats.includes(format)) {
+    logger.error('Invalid export format', { format });
+    errorBoundary.handleError(new Error(`Invalid export format: ${format}`), { context: 'data_export' });
     return;
   }
   
@@ -254,11 +282,21 @@ if (exportPDFBtn) {
 // Financial Insights
 async function updateFinancialInsights() {
   if (typeof financialInsights === 'undefined') {
-    console.warn('FinancialInsights component not available');
+    logger.warn('FinancialInsights component not available');
     return;
   }
   
   try {
+    // Rate limit check
+    const rateCheck = rateLimiter.check('financial_insights_update', {
+      window: 60000, // 1 minute
+      max: 10 // Max 10 updates per minute
+    });
+
+    if (!rateCheck.allowed) {
+      logger.warn('Rate limit exceeded for financial insights update');
+      return;
+    }
     const data = await gatherAllFinancialData();
     const summary = calculateSummaryMetrics(data);
     
@@ -314,7 +352,8 @@ async function updateFinancialInsights() {
       financialInsights.renderRecommendations(recommendations, recommendationsContainer);
     }
   } catch (error) {
-    console.error('Error updating financial insights:', error);
+    logger.error('Error updating financial insights', { error: error.message, stack: error.stack });
+    errorBoundary.handleError(error, { context: 'financial_insights_update' });
   }
 }
 
