@@ -2815,184 +2815,85 @@
     
     /* Custom Theme Dropdown */
     /* REMOVED - will be re-added */
-    .custom-theme-dropdown_REMOVED {
-      position: relative;
-      min-width: 180px;
+    /* Theme Selector List Styles */
+    .theme-selector-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
       width: 100%;
-      max-width: 250px;
+      margin-top: 0.5rem;
     }
     
-    .theme-dropdown-button_REMOVED {
-      width: 100%;
-      padding: 0.5rem 1rem;
-      padding-right: 2.5rem;
+    .theme-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
       border: 2px solid var(--border-color);
       border-radius: 0.5rem;
-      background: #ffffff !important;
-      color: #1e293b !important;
-      font-size: 0.95rem;
-      font-weight: 500;
+      background: #ffffff;
       cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      text-align: left;
-      position: relative;
+      transition: all 0.2s ease;
+      user-select: none;
     }
     
-    .theme-dropdown-button:hover {
+    .theme-option:hover {
       border-color: var(--primary-color);
+      background: #f0f4f8;
+      transform: translateX(4px);
+    }
+    
+    .theme-option.active {
+      border-color: var(--primary-color);
+      background: #e0f2fe;
+      font-weight: 600;
       box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
     }
     
-    .theme-dropdown-button:focus {
-      outline: none;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+    .theme-option input[type="radio"] {
+      margin: 0;
+      cursor: pointer;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary-color);
     }
     
-    .dropdown-arrow {
-      position: absolute;
-      right: 0.75rem;
-      font-size: 0.75rem;
-      color: #1e293b;
-      pointer-events: none;
-      transition: transform 0.2s;
-    }
-    
-    .custom-theme-dropdown.open .dropdown-arrow {
-      transform: rotate(180deg);
-    }
-    
-    .theme-dropdown-menu {
-      position: fixed !important;
-      background: #ffffff !important;
-      border: 2px solid var(--border-color) !important;
-      border-radius: 0.5rem !important;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-      z-index: 999999 !important;
-      max-height: 300px;
-      overflow-y: auto !important;
-      overflow-x: visible !important;
-      margin-top: 0;
-      display: none !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      min-height: 50px;
-      flex-direction: column !important;
-      flex-wrap: nowrap !important;
-      pointer-events: auto !important;
-    }
-    
-    .theme-dropdown-menu[style*="block"],
-    .theme-dropdown-menu.show {
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-    }
-    
-    /* Ensure parent container doesn't clip the menu */
-    .custom-theme-dropdown {
-      overflow: visible !important;
-      position: relative !important;
-    }
-    
-    .profile-settings {
-      overflow: visible !important;
-    }
-    
-    .settings-group {
-      overflow: visible !important;
-    }
-    
-    .setting-item {
-      overflow: visible !important;
-      position: relative !important;
-    }
-    
-    /* Ensure menu appears above modal content */
-    .profile-modal-content {
-      overflow-x: visible !important;
-    }
-    
-    .theme-dropdown-item {
-      padding: 0.75rem 1rem !important;
-      cursor: pointer !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      gap: 0.75rem !important;
-      color: #1e293b !important;
-      background: #ffffff !important;
-      transition: background 0.2s;
-      border-bottom: 1px solid #f0f0f0;
-      visibility: visible !important;
-      opacity: 1 !important;
-      position: relative !important;
-      z-index: 10001 !important;
-      min-height: 44px;
-      width: 100% !important;
-      box-sizing: border-box !important;
-      flex-shrink: 0 !important;
-    }
-    
-    .theme-dropdown-item:last-child {
-      border-bottom: none;
-    }
-    
-    .theme-dropdown-item:hover {
-      background: #f0f4f8 !important;
-    }
-    
-    .theme-dropdown-item.active {
-      background: #e0f2fe !important;
-      font-weight: 600;
-    }
-    
-    .theme-dropdown-item .theme-icon {
-      font-size: 1.1rem;
+    .theme-option-icon {
+      font-size: 1.2rem;
       width: 24px;
       text-align: center;
     }
     
-    .theme-dropdown-item .theme-name {
+    .theme-option-name {
       flex: 1;
+      font-size: 0.95rem;
+      color: #1e293b;
     }
     
-    .theme-dropdown-item .check-mark {
+    .theme-option.active .theme-option-name {
       color: var(--primary-color);
-      font-weight: bold;
+      font-weight: 600;
     }
     
-    /* Dark theme dropdown styling */
-    [data-theme="blue-dark"] .theme-dropdown-button {
-      background: #2b2b2b !important;
-      color: #f4f4f9 !important;
+    /* Dark theme styling */
+    [data-theme="blue-dark"] .theme-option {
+      background: #2b2b2b;
       border-color: #404040;
-    }
-    
-    [data-theme="blue-dark"] .theme-dropdown-button .dropdown-arrow {
       color: #f4f4f9;
     }
     
-    [data-theme="blue-dark"] .theme-dropdown-menu {
-      background: #2b2b2b !important;
-      border-color: #404040;
+    [data-theme="blue-dark"] .theme-option:hover {
+      background: #3a3a3a;
+      border-color: var(--primary-color);
     }
     
-    [data-theme="blue-dark"] .theme-dropdown-item {
-      background: #2b2b2b !important;
-      color: #f4f4f9 !important;
-      border-bottom-color: #404040;
+    [data-theme="blue-dark"] .theme-option.active {
+      background: #1e3a5f;
+      border-color: var(--primary-color);
     }
     
-    [data-theme="blue-dark"] .theme-dropdown-item:hover {
-      background: #3a3a3a !important;
-    }
-    
-    [data-theme="blue-dark"] .theme-dropdown-item.active {
-      background: #1e3a5f !important;
+    [data-theme="blue-dark"] .theme-option-name {
+      color: #f4f4f9;
     }
 
     .setting-label {
