@@ -336,15 +336,6 @@
             </label>
           </div>
           
-          <div class="setting-item">
-            <label class="setting-label">
-              <span class="setting-icon">🎨</span>
-              <span class="setting-text">Color Theme</span>
-            </label>
-            <select id="themeSelector" class="theme-select-dropdown">
-              <!-- Theme options will be populated by JavaScript -->
-            </select>
-          </div>
         </div>
       </div>
       
@@ -689,7 +680,6 @@
           profileModal.style.display = 'flex';
           console.log('Modal display set to flex');
           updateProfileStats();
-          // Initialize theme selector when modal opens
           initializeThemeSelector();
           
           
@@ -862,7 +852,6 @@
     
     // Initialize theme selector dropdown in profile modal
     function initializeThemeSelector() {
-      // Wait a bit for DOM to be ready
       setTimeout(() => {
         const themeSelect = document.getElementById('themeSelector');
         if (!themeSelect) {
@@ -872,7 +861,6 @@
         
         if (!window.themeManager) {
           console.warn('Theme manager not available yet');
-          // Try again after a short delay
           setTimeout(initializeThemeSelector, 500);
           return;
         }
@@ -881,9 +869,6 @@
         themeSelect.innerHTML = '';
         const themes = window.themeManager.getAvailableThemes();
         const currentTheme = window.themeManager.getCurrentTheme();
-        
-        console.log('Available themes:', themes);
-        console.log('Current theme:', currentTheme);
         
         themes.forEach(themeId => {
           const themeInfo = window.themeManager.getThemeInfo(themeId);
@@ -896,59 +881,34 @@
           themeSelect.appendChild(option);
         });
         
-        console.log('Theme selector dropdown initialized with', themes.length, 'themes');
+        // Add event listener
+        themeSelect.addEventListener('change', function(e) {
+          const selectedTheme = e.target.value;
+          console.log('Theme changed to:', selectedTheme);
+          if (window.themeManager) {
+            const themeInfo = window.themeManager.getThemeInfo(selectedTheme);
+            window.themeManager.setTheme(selectedTheme);
+            if (typeof showNotification === 'function') {
+              showNotification(`Theme changed to ${themeInfo.name}`, 'success');
+            }
+          }
+        });
         
-        // Attach event listener after initialization
-        attachThemeSelectorListener();
+        console.log('Theme selector dropdown initialized with', themes.length, 'themes');
       }, 100);
     }
     
-    function handleThemeChange(themeId) {
-      console.log('handleThemeChange called with theme:', themeId);
-      if (window.themeManager) {
-        const themeInfo = window.themeManager.getThemeInfo(themeId);
-        window.themeManager.setTheme(themeId);
-        console.log('Theme changed to:', themeInfo.name);
-        if (typeof showNotification === 'function') {
-          showNotification(`Theme changed to ${themeInfo.name}`, 'success');
-        }
-      } else {
-        console.error('Theme manager not available');
-      }
-    }
-    
+    // Update theme selector when theme changes
     function updateThemeSelector() {
       const themeSelect = document.getElementById('themeSelector');
       if (!themeSelect || !window.themeManager) return;
-      
       const currentTheme = window.themeManager.getCurrentTheme();
       themeSelect.value = currentTheme;
     }
     
-    // Listen for theme changes to update selector
+    // Listen for theme changes
     window.addEventListener('themechange', updateThemeSelector);
     
-    // Make function globally available
-    window.handleThemeChange = handleThemeChange;
-    
-    // Add event listener to dropdown after initialization
-    function attachThemeSelectorListener() {
-      const themeSelect = document.getElementById('themeSelector');
-      if (themeSelect) {
-        // Remove existing listener if any
-        const newSelect = themeSelect.cloneNode(true);
-        themeSelect.parentNode.replaceChild(newSelect, themeSelect);
-        
-        // Add event listener
-        newSelect.addEventListener('change', function(e) {
-          const selectedTheme = e.target.value;
-          console.log('Dropdown changed to:', selectedTheme);
-          handleThemeChange(selectedTheme);
-        });
-        
-        console.log('Theme selector event listener attached');
-      }
-    }
 
     function openAdvancedSettings() {
       console.log('Opening Advanced Settings...');
@@ -2877,6 +2837,57 @@
     }
     
     /* Dark theme specific styling */
+    [data-theme="blue-dark"] .theme-select-dropdown option {
+      background: #2b2b2b !important;
+      color: #f4f4f9 !important;
+    }
+
+    .theme-select-dropdown {
+      padding: 0.5rem 1rem;
+      border: 2px solid var(--border-color);
+      border-radius: 0.5rem;
+      background: #ffffff !important;
+      color: #1e293b !important;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      min-width: 180px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2.5rem;
+      z-index: 10;
+    }
+    
+    .theme-select-dropdown:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+    }
+    
+    .theme-select-dropdown:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+    }
+    
+    .theme-select-dropdown option {
+      background: #ffffff !important;
+      color: #1e293b !important;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    
+    /* Dark theme dropdown styling */
+    [data-theme="blue-dark"] .theme-select-dropdown {
+      background: #2b2b2b !important;
+      color: #f4f4f9 !important;
+    }
+    
     [data-theme="blue-dark"] .theme-select-dropdown option {
       background: #2b2b2b !important;
       color: #f4f4f9 !important;
