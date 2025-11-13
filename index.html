@@ -932,10 +932,20 @@
       if (profileModal) {
         profileModal.style.display = 'flex';
         updateProfileStats();
-        // Initialize theme selector with a small delay to ensure DOM is ready
-        setTimeout(() => {
-          initializeThemeSelector();
-        }, 100);
+        // Initialize theme selector with retry logic to ensure themeManager is loaded
+        let retries = 0;
+        const maxRetries = 20; // 2 seconds total
+        const tryInit = () => {
+          if (window.themeManager && document.getElementById('themeSelectorList')) {
+            initializeThemeSelector();
+          } else if (retries < maxRetries) {
+            retries++;
+            setTimeout(tryInit, 100);
+          } else {
+            console.error('[Theme Selector] Failed to initialize after', maxRetries, 'retries');
+          }
+        };
+        tryInit();
       }
     };
     
