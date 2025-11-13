@@ -860,7 +860,7 @@
       showNotification(`Tips ${enabled ? 'enabled' : 'disabled'}`, 'success');
     }
     
-    // Initialize theme selector as a list of radio buttons
+    // Initialize theme selector with color swatches (industry standard approach)
     function initializeThemeSelector() {
       if (!window.themeManager) {
         setTimeout(initializeThemeSelector, 100);
@@ -884,14 +884,17 @@
         if (!info) return;
         
         const isChecked = themeId === currentTheme;
+        const color = window.themeManager.getThemeColor(themeId);
         
         const item = document.createElement('label');
         item.className = `theme-option ${isChecked ? 'active' : ''}`;
         item.setAttribute('data-theme', themeId);
         item.innerHTML = `
           <input type="radio" name="theme" value="${themeId}" ${isChecked ? 'checked' : ''}>
+          <span class="theme-swatch" style="background: ${color};"></span>
           <span class="theme-option-icon">${info.icon}</span>
           <span class="theme-option-name">${info.name}</span>
+          ${isChecked ? '<span class="check-mark">✓</span>' : ''}
         `;
         item.onclick = (e) => {
           e.stopPropagation();
@@ -2835,24 +2838,26 @@
       gap: 0.75rem;
       padding: 0.75rem 1rem;
       border: 2px solid var(--border-color);
-      border-radius: 0.5rem;
+      border-radius: 0.75rem;
       background: #ffffff;
       cursor: pointer;
       transition: all 0.2s ease;
       user-select: none;
+      position: relative;
     }
     
     .theme-option:hover {
       border-color: var(--primary-color);
       background: #f0f4f8;
       transform: translateX(4px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     
     .theme-option.active {
       border-color: var(--primary-color);
       background: #e0f2fe;
       font-weight: 600;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.1), 0 4px 12px rgba(0,123,255,0.15);
     }
     
     .theme-option input[type="radio"] {
@@ -2861,23 +2866,48 @@
       width: 18px;
       height: 18px;
       accent-color: var(--primary-color);
+      flex-shrink: 0;
+    }
+    
+    .theme-swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 2px solid rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+      display: inline-block;
+    }
+    
+    .theme-option.active .theme-swatch {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.2), 0 2px 8px rgba(0,0,0,0.15);
     }
     
     .theme-option-icon {
       font-size: 1.2rem;
       width: 24px;
       text-align: center;
+      flex-shrink: 0;
     }
     
     .theme-option-name {
       flex: 1;
       font-size: 0.95rem;
       color: #1e293b;
+      font-weight: 500;
     }
     
     .theme-option.active .theme-option-name {
       color: var(--primary-color);
       font-weight: 600;
+    }
+    
+    .theme-option .check-mark {
+      color: var(--primary-color);
+      font-weight: bold;
+      font-size: 1.1rem;
+      flex-shrink: 0;
     }
     
     /* Dark theme styling */
