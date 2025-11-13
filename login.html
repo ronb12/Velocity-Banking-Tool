@@ -277,12 +277,19 @@
         await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
         
         // Use enhanced login function
-        console.log('Submitting credentials for', email);
+        console.log('[Login] Submitting credentials for', email);
+        console.log('[Login] Allowed accounts before login:', [...ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS]);
         const userRecord = await authLogin(email, password);
         
+        console.log('[Login] authLogin returned:', userRecord ? userRecord.email : 'null');
+        console.log('[Login] Current auth user after login:', auth.currentUser?.email || 'null');
+        
         if (!userRecord) {
-          console.warn('Login attempt returned null userRecord; aborting redirect.');
+          console.warn('[Login] Login attempt returned null userRecord; aborting redirect.');
           ErrorHandler.showError('Login failed. Please check your credentials and try again.');
+          loginBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnSpinner.style.display = 'none';
           return;
         }
         
@@ -290,8 +297,14 @@
         const emailLower = (userRecord.email || '').toLowerCase();
         const isUnverifiedAllowed = ALLOW_UNVERIFIED_LOCAL_LOGIN || ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower);
         
+        console.log('[Login] Email check - emailLower:', emailLower, 'isUnverifiedAllowed:', isUnverifiedAllowed, 'emailVerified:', userRecord.emailVerified);
+        
         if (!userRecord.emailVerified && !isUnverifiedAllowed) {
+          console.warn('[Login] Email not verified and not in allowed list');
           ErrorHandler.showWarning('Please verify your email before signing in.');
+          loginBtn.disabled = false;
+          btnText.style.display = 'inline';
+          btnSpinner.style.display = 'none';
           return;
         }
         
@@ -301,11 +314,14 @@
           localStorage.removeItem('loginAttempts');
           document.getElementById('loginAttempts').textContent = '';
           
-          console.log('Login successful for', email);
+          console.log('[Login] Login successful for', email, 'waiting for auth state change...');
           ErrorHandler.showSuccess('Login successful! Redirecting...');
+          
+          // Wait a bit for auth state to update, then redirect
           setTimeout(() => {
+            console.log('[Login] Redirecting to index.html, current auth user:', auth.currentUser?.email || 'null');
             window.location.replace('index.html');
-          }, 500);
+          }, 1000);
         }
         
       } catch (error) {

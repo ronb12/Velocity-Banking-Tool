@@ -111,11 +111,13 @@ async function login(email, password) {
   
   try {
     console.log('[Auth login] Attempting sign-in for', email);
+    console.log('[Auth login] Current auth state before login:', auth.currentUser?.email || 'no user');
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    console.log('[Auth login] Sign-in successful, user:', userCredential.user.email, 'verified:', userCredential.user.emailVerified);
     resetLoginAttempts();
     authPromiseResolvers.forEach(resolve => resolve(userCredential.user));
     authPromiseResolvers.length = 0;
-    console.log('[Auth login] Sign-in successful for', email);
+    console.log('[Auth login] Returning user object');
     return userCredential.user;
   } catch (error) {
     if (error.code === 'auth/user-not-found' || 
@@ -158,6 +160,7 @@ function updateUIForLoggedInUser(user) {
 
 // Authentication state observer
 auth.onAuthStateChanged(async user => {
+  console.log('[Auth] onAuthStateChanged fired, user:', user?.email || 'null', 'authStateResolved:', authStateResolved);
   currentUser = user;
   
   if (user) {
@@ -169,6 +172,7 @@ auth.onAuthStateChanged(async user => {
     
     console.log('[Auth] Email check - emailLower:', emailLower, 'isUnverifiedAllowed:', isUnverifiedAllowed, 'emailVerified:', user.emailVerified);
     console.log('[Auth] Allowed accounts:', [...ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS]);
+    console.log('[Auth] Email in allowed set?', ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower));
 
     if (!user.emailVerified && !isUnverifiedAllowed) {
       console.log('[Auth] Email not verified and not in allowed list, signing out');
@@ -217,10 +221,10 @@ auth.onAuthStateChanged(async user => {
   } else {
     if (!authStateResolved) {
       authStateResolved = true;
-      console.log('[Auth] Awaiting persistence restoration...');
+      console.log('[Auth] Awaiting persistence restoration... (initial page load, no user yet)');
       return;
     }
-    console.log('[Auth] User signed out');
+    console.log('[Auth] User signed out or no user present');
     // Update UI for logged out user
     document.querySelectorAll('.auth-required').forEach(element => {
       element.style.display = 'none';
