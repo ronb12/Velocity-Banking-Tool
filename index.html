@@ -349,30 +349,50 @@
           <script>
             // Auto-initialize theme selector when settings section becomes visible
             (function() {
+              let initAttempts = 0;
+              const maxAttempts = 50; // 5 seconds total
+              
               function tryInit() {
+                initAttempts++;
                 const list = document.getElementById('themeSelectorList');
                 const modal = document.getElementById('profileModal');
-                if (list && modal && window.getComputedStyle(modal).display !== 'none') {
-                  if (list.children.length === 0 && window.themeManager) {
-                    console.log('[Theme Selector] Auto-initializing from inline script');
-                    if (typeof initializeThemeSelector === 'function') {
-                      initializeThemeSelector();
-                    }
+                
+                if (!list) {
+                  if (initAttempts < maxAttempts) {
+                    setTimeout(tryInit, 100);
                   }
+                  return;
+                }
+                
+                const isModalVisible = modal && window.getComputedStyle(modal).display !== 'none';
+                const hasNoThemes = list.children.length === 0;
+                const hasThemeManager = !!window.themeManager;
+                
+                if (hasNoThemes && hasThemeManager) {
+                  console.log('[Theme Selector] Auto-initializing from inline script, attempt', initAttempts);
+                  if (typeof window.initializeThemeSelector === 'function') {
+                    window.initializeThemeSelector();
+                  } else if (typeof initializeThemeSelector === 'function') {
+                    initializeThemeSelector();
+                  } else {
+                    console.warn('[Theme Selector] initializeThemeSelector function not found');
+                  }
+                } else if (hasNoThemes && initAttempts < maxAttempts) {
+                  setTimeout(tryInit, 100);
                 }
               }
               
-              // Try immediately
-              if (document.readyState === 'complete') {
-                tryInit();
-              } else {
-                window.addEventListener('load', tryInit);
-              }
+              // Start trying immediately
+              tryInit();
               
-              // Also observe modal visibility
+              // Also observe modal visibility changes
               const modal = document.getElementById('profileModal');
               if (modal) {
-                const observer = new MutationObserver(tryInit);
+                const observer = new MutationObserver(() => {
+                  if (window.getComputedStyle(modal).display !== 'none') {
+                    setTimeout(tryInit, 200);
+                  }
+                });
                 observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
               }
             })();
@@ -896,67 +916,109 @@
     function initializeThemeSelector() {
       console.log('[Theme Selector] Initializing...', {
         hasThemeManager: !!window.themeManager,
-        themeManager: window.themeManager
+        themeManager: window.themeManager,
+        listExists: !!document.getElementById('themeSelectorList')
       });
       
+      // Wait for themeManager with retry
       if (!window.themeManager) {
-        console.log('[Theme Selector] ThemeManager not available, retrying...');
+        console.log('[Theme Selector] ThemeManager not available, retrying in 100ms...');
         setTimeout(initializeThemeSelector, 100);
         return;
       }
       
       const list = document.getElementById('themeSelectorList');
       if (!list) {
-        console.log('[Theme Selector] List element not found, retrying...');
+        console.log('[Theme Selector] List element not found, retrying in 100ms...');
         setTimeout(initializeThemeSelector, 100);
         return;
       }
       
+      // Check if already initialized
+      if (list.children.length > 0) {
+        console.log('[Theme Selector] Already initialized with', list.children.length, 'themes');
+        return;
+      }
+      
+      // Verify themeManager methods exist
+      if (typeof window.themeManager.getAvailableThemes !== 'function') {
+        console.error('[Theme Selector] getAvailableThemes method not found');
+        return;
+      }
+      if (typeof window.themeManager.getThemeInfo !== 'function') {
+        console.error('[Theme Selector] getThemeInfo method not found');
+        return;
+      }
+      if (typeof window.themeManager.getThemeColor !== 'function') {
+        console.error('[Theme Selector] getThemeColor method not found');
+        return;
+      }
+      
       // Get themes and current theme
-      const themes = window.themeManager.getAvailableThemes();
-      const currentTheme = window.themeManager.getCurrentTheme();
+      let themes, currentTheme;
+      try {
+        themes = window.themeManager.getAvailableThemes();
+        currentTheme = window.themeManager.getCurrentTheme();
+      } catch (error) {
+        console.error('[Theme Selector] Error getting themes:', error);
+        return;
+      }
       
       console.log('[Theme Selector] Populating themes:', {
         themes: themes,
         currentTheme: currentTheme,
-        themesCount: themes.length
+        themesCount: themes ? themes.length : 0
       });
+      
+      if (!themes || themes.length === 0) {
+        console.error('[Theme Selector] No themes available');
+        return;
+      }
       
       // Clear and populate list
       list.innerHTML = '';
+      let addedCount = 0;
       themes.forEach(themeId => {
-        const info = window.themeManager.getThemeInfo(themeId);
-        if (!info) {
-          console.warn('[Theme Selector] No info for theme:', themeId);
-          return;
-        }
-        
-        const isChecked = themeId === currentTheme;
-        const color = window.themeManager.getThemeColor(themeId);
-        
-        const item = document.createElement('label');
-        item.className = `theme-option ${isChecked ? 'active' : ''}`;
-        item.setAttribute('data-theme', themeId);
-        item.innerHTML = `
-          <input type="radio" name="theme" value="${themeId}" ${isChecked ? 'checked' : ''}>
-          <span class="theme-swatch" style="background: ${color};"></span>
-          <span class="theme-option-icon">${info.icon}</span>
-          <span class="theme-option-name">${info.name}</span>
-          ${isChecked ? '<span class="check-mark">✓</span>' : ''}
-        `;
-        item.onclick = (e) => {
-          e.stopPropagation();
-          window.themeManager.setTheme(themeId);
-          updateThemeSelector();
-          if (typeof showNotification === 'function') {
-            showNotification(`Theme changed to ${info.name}`, 'success');
+        try {
+          const info = window.themeManager.getThemeInfo(themeId);
+          if (!info) {
+            console.warn('[Theme Selector] No info for theme:', themeId);
+            return;
           }
-        };
-        list.appendChild(item);
+          
+          const isChecked = themeId === currentTheme;
+          const color = window.themeManager.getThemeColor(themeId);
+          
+          const item = document.createElement('label');
+          item.className = `theme-option ${isChecked ? 'active' : ''}`;
+          item.setAttribute('data-theme', themeId);
+          item.innerHTML = `
+            <input type="radio" name="theme" value="${themeId}" ${isChecked ? 'checked' : ''}>
+            <span class="theme-swatch" style="background: ${color};"></span>
+            <span class="theme-option-icon">${info.icon}</span>
+            <span class="theme-option-name">${info.name}</span>
+            ${isChecked ? '<span class="check-mark">✓</span>' : ''}
+          `;
+          item.onclick = (e) => {
+            e.stopPropagation();
+            window.themeManager.setTheme(themeId);
+            updateThemeSelector();
+            if (typeof showNotification === 'function') {
+              showNotification(`Theme changed to ${info.name}`, 'success');
+            }
+          };
+          list.appendChild(item);
+          addedCount++;
+        } catch (error) {
+          console.error('[Theme Selector] Error creating theme option for', themeId, ':', error);
+        }
       });
       
-      console.log('[Theme Selector] Initialized successfully, added', list.children.length, 'themes');
+      console.log('[Theme Selector] Initialized successfully, added', addedCount, 'themes out of', themes.length);
     }
+    
+    // Make function globally available
+    window.initializeThemeSelector = initializeThemeSelector;
     
     // Make openProfileModal globally available
     window.openProfileModal = function() {
