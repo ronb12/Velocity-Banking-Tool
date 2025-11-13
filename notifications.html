@@ -144,17 +144,23 @@
       padding: 20px;
       margin: 30px 0;
       min-height: 400px;
-      overflow: hidden;
+      overflow: visible;
       width: 100%;
       box-sizing: border-box;
+      display: block;
+      position: relative;
     }
     
     #notifications {
       width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
-      display: block;
+      overflow-y: visible;
+      display: block !important;
       min-height: 50px;
+      visibility: visible !important;
+      opacity: 1 !important;
+      position: relative;
     }
     
     .notification {
@@ -171,6 +177,11 @@
       max-width: 100%;
       overflow-wrap: break-word;
       word-wrap: break-word;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      height: auto !important;
+      min-height: 50px;
     }
     
     .notification:hover {
@@ -611,6 +622,19 @@
       
       console.log('[Notifications] Container children count:', container.children.length);
       console.log('[Notifications] Container innerHTML length:', container.innerHTML.length);
+      console.log('[Notifications] Container computed style:', window.getComputedStyle(container));
+      console.log('[Notifications] Container display:', window.getComputedStyle(container).display);
+      console.log('[Notifications] Container visibility:', window.getComputedStyle(container).visibility);
+      console.log('[Notifications] Container opacity:', window.getComputedStyle(container).opacity);
+      console.log('[Notifications] Container height:', window.getComputedStyle(container).height);
+      
+      if (container.children.length > 0) {
+        const firstChild = container.children[0];
+        console.log('[Notifications] First child computed style:', window.getComputedStyle(firstChild));
+        console.log('[Notifications] First child display:', window.getComputedStyle(firstChild).display);
+        console.log('[Notifications] First child visibility:', window.getComputedStyle(firstChild).visibility);
+        console.log('[Notifications] First child height:', window.getComputedStyle(firstChild).height);
+      }
     }
 
     function showToast(msg, type = 'success') {
