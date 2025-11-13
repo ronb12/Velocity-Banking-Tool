@@ -965,16 +965,18 @@
               document.body.appendChild(dropdownMenu);
             }
             
-            // Position menu below button using fixed positioning
+            // Position menu below button using fixed positioning (no scroll offset needed for fixed)
             dropdownMenu.style.position = 'fixed';
-            dropdownMenu.style.top = `${buttonRect.bottom + window.scrollY + 8}px`;
-            dropdownMenu.style.left = `${buttonRect.left + window.scrollX}px`;
+            dropdownMenu.style.top = `${buttonRect.bottom + 8}px`;
+            dropdownMenu.style.left = `${buttonRect.left}px`;
             dropdownMenu.style.width = `${buttonRect.width}px`;
             dropdownMenu.style.display = 'block';
             dropdownMenu.style.visibility = 'visible';
             dropdownMenu.style.opacity = '1';
             dropdownMenu.style.zIndex = '999999';
             dropdownMenu.style.pointerEvents = 'auto';
+            dropdownMenu.style.transform = 'none';
+            dropdownMenu.style.clip = 'auto';
             dropdownBtn.parentElement.classList.add('open');
             
             console.log('Menu opened, items:', dropdownMenu.children.length);
