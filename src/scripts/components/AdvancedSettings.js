@@ -262,7 +262,9 @@ export class AdvancedSettings {
    * Load advanced settings from localStorage
    */
   loadAdvancedSettings() {
-    if (!this.modal) return;
+    if (!this.modal) {
+      return;
+    }
     
     const settings = {
       enableAutoBackup: localStorage.getItem('advanced_autoBackup') !== 'false',
@@ -287,7 +289,9 @@ export class AdvancedSettings {
    * Save advanced settings to localStorage
    */
   saveAdvancedSettings() {
-    if (!this.modal) return;
+    if (!this.modal) {
+      return;
+    }
     
     const settings = {
       autoBackup: this.modal.querySelector('#enableAutoBackup').checked,
@@ -305,20 +309,22 @@ export class AdvancedSettings {
     });
     
     // Show notification
-    if (typeof window.showNotification === 'function') {
-      window.showNotification('Advanced settings saved successfully!', 'success');
+      if (typeof window.showNotification === 'function') {
+        window.showNotification('Advanced settings saved successfully!', 'success');
+      }
+      
+      this.closeAdvancedSettings();
     }
-    
-    this.closeAdvancedSettings();
-  }
 
-  /**
-   * Reset advanced settings to defaults
-   */
-  resetAdvancedSettings() {
-    if (!this.modal) return;
-    
-    if (confirm('Are you sure you want to reset all advanced settings to defaults?')) {
+    /**
+     * Reset advanced settings to defaults
+     */
+    resetAdvancedSettings() {
+      if (!this.modal) {
+        return;
+      }
+      
+      if (confirm('Are you sure you want to reset all advanced settings to defaults?')) {
       // Clear advanced settings from localStorage
       const keys = ['autoBackup', 'dataSync', 'caching', 'lazyLoading', 'analytics', 'errorReporting', 'betaFeatures'];
       keys.forEach(key => {
