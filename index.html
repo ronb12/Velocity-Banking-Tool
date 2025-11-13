@@ -889,12 +889,23 @@
         const currentTheme = window.themeManager.getCurrentTheme();
         const currentThemeInfo = window.themeManager.getThemeInfo(currentTheme);
         
+        console.log('Available themes:', themes);
+        console.log('Current theme:', currentTheme);
+        console.log('Current theme info:', currentThemeInfo);
+        
         // Update button text
-        dropdownText.textContent = `${currentThemeInfo.icon} ${currentThemeInfo.name}`;
+        if (currentThemeInfo) {
+          dropdownText.textContent = `${currentThemeInfo.icon} ${currentThemeInfo.name}`;
+        }
         
         // Create menu items
         themes.forEach(themeId => {
           const themeInfo = window.themeManager.getThemeInfo(themeId);
+          if (!themeInfo) {
+            console.warn('Theme info not found for:', themeId);
+            return;
+          }
+          
           const menuItem = document.createElement('div');
           menuItem.className = `theme-dropdown-item ${themeId === currentTheme ? 'active' : ''}`;
           menuItem.setAttribute('data-theme', themeId);
@@ -903,11 +914,17 @@
             <span class="theme-name">${themeInfo.name}</span>
             ${themeId === currentTheme ? '<span class="check-mark">✓</span>' : ''}
           `;
-          menuItem.onclick = () => {
+          menuItem.style.display = 'block';
+          menuItem.style.visibility = 'visible';
+          menuItem.style.opacity = '1';
+          menuItem.onclick = (e) => {
+            e.stopPropagation();
+            console.log('Theme selected:', themeId);
             window.themeManager.setTheme(themeId);
             const newThemeInfo = window.themeManager.getThemeInfo(themeId);
             dropdownText.textContent = `${newThemeInfo.icon} ${newThemeInfo.name}`;
             dropdownMenu.style.display = 'none';
+            dropdownBtn.parentElement.classList.remove('open');
             updateThemeSelector();
             if (typeof showNotification === 'function') {
               showNotification(`Theme changed to ${newThemeInfo.name}`, 'success');
@@ -916,19 +933,28 @@
           dropdownMenu.appendChild(menuItem);
         });
         
+        console.log('Menu items created:', dropdownMenu.children.length);
+        
         // Toggle dropdown on button click
         dropdownBtn.onclick = (e) => {
           e.stopPropagation();
-          const isOpen = dropdownMenu.style.display !== 'none';
+          const isOpen = dropdownMenu.style.display === 'block';
           dropdownMenu.style.display = isOpen ? 'none' : 'block';
+          if (!isOpen) {
+            dropdownBtn.parentElement.classList.add('open');
+          } else {
+            dropdownBtn.parentElement.classList.remove('open');
+          }
         };
         
         // Close dropdown when clicking outside
-        document.addEventListener('click', function closeDropdown(e) {
+        let closeDropdownHandler = function(e) {
           if (!dropdownMenu.contains(e.target) && !dropdownBtn.contains(e.target)) {
             dropdownMenu.style.display = 'none';
+            dropdownBtn.parentElement.classList.remove('open');
           }
-        });
+        };
+        document.addEventListener('click', closeDropdownHandler);
         
         console.log('Custom theme selector dropdown initialized with', themes.length, 'themes');
       }, 100);
