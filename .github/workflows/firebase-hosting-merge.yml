@@ -27,9 +27,24 @@ jobs:
           NODE_ENV: production
           DISABLE_PWA: 'true'
       
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed: dist directory not found"
+            exit 1
+          fi
+          echo "✅ Build successful"
+          echo "Dist contents:"
+          ls -la dist/ | head -10
+          echo ""
+          echo "Total files:"
+          find dist -type f | wc -l
+      
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_MOBILE_DEBT_TRACKER }}
           channelId: live
           projectId: mobile-debt-tracker
+        continue-on-error: false
