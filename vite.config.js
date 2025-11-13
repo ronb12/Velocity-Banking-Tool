@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import legacy from '@vitejs/plugin-legacy';
+import { resolve } from 'path';
 
 export default defineConfig({
   root: '.',
@@ -18,23 +19,61 @@ export default defineConfig({
     },
     rollupOptions: {
       input: {
-        main: './index.html',
-        login: './login.html',
-        register: './register.html',
-        // Add other entry points as needed
+        main: resolve(__dirname, 'index.html'),
+        login: resolve(__dirname, 'src/pages/auth/login.html'),
+        register: resolve(__dirname, 'src/pages/auth/register.html'),
+        reset: resolve(__dirname, 'src/pages/auth/reset.html'),
+        // Debt pages
+        debtTracker: resolve(__dirname, 'src/pages/debt/Debt_Tracker.html'),
+        debtCrusher: resolve(__dirname, 'src/pages/debt/debt-crusher.html'),
+        // Savings pages
+        savingsTracker: resolve(__dirname, 'src/pages/savings/savings_goal_tracker.html'),
+        challengeLibrary: resolve(__dirname, 'src/pages/savings/challenge_library.html'),
+        // Calculator pages
+        velocityCalculator: resolve(__dirname, 'src/pages/calculators/Velocity_Calculator.html'),
+        calculator1099: resolve(__dirname, 'src/pages/calculators/1099_calculator.html'),
+        creditScore: resolve(__dirname, 'src/pages/calculators/Credit_Score_Estimator.html'),
+        // Other pages
+        budget: resolve(__dirname, 'src/pages/other/budget.html'),
+        income: resolve(__dirname, 'src/pages/other/income.html'),
+        calendar: resolve(__dirname, 'src/pages/other/calendar.html'),
+        netWorth: resolve(__dirname, 'src/pages/other/net_worth_tracker.html'),
+        activityFeed: resolve(__dirname, 'src/pages/other/activity_feed.html'),
+        notifications: resolve(__dirname, 'src/pages/other/notifications.html'),
+        mobileTracker: resolve(__dirname, 'src/pages/other/Mobile_Tracker.html'),
       },
       output: {
         manualChunks: {
-          'vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          'utils': [
+          'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+          'vendor-utils': [
             './utils/themeManager.js',
             './utils/errorHandler.js',
             './utils/analytics.js',
           ],
+          'components': [
+            './src/scripts/components/ProfileModal.js',
+            './src/scripts/components/ThemeSelector.js',
+          ],
+          'core': [
+            './src/scripts/core/StateManager.js',
+            './src/scripts/core/config.js',
+          ],
         },
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
     chunkSizeWarningLimit: 1000,
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@utils': resolve(__dirname, 'utils'),
+      '@styles': resolve(__dirname, 'src/styles'),
+      '@components': resolve(__dirname, 'src/scripts/components'),
+      '@core': resolve(__dirname, 'src/scripts/core'),
+    },
   },
   plugins: [
     legacy({
@@ -85,9 +124,11 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    fs: {
+      allow: ['..'],
+    },
   },
   optimizeDeps: {
     include: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
   },
 });
-
