@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Savings Challenge Library</title>
+  <script src="utils/analytics.js"></script>
   <style>
     :root {
       --bg: #f4f6f8;
@@ -225,7 +226,16 @@
     function toggleTheme() {
       const body = document.body;
       const current = body.getAttribute('data-theme');
-      body.setAttribute('data-theme', current === 'light' ? 'dark' : current === 'dark' ? 'fun' : 'light');
+      const next = current === 'light' ? 'dark' : current === 'dark' ? 'fun' : 'light';
+      body.setAttribute('data-theme', next);
+      
+      // Track theme change
+      if (window.analytics) {
+        window.analytics.trackEvent('challenge_theme_changed', {
+          previousTheme: current,
+          newTheme: next
+        });
+      }
     }
 
     function renderChallenges() {
@@ -246,7 +256,7 @@
         card.className = 'card';
         card.innerHTML = `<h3>${challenge.title}</h3>
           <p>${completed} of ${challenge.items.length} saved</p>
-          <button onclick="toggleDetails('${challenge.id}')">${completed > 0 ? 'Continue' : 'Start'} ✅</button>
+          <button onclick="toggleDetails('${challenge.id}'); if (window.analytics && ${completed === 0}) { window.analytics.trackEvent('challenge_started', { challengeId: '${challenge.id}', challengeTitle: '${challenge.title}' }); }">${completed > 0 ? 'Continue' : 'Start'} ✅</button>
           <div class="details-box" id="details-${challenge.id}" style="display:none"></div>
         `;
         grid.appendChild(card);
@@ -323,6 +333,36 @@
       checkbox.onchange = () => {
         savedData[i] = checkbox.checked;
         localStorage.setItem(id, JSON.stringify(savedData));
+        
+        // Track challenge item completion
+        if (window.analytics) {
+          const completed = savedData.filter(Boolean).length;
+          const total = challenge.items.length;
+          const isCompleted = completed === total;
+          
+          window.analytics.trackEvent('challenge_item_completed', {
+            challengeId: id,
+            challengeTitle: challenge.title,
+            itemIndex: i,
+            itemLabel: item.label,
+            itemAmount: item.amount,
+            completed: savedData[i],
+            totalCompleted: completed,
+            totalItems: total,
+            isChallengeComplete: isCompleted
+          });
+          
+          // Track challenge completion milestone
+          if (isCompleted) {
+            window.analytics.trackEvent('challenge_completed', {
+              challengeId: id,
+              challengeTitle: challenge.title,
+              totalItems: total,
+              totalAmount: sum
+            });
+          }
+        }
+        
         renderChallenges();
         toggleDetails(id); // rerender list
       };
@@ -352,6 +392,17 @@
       a.href = URL.createObjectURL(blob);
       a.download = `${id}.csv`;
       a.click();
+      
+      // Track CSV export
+      if (window.analytics) {
+        const completed = savedData.filter(Boolean).length;
+        window.analytics.trackEvent('challenge_csv_exported', {
+          challengeId: id,
+          challengeTitle: challenge.title,
+          totalItems: challenge.items.length,
+          completedItems: completed
+        });
+      }
     };
 
     const pdfBtn = document.createElement('a');
@@ -359,6 +410,16 @@
     pdfBtn.target = '_blank';
     pdfBtn.textContent = '🖨️ PDF';
     pdfBtn.className = 'pdf-btn';
+    pdfBtn.onclick = () => {
+      // Track PDF view
+      if (window.analytics) {
+        window.analytics.trackEvent('challenge_pdf_viewed', {
+          challengeId: id,
+          challengeTitle: challenge.title,
+          pdfPath: challenge.pdf
+        });
+      }
+    };
 
     box.appendChild(summary);
     box.appendChild(list);
@@ -379,6 +440,14 @@
     window.onload = () => {
       renderChallenges();
       pickWeeklyChallenge();
+      
+      // Track page view
+      if (window.analytics) {
+        window.analytics.trackEvent('challenge_library_viewed', {
+          totalChallenges: challenges.length,
+          challengeIds: challenges.map(c => c.id)
+        });
+      }
     };
   </script>
 </body>
