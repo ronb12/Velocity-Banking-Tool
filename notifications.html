@@ -251,7 +251,7 @@
       padding: 60px 20px;
       color: #6c757d;
       font-size: 18px;
-      display: block;
+      display: none !important;
     }
     
     .loading::after {
@@ -627,6 +627,26 @@
       console.log('[Notifications] Container visibility:', window.getComputedStyle(container).visibility);
       console.log('[Notifications] Container opacity:', window.getComputedStyle(container).opacity);
       console.log('[Notifications] Container height:', window.getComputedStyle(container).height);
+      console.log('[Notifications] Container background-color:', window.getComputedStyle(container).backgroundColor);
+      console.log('[Notifications] Container z-index:', window.getComputedStyle(container).zIndex);
+      
+      // Check if loading element is still visible
+      const loading = document.getElementById("loading");
+      if (loading) {
+        console.log('[Notifications] Loading element display:', window.getComputedStyle(loading).display);
+        console.log('[Notifications] Loading element visibility:', window.getComputedStyle(loading).visibility);
+        console.log('[Notifications] Loading element position:', window.getComputedStyle(loading).position);
+        console.log('[Notifications] Loading element z-index:', window.getComputedStyle(loading).zIndex);
+      }
+      
+      // Check notifications-container
+      const notificationsContainer = document.querySelector('.notifications-container');
+      if (notificationsContainer) {
+        console.log('[Notifications] Notifications-container display:', window.getComputedStyle(notificationsContainer).display);
+        console.log('[Notifications] Notifications-container visibility:', window.getComputedStyle(notificationsContainer).visibility);
+        console.log('[Notifications] Notifications-container height:', window.getComputedStyle(notificationsContainer).height);
+        console.log('[Notifications] Notifications-container overflow:', window.getComputedStyle(notificationsContainer).overflow);
+      }
       
       if (container.children.length > 0) {
         const firstChild = container.children[0];
@@ -634,6 +654,10 @@
         console.log('[Notifications] First child display:', window.getComputedStyle(firstChild).display);
         console.log('[Notifications] First child visibility:', window.getComputedStyle(firstChild).visibility);
         console.log('[Notifications] First child height:', window.getComputedStyle(firstChild).height);
+        console.log('[Notifications] First child background-color:', window.getComputedStyle(firstChild).backgroundColor);
+        console.log('[Notifications] First child position:', window.getComputedStyle(firstChild).position);
+        console.log('[Notifications] First child top:', window.getComputedStyle(firstChild).top);
+        console.log('[Notifications] First child left:', window.getComputedStyle(firstChild).left);
       }
     }
 
