@@ -1107,6 +1107,16 @@
       tryInitialize();
     }
     
+    // Make openProfileModal globally available
+    window.openProfileModal = function() {
+      const profileModal = document.getElementById('profileModal');
+      if (profileModal) {
+        profileModal.style.display = 'flex';
+        updateProfileStats();
+        initializeThemeSelector();
+      }
+    };
+    
     // Update theme selector when theme changes
     function updateThemeSelector() {
       const dropdownText = document.getElementById('themeDropdownText');
