@@ -1078,9 +1078,9 @@
         console.log('Button onclick type:', typeof freshBtn.onclick);
         console.log('Button pointer-events:', window.getComputedStyle(freshBtn).pointerEvents);
         
-        // Update references to use fresh button
-        const originalDropdownBtn = dropdownBtn;
-        dropdownBtn = freshBtn;
+        // Update references to use fresh button - need to update closure variables
+        // Note: dropdownBtn is in closure, so we'll use freshBtn directly in handlers
+        const activeDropdownBtn = freshBtn;
         
         // Close dropdown when clicking outside
         let closeDropdownHandler = function(e) {
