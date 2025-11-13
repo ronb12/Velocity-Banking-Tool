@@ -2921,10 +2921,15 @@
       border: 2px solid var(--border-color);
       border-radius: 0.5rem;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      z-index: 1000;
+      z-index: 10000 !important;
       max-height: 300px;
       overflow-y: auto;
       margin-top: 0.25rem;
+      display: none;
+    }
+    
+    .theme-dropdown-menu[style*="block"] {
+      display: block !important;
     }
     
     .theme-dropdown-item {
