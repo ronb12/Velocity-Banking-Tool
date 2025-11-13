@@ -21,7 +21,7 @@
     "url": "https://github.com/ronb12/Velocity-Banking-Tool/issues"
   },
   "homepage": "https://github.com/ronb12/Velocity-Banking-Tool#readme",
-  "dependencies": {
-    "puppeteer": "^24.29.1"
+  "devDependencies": {
+    "puppeteer": "^24.30.0"
   }
 }
