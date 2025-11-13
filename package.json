@@ -1,27 +1,40 @@
 {
-  "name": "bradley's-finance-hub",
-  "version": "1.0.0",
-  "description": "A comprehensive, AI-powered personal finance dashboard built with Firebase and modern web technologies. This advanced toolkit helps users master their money using velocity banking principles, debt payoff automation, budgeting, and net worth tracking — all in one intuitive, accessible, and secure app.",
-  "main": "app-updater.js",
-  "directories": {
-    "test": "tests"
-  },
+  "name": "bradleys-finance-hub",
+  "version": "2.1.0",
+  "description": "Comprehensive financial management Progressive Web App",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:e2e": "node tests/e2e/run-all.mjs",
+    "lint": "eslint src/**/*.{js,html}",
+    "format": "prettier --write \"src/**/*.{js,html,css}\"",
+    "deploy": "npm run build && firebase deploy --only hosting",
+    "analyze": "vite-bundle-visualizer"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ronb12/Velocity-Banking-Tool.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/ronb12/Velocity-Banking-Tool/issues"
-  },
-  "homepage": "https://github.com/ronb12/Velocity-Banking-Tool#readme",
+  "keywords": [
+    "finance",
+    "pwa",
+    "debt-tracker",
+    "budget",
+    "savings"
+  ],
+  "author": "Bradley's Finance Hub",
+  "license": "MIT",
   "devDependencies": {
-    "puppeteer": "^24.30.0"
+    "@vitejs/plugin-legacy": "^5.4.3",
+    "eslint": "^8.57.1",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.6.2",
+    "vite": "^5.4.21",
+    "vite-plugin-pwa": "^0.17.5"
+  },
+  "dependencies": {
+    "firebase": "^9.23.0"
   }
 }
