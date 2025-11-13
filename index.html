@@ -341,9 +341,15 @@
               <span class="setting-icon">🎨</span>
               <span class="setting-text">Color Theme</span>
             </label>
-            <select id="themeSelector" class="theme-select-dropdown">
-              <!-- Theme options will be populated by JavaScript -->
-            </select>
+            <div class="custom-theme-dropdown">
+              <button id="themeDropdownBtn" class="theme-dropdown-button" type="button">
+                <span id="themeDropdownText">🔵 Blue</span>
+                <span class="dropdown-arrow">▼</span>
+              </button>
+              <div id="themeDropdownMenu" class="theme-dropdown-menu" style="display: none;">
+                <!-- Theme options will be populated by JavaScript -->
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -859,12 +865,15 @@
       showNotification(`Tips ${enabled ? 'enabled' : 'disabled'}`, 'success');
     }
     
-    // Initialize theme selector dropdown in profile modal
+    // Initialize custom theme selector dropdown in profile modal
     function initializeThemeSelector() {
       setTimeout(() => {
-        const themeSelect = document.getElementById('themeSelector');
-        if (!themeSelect) {
-          console.warn('Theme selector dropdown not found');
+        const dropdownBtn = document.getElementById('themeDropdownBtn');
+        const dropdownMenu = document.getElementById('themeDropdownMenu');
+        const dropdownText = document.getElementById('themeDropdownText');
+        
+        if (!dropdownBtn || !dropdownMenu || !dropdownText) {
+          console.warn('Theme selector dropdown elements not found');
           return;
         }
         
@@ -874,55 +883,78 @@
           return;
         }
         
-        console.log('Initializing theme selector dropdown...');
-        themeSelect.innerHTML = '';
+        console.log('Initializing custom theme selector dropdown...');
+        dropdownMenu.innerHTML = '';
         const themes = window.themeManager.getAvailableThemes();
         const currentTheme = window.themeManager.getCurrentTheme();
+        const currentThemeInfo = window.themeManager.getThemeInfo(currentTheme);
         
+        // Update button text
+        dropdownText.textContent = `${currentThemeInfo.icon} ${currentThemeInfo.name}`;
+        
+        // Create menu items
         themes.forEach(themeId => {
           const themeInfo = window.themeManager.getThemeInfo(themeId);
-          const option = document.createElement('option');
-          option.value = themeId;
-          option.textContent = `${themeInfo.icon} ${themeInfo.name}`;
-          // Set inline styles to ensure visibility
-          option.style.backgroundColor = '#ffffff';
-          option.style.color = '#1e293b';
-          option.style.padding = '0.75rem 1rem';
-          option.style.fontSize = '0.95rem';
-          option.style.fontWeight = '500';
-          if (themeId === currentTheme) {
-            option.selected = true;
-          }
-          themeSelect.appendChild(option);
-        });
-        
-        // Force dropdown to show options by ensuring it's visible and has proper size
-        themeSelect.style.minHeight = '40px';
-        themeSelect.style.height = 'auto';
-        
-        // Add event listener
-        themeSelect.addEventListener('change', function(e) {
-          const selectedTheme = e.target.value;
-          console.log('Theme changed to:', selectedTheme);
-          if (window.themeManager) {
-            const themeInfo = window.themeManager.getThemeInfo(selectedTheme);
-            window.themeManager.setTheme(selectedTheme);
+          const menuItem = document.createElement('div');
+          menuItem.className = `theme-dropdown-item ${themeId === currentTheme ? 'active' : ''}`;
+          menuItem.setAttribute('data-theme', themeId);
+          menuItem.innerHTML = `
+            <span class="theme-icon">${themeInfo.icon}</span>
+            <span class="theme-name">${themeInfo.name}</span>
+            ${themeId === currentTheme ? '<span class="check-mark">✓</span>' : ''}
+          `;
+          menuItem.onclick = () => {
+            window.themeManager.setTheme(themeId);
+            const newThemeInfo = window.themeManager.getThemeInfo(themeId);
+            dropdownText.textContent = `${newThemeInfo.icon} ${newThemeInfo.name}`;
+            dropdownMenu.style.display = 'none';
+            updateThemeSelector();
             if (typeof showNotification === 'function') {
-              showNotification(`Theme changed to ${themeInfo.name}`, 'success');
+              showNotification(`Theme changed to ${newThemeInfo.name}`, 'success');
             }
+          };
+          dropdownMenu.appendChild(menuItem);
+        });
+        
+        // Toggle dropdown on button click
+        dropdownBtn.onclick = (e) => {
+          e.stopPropagation();
+          const isOpen = dropdownMenu.style.display !== 'none';
+          dropdownMenu.style.display = isOpen ? 'none' : 'block';
+        };
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function closeDropdown(e) {
+          if (!dropdownMenu.contains(e.target) && !dropdownBtn.contains(e.target)) {
+            dropdownMenu.style.display = 'none';
           }
         });
         
-        console.log('Theme selector dropdown initialized with', themes.length, 'themes');
+        console.log('Custom theme selector dropdown initialized with', themes.length, 'themes');
       }, 100);
     }
     
     // Update theme selector when theme changes
     function updateThemeSelector() {
-      const themeSelect = document.getElementById('themeSelector');
-      if (!themeSelect || !window.themeManager) return;
+      const dropdownText = document.getElementById('themeDropdownText');
+      const dropdownMenu = document.getElementById('themeDropdownMenu');
+      if (!dropdownText || !dropdownMenu || !window.themeManager) return;
+      
       const currentTheme = window.themeManager.getCurrentTheme();
-      themeSelect.value = currentTheme;
+      const currentThemeInfo = window.themeManager.getThemeInfo(currentTheme);
+      dropdownText.textContent = `${currentThemeInfo.icon} ${currentThemeInfo.name}`;
+      
+      // Update active state
+      dropdownMenu.querySelectorAll('.theme-dropdown-item').forEach(item => {
+        const isActive = item.getAttribute('data-theme') === currentTheme;
+        item.classList.toggle('active', isActive);
+        const checkMark = item.querySelector('.check-mark');
+        if (isActive && !checkMark) {
+          item.innerHTML += '<span class="check-mark">✓</span>';
+        } else if (!isActive && checkMark) {
+          checkMark.remove();
+        }
+      });
     }
     
     // Listen for theme changes
@@ -2803,61 +2835,141 @@
       margin-bottom: 1rem;
     }
     
-    .theme-select-dropdown {
+    /* Custom Theme Dropdown */
+    .custom-theme-dropdown {
+      position: relative;
+      min-width: 180px;
+      width: 100%;
+      max-width: 250px;
+    }
+    
+    .theme-dropdown-button {
+      width: 100%;
       padding: 0.5rem 1rem;
       padding-right: 2.5rem;
       border: 2px solid var(--border-color);
       border-radius: 0.5rem;
       background: #ffffff !important;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231e293b' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
-      background-repeat: no-repeat !important;
-      background-position: right 0.75rem center !important;
       color: #1e293b !important;
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
       transition: var(--transition);
-      min-width: 180px;
-      width: 100%;
-      max-width: 250px;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
       position: relative;
     }
     
-    .theme-select-dropdown:hover {
+    .theme-dropdown-button:hover {
       border-color: var(--primary-color);
       box-shadow: 0 0 0 2px rgba(0,123,255,0.1);
     }
     
-    .theme-select-dropdown:focus {
+    .theme-dropdown-button:focus {
       outline: none;
       border-color: var(--primary-color);
       box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
     }
     
-    /* Note: Native select option styling is limited by browser
-       Options will use system default styling but should be visible */
-    .theme-select-dropdown option {
-      background-color: #ffffff !important;
-      color: #1e293b !important;
+    .dropdown-arrow {
+      position: absolute;
+      right: 0.75rem;
+      font-size: 0.75rem;
+      color: #1e293b;
+      pointer-events: none;
+      transition: transform 0.2s;
+    }
+    
+    .custom-theme-dropdown.open .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+    
+    .theme-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      left: 0;
+      right: 0;
+      background: #ffffff !important;
+      border: 2px solid var(--border-color);
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 0.25rem;
+    }
+    
+    .theme-dropdown-item {
       padding: 0.75rem 1rem;
-      font-size: 0.95rem;
-      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      color: #1e293b !important;
+      background: #ffffff !important;
+      transition: background 0.2s;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .theme-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .theme-dropdown-item:hover {
+      background: #f0f4f8 !important;
+    }
+    
+    .theme-dropdown-item.active {
+      background: #e0f2fe !important;
+      font-weight: 600;
+    }
+    
+    .theme-dropdown-item .theme-icon {
+      font-size: 1.1rem;
+      width: 24px;
+      text-align: center;
+    }
+    
+    .theme-dropdown-item .theme-name {
+      flex: 1;
+    }
+    
+    .theme-dropdown-item .check-mark {
+      color: var(--primary-color);
+      font-weight: bold;
     }
     
     /* Dark theme dropdown styling */
-    [data-theme="blue-dark"] .theme-select-dropdown {
+    [data-theme="blue-dark"] .theme-dropdown-button {
       background: #2b2b2b !important;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f4f4f9' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
       color: #f4f4f9 !important;
+      border-color: #404040;
     }
     
-    [data-theme="blue-dark"] .theme-select-dropdown option {
-      background-color: #2b2b2b !important;
+    [data-theme="blue-dark"] .theme-dropdown-button .dropdown-arrow {
+      color: #f4f4f9;
+    }
+    
+    [data-theme="blue-dark"] .theme-dropdown-menu {
+      background: #2b2b2b !important;
+      border-color: #404040;
+    }
+    
+    [data-theme="blue-dark"] .theme-dropdown-item {
+      background: #2b2b2b !important;
       color: #f4f4f9 !important;
+      border-bottom-color: #404040;
+    }
+    
+    [data-theme="blue-dark"] .theme-dropdown-item:hover {
+      background: #3a3a3a !important;
+    }
+    
+    [data-theme="blue-dark"] .theme-dropdown-item.active {
+      background: #1e3a5f !important;
     }
 
     .setting-label {
