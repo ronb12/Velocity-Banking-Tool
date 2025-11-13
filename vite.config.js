@@ -118,7 +118,12 @@ export default defineConfig({
             },
           },
         ],
+        // Fix path issues with spaces
+        swDest: 'sw.js',
+        mode: 'production',
       },
+      // Disable service worker generation in development to avoid path issues
+      disable: process.env.NODE_ENV === 'development',
     }),
   ],
   server: {
