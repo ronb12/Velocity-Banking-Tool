@@ -2828,18 +2828,21 @@
       padding: 0.5rem 1rem;
       border: 2px solid var(--border-color);
       border-radius: 0.5rem;
-      background: var(--bg-card);
-      color: var(--text-color);
+      background: var(--bg-card) !important;
+      color: var(--text-color) !important;
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
       transition: var(--transition);
       min-width: 180px;
       appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 0.75rem center;
       padding-right: 2.5rem;
+      z-index: 10;
     }
     
     .theme-select-dropdown:hover {
@@ -2854,9 +2857,29 @@
     }
     
     .theme-select-dropdown option {
-      background: var(--bg-card);
-      color: var(--text-color);
-      padding: 0.5rem;
+      background: var(--bg-card) !important;
+      color: var(--text-color) !important;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    
+    /* Ensure dropdown options are visible on all themes */
+    [data-theme="blue"] .theme-select-dropdown option,
+    [data-theme="pink"] .theme-select-dropdown option,
+    [data-theme="green"] .theme-select-dropdown option,
+    [data-theme="purple"] .theme-select-dropdown option,
+    [data-theme="orange"] .theme-select-dropdown option,
+    [data-theme="teal"] .theme-select-dropdown option,
+    [data-theme="red"] .theme-select-dropdown option {
+      background: #ffffff !important;
+      color: #1e293b !important;
+    }
+    
+    /* Dark theme specific styling */
+    [data-theme="blue-dark"] .theme-select-dropdown option {
+      background: #2b2b2b !important;
+      color: #f4f4f9 !important;
     }
 
     .setting-label {
