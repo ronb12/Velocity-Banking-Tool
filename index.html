@@ -336,14 +336,14 @@
             </label>
           </div>
           
-          <div class="setting-item theme-selector-item">
+          <div class="setting-item">
             <label class="setting-label">
               <span class="setting-icon">🎨</span>
               <span class="setting-text">Color Theme</span>
             </label>
-            <div class="theme-selector-grid" id="themeSelectorGrid">
+            <select id="themeSelector" class="theme-select-dropdown" onchange="handleThemeChange(this.value)">
               <!-- Theme options will be populated by JavaScript -->
-            </div>
+            </select>
           </div>
         </div>
       </div>
@@ -860,13 +860,13 @@
       showNotification(`Tips ${enabled ? 'enabled' : 'disabled'}`, 'success');
     }
     
-    // Initialize theme selector in profile modal
+    // Initialize theme selector dropdown in profile modal
     function initializeThemeSelector() {
       // Wait a bit for DOM to be ready
       setTimeout(() => {
-        const themeGrid = document.getElementById('themeSelectorGrid');
-        if (!themeGrid) {
-          console.warn('Theme selector grid not found');
+        const themeSelect = document.getElementById('themeSelector');
+        if (!themeSelect) {
+          console.warn('Theme selector dropdown not found');
           return;
         }
         
@@ -877,8 +877,8 @@
           return;
         }
         
-        console.log('Initializing theme selector...');
-        themeGrid.innerHTML = '';
+        console.log('Initializing theme selector dropdown...');
+        themeSelect.innerHTML = '';
         const themes = window.themeManager.getAvailableThemes();
         const currentTheme = window.themeManager.getCurrentTheme();
         
@@ -887,39 +887,42 @@
         
         themes.forEach(themeId => {
           const themeInfo = window.themeManager.getThemeInfo(themeId);
-          const btn = document.createElement('button');
-          btn.className = `theme-option-btn ${themeId === currentTheme ? 'active' : ''}`;
-          btn.setAttribute('data-theme', themeId);
-          btn.innerHTML = `
-            <span class="theme-icon">${themeInfo.icon}</span>
-            <span class="theme-name">${themeInfo.name}</span>
-          `;
-          btn.onclick = () => {
-            window.themeManager.setTheme(themeId);
-            updateThemeSelector();
-            if (typeof showNotification === 'function') {
-              showNotification(`Theme changed to ${themeInfo.name}`, 'success');
-            }
-          };
-          themeGrid.appendChild(btn);
+          const option = document.createElement('option');
+          option.value = themeId;
+          option.textContent = `${themeInfo.icon} ${themeInfo.name}`;
+          if (themeId === currentTheme) {
+            option.selected = true;
+          }
+          themeSelect.appendChild(option);
         });
         
-        console.log('Theme selector initialized with', themes.length, 'themes');
+        console.log('Theme selector dropdown initialized with', themes.length, 'themes');
       }, 100);
     }
     
+    function handleThemeChange(themeId) {
+      if (window.themeManager) {
+        const themeInfo = window.themeManager.getThemeInfo(themeId);
+        window.themeManager.setTheme(themeId);
+        if (typeof showNotification === 'function') {
+          showNotification(`Theme changed to ${themeInfo.name}`, 'success');
+        }
+      }
+    }
+    
     function updateThemeSelector() {
-      const themeGrid = document.getElementById('themeSelectorGrid');
-      if (!themeGrid || !window.themeManager) return;
+      const themeSelect = document.getElementById('themeSelector');
+      if (!themeSelect || !window.themeManager) return;
       
       const currentTheme = window.themeManager.getCurrentTheme();
-      themeGrid.querySelectorAll('.theme-option-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-theme') === currentTheme);
-      });
+      themeSelect.value = currentTheme;
     }
     
     // Listen for theme changes to update selector
     window.addEventListener('themechange', updateThemeSelector);
+    
+    // Make function globally available
+    window.handleThemeChange = handleThemeChange;
 
     function openAdvancedSettings() {
       console.log('Opening Advanced Settings...');
@@ -3645,60 +3648,5 @@
   <footer style="text-align: center; margin-top: 40px; padding: 20px; font-weight: bold; font-size: 14px; color: var(--text-muted); border-top: 1px solid var(--border-color);">
     This is a product of Bradley Virtual Solutions, LLC
   </footer>
-  
-  <!-- Theme Toggle Button -->
-  <button id="themeToggle" class="theme-toggle-btn" title="Toggle Theme" onclick="window.themeManager?.toggleTheme()">
-    <span class="theme-icon">🎨</span>
-    <span class="theme-text">Theme</span>
-  </button>
-  
-  <style>
-    .theme-toggle-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--primary-color);
-      color: var(--text-inverse);
-      border: none;
-      border-radius: 50px;
-      padding: 12px 20px;
-      cursor: pointer;
-      box-shadow: var(--shadow-hover);
-      z-index: 1000;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 600;
-      transition: var(--transition);
-      font-size: 14px;
-    }
-
-    .theme-toggle-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-hover);
-      opacity: 0.9;
-    }
-
-    .theme-toggle-btn:active {
-      transform: translateY(0);
-    }
-
-    .theme-icon {
-      font-size: 18px;
-    }
-
-    @media (max-width: 768px) {
-      .theme-toggle-btn {
-        bottom: 15px;
-        right: 15px;
-        padding: 10px 16px;
-        font-size: 12px;
-      }
-      
-      .theme-text {
-        display: none;
-      }
-    }
-  </style>
 </body>
 </html>
