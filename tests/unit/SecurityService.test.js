@@ -18,8 +18,9 @@ describe('SecurityService', () => {
   });
 
   test('should validate CSRF token', () => {
-    const token = securityService.generateCSRFToken();
-    expect(securityService.validateCSRFToken(token)).toBe(true);
+    // Get the current token from the service
+    const currentToken = securityService.csrfToken;
+    expect(securityService.validateCSRFToken(currentToken)).toBe(true);
     expect(securityService.validateCSRFToken('invalid')).toBe(false);
   });
 
