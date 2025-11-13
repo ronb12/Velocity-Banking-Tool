@@ -414,9 +414,14 @@
     const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
     
     function isTestUser(user) {
-      if (!user || !user.email) return false;
+      if (!user || !user.email) {
+        console.log('[Notifications] isTestUser: No user or email');
+        return false;
+      }
       const testEmails = (window.CONFIG?.security?.allowUnverifiedAccounts || []).map(e => e.toLowerCase());
-      return testEmails.includes(user.email.toLowerCase());
+      const isTest = testEmails.includes(user.email.toLowerCase());
+      console.log('[Notifications] isTestUser:', user.email, 'isTest:', isTest, 'testEmails:', testEmails);
+      return isTest;
     }
     
     function getSampleNotifications() {
@@ -438,15 +443,24 @@
     }
     
     async function addSampleNotificationsForTestUser(user) {
-      if (!isTestUser(user)) return false;
+      if (!isTestUser(user)) {
+        console.log('[Notifications] addSampleNotificationsForTestUser: Not a test user');
+        return false;
+      }
       
       try {
+        console.log('[Notifications] Checking for existing notifications for user:', user.uid);
         const notificationsRef = collection(db, 'users', user.uid, 'notifications');
         const snapshot = await getDocs(notificationsRef);
         
+        console.log('[Notifications] Existing notifications count:', snapshot.size);
+        
         // Only add if user has no notifications
         if (snapshot.empty) {
+          console.log('[Notifications] No notifications found, adding sample notifications...');
           const sampleNotifications = getSampleNotifications();
+          console.log('[Notifications] Sample notifications to add:', sampleNotifications.length);
+          
           const promises = sampleNotifications.map(notif => {
             return addDoc(notificationsRef, {
               message: notif.message,
@@ -457,11 +471,14 @@
           });
           
           await Promise.all(promises);
-          console.log('[Notifications] Added sample notifications for test user');
+          console.log('[Notifications] Successfully added', sampleNotifications.length, 'sample notifications for test user');
           return true;
+        } else {
+          console.log('[Notifications] User already has', snapshot.size, 'notifications, skipping sample addition');
         }
       } catch (error) {
-        console.error('Error adding sample notifications:', error);
+        console.error('[Notifications] Error adding sample notifications:', error);
+        console.error('[Notifications] Error details:', error.code, error.message);
       }
       return false;
     }
@@ -624,15 +641,23 @@
       
       try {
         // First check if test user has any notifications at all (before filtering)
+        console.log('[Notifications] loadNotifications: Checking for test user and existing notifications');
         if (isTestUser(user)) {
+          console.log('[Notifications] User is a test user, checking for existing notifications...');
           const allNotificationsRef = collection(db, 'users', user.uid, 'notifications');
           const allSnapshot = await getDocs(allNotificationsRef);
+          console.log('[Notifications] Found', allSnapshot.size, 'existing notifications');
+          
           if (allSnapshot.empty) {
+            console.log('[Notifications] No notifications found, attempting to add samples...');
             const added = await addSampleNotificationsForTestUser(user);
             if (added) {
+              console.log('[Notifications] Sample notifications added, reloading...');
               // Reload notifications after adding samples
               await loadNotifications(user);
               return;
+            } else {
+              console.log('[Notifications] Failed to add sample notifications');
             }
           }
         }
