@@ -939,12 +939,18 @@
         
         // Toggle dropdown on button click
         function handleDropdownClick(e) {
-          e.stopPropagation();
-          e.preventDefault();
+          if (e) {
+            e.stopPropagation();
+            e.preventDefault();
+          }
           console.log('🔵 Dropdown button clicked!');
           console.log('Button element:', dropdownBtn);
           console.log('Menu element:', dropdownMenu);
-          const isOpen = dropdownMenu.style.display === 'block' || dropdownMenu.style.display === 'flex';
+          console.log('Menu current display:', dropdownMenu.style.display);
+          console.log('Menu computed display:', window.getComputedStyle(dropdownMenu).display);
+          const isOpen = dropdownMenu.style.display === 'block' || 
+                        dropdownMenu.style.display === 'flex' ||
+                        window.getComputedStyle(dropdownMenu).display === 'block';
           console.log('Dropdown button clicked, isOpen:', isOpen);
           console.log('Menu children count:', dropdownMenu.children.length);
           if (isOpen) {
@@ -1032,10 +1038,18 @@
           }
         }
         
-        // Add event listener
+        // Add event listener with multiple approaches to ensure it fires
         dropdownBtn.addEventListener('click', handleDropdownClick, true);
+        dropdownBtn.addEventListener('mousedown', function(e) {
+          console.log('🔵 Dropdown button mousedown event');
+        }, true);
         // Also set onclick as fallback
         dropdownBtn.onclick = handleDropdownClick;
+        
+        // Debug: Log that handler was attached
+        console.log('✅ Dropdown click handler attached to button');
+        console.log('Button element:', dropdownBtn);
+        console.log('Button onclick type:', typeof dropdownBtn.onclick);
         
         // Close dropdown when clicking outside
         let closeDropdownHandler = function(e) {
