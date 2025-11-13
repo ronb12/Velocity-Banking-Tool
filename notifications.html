@@ -525,16 +525,27 @@
       const container = document.getElementById("notifications");
       const loading = document.getElementById("loading");
       const records = getStoredLocalNotifications();
+      
+      console.log('[Notifications] renderLocalNotifications: filter=', filter, 'records count=', records.length);
+      console.log('[Notifications] Records:', records);
+      
       loading.style.display = "none";
       container.style.display = "block";
 
-      allNotifications = records.map(record => ({
-        ...record
+      allNotifications = records.map((record, index) => ({
+        id: record.id || `local-${index}-${Date.now()}`,
+        message: record.message || 'Notification',
+        timestamp: record.timestamp || Date.now(),
+        read: record.read !== undefined ? record.read : false,
+        category: record.category || 'info'
       }));
+
+      console.log('[Notifications] Processed notifications:', allNotifications.length, allNotifications);
 
       updateStats();
 
       if (allNotifications.length === 0) {
+        console.log('[Notifications] No notifications found, showing empty state');
         container.innerHTML = `
           <div class="empty-state">
             <div style="font-size: 4em; margin-bottom: 20px;">🔔</div>
@@ -551,7 +562,10 @@
         return true;
       });
 
+      console.log('[Notifications] Filtered notifications:', filtered.length, 'filter:', filter);
+
       if (filtered.length === 0) {
+        console.log('[Notifications] No filtered notifications, showing empty state');
         container.innerHTML = `
           <div class="empty-state">
             <div style="font-size: 4em; margin-bottom: 20px;">🔔</div>
@@ -563,13 +577,16 @@
       }
 
       container.innerHTML = '';
+      console.log('[Notifications] Rendering', filtered.length, 'notifications');
 
-      filtered.forEach(notif => {
+      filtered.forEach((notif, index) => {
         const div = document.createElement('div');
         div.className = `notification ${notif.read ? '' : 'unread'}`;
         const type = getNotificationType(notif.message || '');
         const icon = getNotificationIcon(notif.message || '');
         const time = normalizeTimestamp(notif);
+
+        console.log('[Notifications] Rendering notification', index + 1, ':', notif);
 
         div.innerHTML = `
           <div class="notification-header">
@@ -589,7 +606,11 @@
         `;
 
         container.appendChild(div);
+        console.log('[Notifications] Appended notification', index + 1, 'to container');
       });
+      
+      console.log('[Notifications] Container children count:', container.children.length);
+      console.log('[Notifications] Container innerHTML length:', container.innerHTML.length);
     }
 
     function showToast(msg, type = 'success') {
