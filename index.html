@@ -961,57 +961,41 @@
             const buttonRect = dropdownBtn.getBoundingClientRect();
             console.log('Button rect:', buttonRect);
             
-            // Move dropdown to body to escape modal stacking context
-            const originalParent = dropdownMenu.parentElement;
-            if (dropdownMenu.parentElement !== document.body) {
-              document.body.appendChild(dropdownMenu);
-              console.log('Moved dropdown to body');
-            }
+            // Keep dropdown in original container but use fixed positioning
+            // Position menu below button using fixed positioning
+            dropdownMenu.style.position = 'fixed';
+            dropdownMenu.style.top = `${buttonRect.bottom + 8}px`;
+            dropdownMenu.style.left = `${buttonRect.left}px`;
+            dropdownMenu.style.width = `${buttonRect.width}px`;
+            dropdownMenu.style.display = 'block';
+            dropdownMenu.style.visibility = 'visible';
+            dropdownMenu.style.opacity = '1';
+            dropdownMenu.style.zIndex = '999999';
+            dropdownMenu.style.pointerEvents = 'auto';
+            dropdownMenu.style.transform = 'none';
+            dropdownMenu.style.clip = 'auto';
+            dropdownMenu.style.background = '#ffffff';
+            dropdownMenu.style.border = '2px solid var(--border-color)';
+            dropdownMenu.style.borderRadius = '0.5rem';
+            dropdownMenu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            dropdownMenu.style.maxHeight = '300px';
+            dropdownMenu.style.overflowY = 'auto';
             
-            // Wait a frame to ensure DOM update
-            requestAnimationFrame(() => {
-              // Position menu below button using fixed positioning (no scroll offset needed for fixed)
-              dropdownMenu.style.cssText = `
-                position: fixed !important;
-                top: ${buttonRect.bottom + 8}px !important;
-                left: ${buttonRect.left}px !important;
-                width: ${buttonRect.width}px !important;
-                display: block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-                z-index: 999999 !important;
-                pointer-events: auto !important;
-                transform: none !important;
-                clip: auto !important;
-                background: #ffffff !important;
-                border: 2px solid var(--border-color) !important;
-                border-radius: 0.5rem !important;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-                max-height: 300px !important;
-                overflow-y: auto !important;
-              `;
-              
-              dropdownBtn.parentElement.classList.add('open');
-              
-              console.log('Menu opened, items:', dropdownMenu.children.length);
-              console.log('Menu position:', dropdownMenu.style.top, dropdownMenu.style.left);
-              console.log('Menu z-index:', dropdownMenu.style.zIndex);
-              console.log('Menu parent:', dropdownMenu.parentElement.tagName);
-              console.log('Menu computed display:', window.getComputedStyle(dropdownMenu).display);
-              console.log('Menu offsetParent:', dropdownMenu.offsetParent);
-              console.log('Menu bounding rect:', dropdownMenu.getBoundingClientRect());
-              
-              // Force visibility on all items
-              Array.from(dropdownMenu.children).forEach((item, i) => {
-                item.style.cssText += `
-                  display: flex !important;
-                  visibility: visible !important;
-                  opacity: 1 !important;
-                  z-index: 1000000 !important;
-                  pointer-events: auto !important;
-                `;
-                console.log(`Menu item ${i}:`, item.textContent.trim(), 'visible:', item.offsetParent !== null);
-              });
+            dropdownBtn.parentElement.classList.add('open');
+            
+            console.log('Menu opened, items:', dropdownMenu.children.length);
+            console.log('Menu position:', dropdownMenu.style.top, dropdownMenu.style.left);
+            console.log('Menu z-index:', dropdownMenu.style.zIndex);
+            console.log('Menu parent:', dropdownMenu.parentElement.tagName);
+            
+            // Force visibility on all items
+            Array.from(dropdownMenu.children).forEach((item, i) => {
+              item.style.display = 'flex';
+              item.style.visibility = 'visible';
+              item.style.opacity = '1';
+              item.style.zIndex = '1000000';
+              item.style.pointerEvents = 'auto';
+              console.log(`Menu item ${i}:`, item.textContent.trim(), 'visible:', item.offsetParent !== null);
             });
           }
         };
@@ -2781,6 +2765,7 @@
       justify-content: center;
       animation: fadeIn 0.2s;
       overflow-y: auto;
+      overflow-x: visible;
       padding: 2rem;
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
