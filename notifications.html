@@ -210,42 +210,51 @@
       padding-left: 0 !important;
     }
     
-    .notification {
+    /* Override theme.css toast notification styles - use specific selector */
+    .notifications-container .notification,
+    #notifications .notification {
       background: white !important;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
-      border-left: 4px solid #e9ecef;
+      border-radius: 12px !important;
+      padding: 20px !important;
+      margin-bottom: 15px !important;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+      transition: all 0.3s ease !important;
+      border-left: 4px solid #e9ecef !important;
       position: relative !important;
+      transform: none !important;
+      translate: none !important;
       left: 0 !important;
       top: 0 !important;
-      width: 100%;
-      box-sizing: border-box;
-      max-width: 100%;
-      overflow-wrap: break-word;
-      word-wrap: break-word;
+      right: auto !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      max-width: 100% !important;
+      overflow-wrap: break-word !important;
+      word-wrap: break-word !important;
       display: block !important;
       visibility: visible !important;
       opacity: 1 !important;
       height: auto !important;
-      min-height: 50px;
+      min-height: 50px !important;
       margin-left: 0 !important;
       margin-right: 0 !important;
+      z-index: auto !important;
     }
     
-    .notification:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    .notifications-container .notification:hover,
+    #notifications .notification:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15) !important;
     }
     
-    .notification.unread {
+    .notifications-container .notification.unread,
+    #notifications .notification.unread {
       border-left-color: #007bff;
       background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
     }
     
-    .notification.unread::before {
+    .notifications-container .notification.unread::before,
+    #notifications .notification.unread::before {
       content: '';
       position: absolute;
       top: 20px;
