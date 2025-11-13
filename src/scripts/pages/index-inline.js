@@ -1,3 +1,14 @@
+/**
+ * Dashboard Inline Scripts
+ * Extracted from index.html
+ * This file contains all JavaScript that was inline in index.html
+ */
+
+// Note: This code assumes global variables from index.html:
+// - window.auth, window.db, window.themeManager
+// - USE_FIRESTORE, ErrorHandler
+// - Firebase imports (doc, getDoc, setDoc, onSnapshot, etc.)
+
 // Enhanced data loading with error handling
 auth.onAuthStateChanged(async user => {
   if (user) {
