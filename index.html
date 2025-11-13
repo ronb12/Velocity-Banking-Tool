@@ -929,9 +929,21 @@
         const themeId = item.getAttribute('data-theme');
         const isActive = themeId === currentTheme;
         item.classList.toggle('active', isActive);
+        
         const radio = item.querySelector('input[type="radio"]');
         if (radio) {
           radio.checked = isActive;
+        }
+        
+        // Update check mark
+        let checkMark = item.querySelector('.check-mark');
+        if (isActive && !checkMark) {
+          checkMark = document.createElement('span');
+          checkMark.className = 'check-mark';
+          checkMark.textContent = '✓';
+          item.appendChild(checkMark);
+        } else if (!isActive && checkMark) {
+          checkMark.remove();
         }
       });
     }
