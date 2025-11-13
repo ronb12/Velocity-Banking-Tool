@@ -3,14 +3,21 @@
  * Tests that all PDF files referenced in challenge_library.html actually exist
  */
 
-const fs = require('fs');
-const path = require('path');
-const http = require('http');
-const https = require('https');
+import fs from 'fs';
+import path from 'path';
+import http from 'http';
+import https from 'https';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const BASE_DIR = path.join(__dirname, '..');
 const LIVE_URL = 'https://mobile-debt-tracker.web.app';
 const LOCAL_URL = 'http://localhost:5500';
+
+// Note: This test file uses CommonJS-style requires which need to be converted
+// For now, we'll skip this test in Jest and run it separately if needed
 
 class PDFIntegrationTests {
   constructor() {

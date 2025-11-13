@@ -179,7 +179,9 @@ export class NotificationSystem {
    */
   remove(id) {
     const notification = this.notifications.find(n => n.id === id);
-    if (!notification) return;
+    if (!notification) {
+      return;
+    }
     
     // Add removing class for animation
     notification.element.classList.add('removing');

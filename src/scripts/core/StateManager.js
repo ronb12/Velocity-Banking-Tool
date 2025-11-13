@@ -118,8 +118,14 @@ class StateManager {
 // Export singleton instance
 export const stateManager = new StateManager();
 
+// Export class for testing
+export { StateManager };
+
 // Make globally available
-window.stateManager = stateManager;
+if (typeof window !== 'undefined') {
+  window.stateManager = stateManager;
+  window.StateManager = StateManager;
+}
 
 export default stateManager;
 

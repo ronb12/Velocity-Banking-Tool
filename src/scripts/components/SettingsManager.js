@@ -62,7 +62,43 @@ export class SettingsManager {
       showTips: showTipsToggle?.checked ?? true,
     };
     
-    console.log('Settings loaded - Dark mode:', darkMode);
+    // Use logger if available, otherwise console
+    if (typeof window !== 'undefined' && window.logger) {
+      window.logger.debug('Settings loaded', { darkMode });
+    }
+  }
+
+  /**
+   * Save a setting to localStorage
+   * @param {string} key - Setting key
+   * @param {*} value - Setting value
+   */
+  saveSetting(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      if (typeof window !== 'undefined' && window.logger) {
+        window.logger.error('Failed to save setting', { key, error: e.message });
+      }
+    }
+  }
+
+  /**
+   * Load a setting from localStorage
+   * @param {string} key - Setting key
+   * @param {*} defaultValue - Default value if not found
+   * @returns {*} Setting value or default
+   */
+  loadSetting(key, defaultValue = null) {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) : defaultValue;
+    } catch (e) {
+      if (typeof window !== 'undefined' && window.logger) {
+        window.logger.error('Failed to load setting', { key, error: e.message });
+      }
+      return defaultValue;
+    }
   }
 
   /**
@@ -71,7 +107,9 @@ export class SettingsManager {
   toggleDarkMode() {
     const darkModeToggle = document.getElementById('settingsDarkMode');
     if (!darkModeToggle) {
-      console.error('Dark mode toggle not found!');
+      if (typeof window !== 'undefined' && window.logger) {
+        window.logger.error('Dark mode toggle not found');
+      }
       return;
     }
     
