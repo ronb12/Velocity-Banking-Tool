@@ -153,6 +153,8 @@
       width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
+      display: block;
+      min-height: 50px;
     }
     
     .notification {
@@ -238,6 +240,7 @@
       padding: 60px 20px;
       color: #6c757d;
       font-size: 18px;
+      display: block;
     }
     
     .loading::after {
@@ -523,6 +526,7 @@
       const loading = document.getElementById("loading");
       const records = getStoredLocalNotifications();
       loading.style.display = "none";
+      container.style.display = "block";
 
       allNotifications = records.map(record => ({
         ...record
@@ -546,6 +550,17 @@
         if (filter === 'read') return notif.read;
         return true;
       });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 4em; margin-bottom: 20px;">🔔</div>
+            <h3>No ${filter === 'unread' ? 'unread' : filter === 'read' ? 'read' : ''} notifications found</h3>
+            <p>Try changing the filter to see more notifications.</p>
+          </div>
+        `;
+        return;
+      }
 
       container.innerHTML = '';
 
@@ -634,6 +649,7 @@
       
       container.innerHTML = "";
       loading.style.display = "block";
+      container.style.display = "block";
 
       if (IS_LOCALHOST) {
         renderLocalNotifications(filter);
@@ -672,6 +688,7 @@
         
         const snapshot = await getDocs(q);
         loading.style.display = "none";
+        container.style.display = "block";
         
         allNotifications = [];
         snapshot.forEach(docSnap => {
@@ -698,6 +715,18 @@
           return true;
         });
         
+        if (filteredNotifications.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div style="font-size: 4em; margin-bottom: 20px;">🔔</div>
+              <h3>No ${filter === 'unread' ? 'unread' : filter === 'read' ? 'read' : ''} notifications found</h3>
+              <p>Try changing the filter to see more notifications.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        container.innerHTML = "";
         filteredNotifications.forEach(notif => {
           const div = document.createElement('div');
           div.className = `notification ${notif.read ? '' : 'unread'}`;
