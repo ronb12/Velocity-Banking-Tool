@@ -917,23 +917,18 @@
     
     // Update theme selector when theme changes
     function updateThemeSelector() {
-      const dropdownText = document.getElementById('themeDropdownText');
-      const dropdownMenu = document.getElementById('themeDropdownMenu');
-      if (!dropdownText || !dropdownMenu || !window.themeManager) return;
+      const list = document.getElementById('themeSelectorList');
+      if (!list || !window.themeManager) return;
       
       const currentTheme = window.themeManager.getCurrentTheme();
-      const currentThemeInfo = window.themeManager.getThemeInfo(currentTheme);
-      dropdownText.textContent = `${currentThemeInfo.icon} ${currentThemeInfo.name}`;
       
-      // Update active state
-      dropdownMenu.querySelectorAll('.theme-dropdown-item').forEach(item => {
-        const isActive = item.getAttribute('data-theme') === currentTheme;
+      list.querySelectorAll('.theme-option').forEach(item => {
+        const themeId = item.getAttribute('data-theme');
+        const isActive = themeId === currentTheme;
         item.classList.toggle('active', isActive);
-        const checkMark = item.querySelector('.check-mark');
-        if (isActive && !checkMark) {
-          item.innerHTML += '<span class="check-mark">✓</span>';
-        } else if (!isActive && checkMark) {
-          checkMark.remove();
+        const radio = item.querySelector('input[type="radio"]');
+        if (radio) {
+          radio.checked = isActive;
         }
       });
     }
