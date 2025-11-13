@@ -631,12 +631,12 @@
       console.log('[Notifications] Container z-index:', window.getComputedStyle(container).zIndex);
       
       // Check if loading element is still visible
-      const loading = document.getElementById("loading");
-      if (loading) {
-        console.log('[Notifications] Loading element display:', window.getComputedStyle(loading).display);
-        console.log('[Notifications] Loading element visibility:', window.getComputedStyle(loading).visibility);
-        console.log('[Notifications] Loading element position:', window.getComputedStyle(loading).position);
-        console.log('[Notifications] Loading element z-index:', window.getComputedStyle(loading).zIndex);
+      const loadingElement = document.getElementById("loading");
+      if (loadingElement) {
+        console.log('[Notifications] Loading element display:', window.getComputedStyle(loadingElement).display);
+        console.log('[Notifications] Loading element visibility:', window.getComputedStyle(loadingElement).visibility);
+        console.log('[Notifications] Loading element position:', window.getComputedStyle(loadingElement).position);
+        console.log('[Notifications] Loading element z-index:', window.getComputedStyle(loadingElement).zIndex);
       }
       
       // Check notifications-container
