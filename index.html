@@ -35,6 +35,7 @@
   <script src="utils/accessibility.js"></script>
   <script src="utils/analytics.js"></script>
   <script src="utils/financialInsights.js"></script>
+  <script src="utils/themeManager.js"></script>
   <script type="module" src="auth.js"></script>
   <script type="module" src="sync.js"></script>
   <script src="app-updater.js"></script>
@@ -3452,45 +3453,105 @@
       border: 1px solid #bfdbfe;
     }
 
-    /* Dark mode adjustments */
-    body.dark .financial-education {
+    /* Dark mode adjustments - using theme variables */
+    [data-theme="dark"] .financial-education {
       background: rgba(35, 41, 70, 0.65);
     }
 
-    body.dark .recommendations {
+    [data-theme="dark"] .recommendations {
       background: rgba(35, 41, 70, 0.65);
     }
 
-    body.dark .recommendation-card {
-      background: #232946;
-      color: #f4f4f9;
+    [data-theme="dark"] .recommendation-card {
+      background: var(--bg-card);
+      color: var(--text-color);
     }
 
-    body.dark .recommendation-content h3 {
-      color: #f4f4f9;
+    [data-theme="dark"] .recommendation-content h3 {
+      color: var(--text-color);
     }
 
-    body.dark .recommendation-content p {
-      color: #b8bcc8;
+    [data-theme="dark"] .recommendation-content p {
+      color: var(--text-muted);
     }
 
-    body.dark .insight-card, 
-    body.dark .recommendation-card {
-      background: #232946;
-      color: #f4f4f9;
+    [data-theme="dark"] .insight-card, 
+    [data-theme="dark"] .recommendation-card {
+      background: var(--bg-card);
+      color: var(--text-color);
     }
 
-    body.dark .data-point {
-      border-bottom-color: #334155;
+    [data-theme="dark"] .data-point {
+      border-bottom-color: var(--border-color);
     }
 
-    body.dark .recommendation-action {
-      background: #1e293b;
+    [data-theme="dark"] .recommendation-action {
+      background: var(--bg-secondary);
+    }
+    
+    /* Fun theme adjustments */
+    [data-theme="fun"] .recommendation-action {
+      background: var(--bg-card);
     }
   </style>
   
-  <footer style="text-align: center; margin-top: 40px; padding: 20px; font-weight: bold; font-size: 14px; color: #555; border-top: 1px solid #e5e7eb;">
+  <footer style="text-align: center; margin-top: 40px; padding: 20px; font-weight: bold; font-size: 14px; color: var(--text-muted); border-top: 1px solid var(--border-color);">
     This is a product of Bradley Virtual Solutions, LLC
   </footer>
+  
+  <!-- Theme Toggle Button -->
+  <button id="themeToggle" class="theme-toggle-btn" title="Toggle Theme" onclick="window.themeManager?.toggleTheme()">
+    <span class="theme-icon">🎨</span>
+    <span class="theme-text">Theme</span>
+  </button>
+  
+  <style>
+    .theme-toggle-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary-color);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: 50px;
+      padding: 12px 20px;
+      cursor: pointer;
+      box-shadow: var(--shadow-hover);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      transition: var(--transition);
+      font-size: 14px;
+    }
+
+    .theme-toggle-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      opacity: 0.9;
+    }
+
+    .theme-toggle-btn:active {
+      transform: translateY(0);
+    }
+
+    .theme-icon {
+      font-size: 18px;
+    }
+
+    @media (max-width: 768px) {
+      .theme-toggle-btn {
+        bottom: 15px;
+        right: 15px;
+        padding: 10px 16px;
+        font-size: 12px;
+      }
+      
+      .theme-text {
+        display: none;
+      }
+    }
+  </style>
 </body>
 </html>
