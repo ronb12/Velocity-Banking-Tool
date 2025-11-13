@@ -341,7 +341,7 @@
               <span class="setting-icon">🎨</span>
               <span class="setting-text">Color Theme</span>
             </label>
-            <select id="themeSelector" class="theme-select-dropdown" onchange="handleThemeChange(this.value)">
+            <select id="themeSelector" class="theme-select-dropdown">
               <!-- Theme options will be populated by JavaScript -->
             </select>
           </div>
@@ -897,16 +897,23 @@
         });
         
         console.log('Theme selector dropdown initialized with', themes.length, 'themes');
+        
+        // Attach event listener after initialization
+        attachThemeSelectorListener();
       }, 100);
     }
     
     function handleThemeChange(themeId) {
+      console.log('handleThemeChange called with theme:', themeId);
       if (window.themeManager) {
         const themeInfo = window.themeManager.getThemeInfo(themeId);
         window.themeManager.setTheme(themeId);
+        console.log('Theme changed to:', themeInfo.name);
         if (typeof showNotification === 'function') {
           showNotification(`Theme changed to ${themeInfo.name}`, 'success');
         }
+      } else {
+        console.error('Theme manager not available');
       }
     }
     
@@ -923,6 +930,25 @@
     
     // Make function globally available
     window.handleThemeChange = handleThemeChange;
+    
+    // Add event listener to dropdown after initialization
+    function attachThemeSelectorListener() {
+      const themeSelect = document.getElementById('themeSelector');
+      if (themeSelect) {
+        // Remove existing listener if any
+        const newSelect = themeSelect.cloneNode(true);
+        themeSelect.parentNode.replaceChild(newSelect, themeSelect);
+        
+        // Add event listener
+        newSelect.addEventListener('change', function(e) {
+          const selectedTheme = e.target.value;
+          console.log('Dropdown changed to:', selectedTheme);
+          handleThemeChange(selectedTheme);
+        });
+        
+        console.log('Theme selector event listener attached');
+      }
+    }
 
     function openAdvancedSettings() {
       console.log('Opening Advanced Settings...');
