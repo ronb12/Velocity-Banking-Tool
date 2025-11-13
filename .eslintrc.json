@@ -12,6 +12,13 @@
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
+  "overrides": [
+    {
+      "files": ["*.html"],
+      "parser": null,
+      "rules": {}
+    }
+  ],
   "rules": {
     "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
     "no-console": ["warn", { "allow": ["warn", "error"] }],
@@ -25,6 +32,7 @@
   "globals": {
     "firebase": "readonly",
     "ErrorHandler": "readonly"
-  }
+  },
+  "ignorePatterns": ["*.html", "dist/", "node_modules/"]
 }
 

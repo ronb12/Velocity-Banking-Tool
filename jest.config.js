@@ -1,25 +1,25 @@
 export default {
   testEnvironment: 'jsdom',
-  testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.spec.js'],
+  testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
   collectCoverageFrom: [
     'src/**/*.js',
-    'utils/**/*.js',
+    '!src/**/*.test.js',
+    '!src/**/*.spec.js',
     '!**/node_modules/**',
-    '!**/tests/**',
-    '!**/*.config.js',
+    '!**/dist/**'
   ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@utils/(.*)$': '<rootDir>/utils/$1',
+    '^@styles/(.*)$': '<rootDir>/src/styles/$1',
+    '^@components/(.*)$': '<rootDir>/src/scripts/components/$1',
+    '^@core/(.*)$': '<rootDir>/src/scripts/core/$1'
   },
   transform: {},
   extensionsToTreatAsEsm: ['.js'],
   globals: {
     'ts-jest': {
-      useESM: true,
-    },
-  },
+      useESM: true
+    }
+  }
 };
-

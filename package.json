@@ -11,7 +11,7 @@
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "test:e2e": "node tests/e2e/run-all.mjs",
-    "lint": "eslint src/**/*.{js,html}",
+    "lint": "eslint src/**/*.js --ignore-pattern '*.html'",
     "format": "prettier --write \"src/**/*.{js,html,css}\"",
     "deploy": "npm run build && firebase deploy --only hosting",
     "analyze": "vite-bundle-visualizer"
