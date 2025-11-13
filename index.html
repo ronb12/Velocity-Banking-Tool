@@ -346,6 +346,38 @@
             </div>
           </div>
           
+          <script>
+            // Auto-initialize theme selector when settings section becomes visible
+            (function() {
+              function tryInit() {
+                const list = document.getElementById('themeSelectorList');
+                const modal = document.getElementById('profileModal');
+                if (list && modal && window.getComputedStyle(modal).display !== 'none') {
+                  if (list.children.length === 0 && window.themeManager) {
+                    console.log('[Theme Selector] Auto-initializing from inline script');
+                    if (typeof initializeThemeSelector === 'function') {
+                      initializeThemeSelector();
+                    }
+                  }
+                }
+              }
+              
+              // Try immediately
+              if (document.readyState === 'complete') {
+                tryInit();
+              } else {
+                window.addEventListener('load', tryInit);
+              }
+              
+              // Also observe modal visibility
+              const modal = document.getElementById('profileModal');
+              if (modal) {
+                const observer = new MutationObserver(tryInit);
+                observer.observe(modal, { attributes: true, attributeFilter: ['style'] });
+              }
+            })();
+          </script>
+          
         </div>
       </div>
       
