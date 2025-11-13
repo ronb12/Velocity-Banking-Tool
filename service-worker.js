@@ -1,7 +1,7 @@
-const CACHE_NAME = 'velocity-banking-v1';
-const STATIC_CACHE = 'static-v1';
-const DYNAMIC_CACHE = 'dynamic-v1';
-const VERSION = '1.0.0';
+const CACHE_NAME = 'velocity-banking-v2';
+const STATIC_CACHE = 'static-v2';
+const DYNAMIC_CACHE = 'dynamic-v2';
+const VERSION = '1.1.0';
 
 const STATIC_ASSETS = [
   '/',
