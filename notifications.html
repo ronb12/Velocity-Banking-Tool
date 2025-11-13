@@ -408,10 +408,63 @@
 
   <script type="module">
     import { auth, db } from './firebase-config.js';
-    import { collection, query, where, orderBy, getDocs, updateDoc, doc, deleteDoc } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+    import { collection, query, where, orderBy, getDocs, updateDoc, doc, deleteDoc, addDoc, Timestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
     let allNotifications = [];
     const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    
+    function isTestUser(user) {
+      if (!user || !user.email) return false;
+      const testEmails = (window.CONFIG?.security?.allowUnverifiedAccounts || []).map(e => e.toLowerCase());
+      return testEmails.includes(user.email.toLowerCase());
+    }
+    
+    function getSampleNotifications() {
+      const now = Date.now();
+      return [
+        { message: 'Welcome to Bradley\'s Financial Tools! 🎉 Start tracking your finances today.', timestamp: now - 86400000 * 2, read: false },
+        { message: 'Your savings goal is 25% complete! Keep up the great work! 💰', timestamp: now - 86400000 * 1.5, read: false },
+        { message: 'Payment reminder: Credit card payment due in 3 days. 💳', timestamp: now - 86400000, read: false },
+        { message: 'Budget alert: You\'ve spent 80% of your monthly budget. ⚠️', timestamp: now - 43200000, read: false },
+        { message: 'Congratulations! You paid off $500 in debt this month! 🎯', timestamp: now - 36000000, read: false },
+        { message: 'New feature: Check out the Velocity Banking Calculator! 🚀', timestamp: now - 28800000, read: true },
+        { message: 'Your net worth increased by $1,200 this month! 📈', timestamp: now - 21600000, read: true },
+        { message: 'Reminder: Review your monthly financial goals. 📊', timestamp: now - 14400000, read: false },
+        { message: 'Success: All bills paid on time this month! ✅', timestamp: now - 7200000, read: true },
+        { message: 'Tip: Use the debt tracker to visualize your progress. 💡', timestamp: now - 3600000, read: false },
+        { message: 'Alert: Your emergency fund reached $5,000! 🎊', timestamp: now - 1800000, read: false },
+        { message: 'Update: Your credit score improved by 15 points! 📈', timestamp: now - 900000, read: true }
+      ];
+    }
+    
+    async function addSampleNotificationsForTestUser(user) {
+      if (!isTestUser(user)) return false;
+      
+      try {
+        const notificationsRef = collection(db, 'users', user.uid, 'notifications');
+        const snapshot = await getDocs(notificationsRef);
+        
+        // Only add if user has no notifications
+        if (snapshot.empty) {
+          const sampleNotifications = getSampleNotifications();
+          const promises = sampleNotifications.map(notif => {
+            return addDoc(notificationsRef, {
+              message: notif.message,
+              timestamp: Timestamp.fromMillis(notif.timestamp),
+              read: notif.read,
+              category: 'info'
+            });
+          });
+          
+          await Promise.all(promises);
+          console.log('[Notifications] Added sample notifications for test user');
+          return true;
+        }
+      } catch (error) {
+        console.error('Error adding sample notifications:', error);
+      }
+      return false;
+    }
 
     function clone(obj) {
       return JSON.parse(JSON.stringify(obj));
@@ -570,6 +623,20 @@
       }
       
       try {
+        // First check if test user has any notifications at all (before filtering)
+        if (isTestUser(user)) {
+          const allNotificationsRef = collection(db, 'users', user.uid, 'notifications');
+          const allSnapshot = await getDocs(allNotificationsRef);
+          if (allSnapshot.empty) {
+            const added = await addSampleNotificationsForTestUser(user);
+            if (added) {
+              // Reload notifications after adding samples
+              await loadNotifications(user);
+              return;
+            }
+          }
+        }
+        
         let q = query(collection(db, 'users', user.uid, 'notifications'), orderBy('timestamp', 'desc'));
         if (filter === 'unread') {
           q = query(q, where('read', '==', false));
