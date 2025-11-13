@@ -8,7 +8,6 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <script type="module" src="utils/activityLogger.js"></script>
@@ -335,14 +334,6 @@
       width: 100%;
     }
     
-    .chart-container {
-      background: white;
-      border-radius: 15px;
-      padding: 20px;
-      margin: 30px 0;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    
     .section-title {
       color: #2c3e50;
       margin: 30px 0 20px 0;
@@ -474,13 +465,6 @@
     </div>
   </div>
 
-  <!-- Progress Chart -->
-  <div class="chart-container">
-    <h3 class="section-title">📊 Goals Progress Overview</h3>
-    <div style="position: relative; height: 300px; width: 100%;">
-      <canvas id="progressChart"></canvas>
-    </div>
-  </div>
 
   <!-- Add Goal Modal -->
   <div id="addGoalModal" class="modal">
@@ -582,7 +566,6 @@ const STORAGE_KEY = 'savings_goals';
 const ARCHIVE_KEY = 'archived_goals';
 const VERSION_KEY = 'savings_goals_version';
 const CURRENT_VERSION = '2.2.0';
-let progressChart = null;
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -612,12 +595,6 @@ document.addEventListener('DOMContentLoaded', function() {
   renderGoals();
   renderArchivedGoals();
   updateStats();
-  
-  // Initialize chart with a small delay to ensure DOM is ready
-  setTimeout(() => {
-    initializeChart();
-    updateChart();
-  }, 100);
 });
 
 // Add sample goals for demonstration
@@ -781,7 +758,6 @@ function addSampleGoals() {
   renderGoals();
   renderArchivedGoals();
   updateStats();
-  updateChart();
   
   showNotification('Sample goals loaded successfully!', 'success');
 }
@@ -813,7 +789,6 @@ function addGoal(goalData = null) {
   
   renderGoals();
   updateStats();
-  updateChart();
 }
 
 function editGoal(index, field, value) {
@@ -881,7 +856,6 @@ function completeGoal(index) {
     renderGoals();
     renderArchivedGoals();
     updateStats();
-    updateChart();
     
     // Show celebration
     showNotification('🎉 Congratulations! Goal completed!', 'success');
@@ -1074,79 +1048,6 @@ function updateCategoryFilter() {
   select.value = current || 'All';
 }
 
-function initializeChart() {
-  const ctx = document.getElementById('progressChart').getContext('2d');
-  
-  // Destroy existing chart if it exists
-  if (progressChart) {
-    progressChart.destroy();
-  }
-  
-  progressChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['No Goals'],
-      datasets: [{
-        data: [1],
-        backgroundColor: ['#e9ecef'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            padding: 20,
-            usePointStyle: true
-          }
-        },
-        tooltip: {
-          enabled: false
-        }
-      },
-      cutout: '60%'
-    }
-  });
-}
-
-function updateChart() {
-  if (!progressChart) {
-    initializeChart();
-    return;
-  }
-  
-  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  
-  if (goals.length === 0) {
-    progressChart.data.labels = ['No Goals Yet'];
-    progressChart.data.datasets[0].data = [1];
-    progressChart.data.datasets[0].backgroundColor = ['#e9ecef'];
-    progressChart.data.datasets[0].borderWidth = 0;
-  } else {
-    progressChart.data.labels = goals.map(goal => goal.name);
-    progressChart.data.datasets[0].data = goals.map(goal => goal.saved);
-    progressChart.data.datasets[0].backgroundColor = [
-      '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6f42c1', '#fd7e14',
-      '#20c997', '#6c757d', '#fd7e14', '#e83e8c', '#6f42c1', '#20c997',
-      '#ffc107', '#dc3545', '#17a2b8', '#28a745', '#6c757d'
-    ].slice(0, goals.length);
-    progressChart.data.datasets[0].borderWidth = 2;
-  }
-  
-  progressChart.update('active');
-}
-
-// Debug function to check chart status
-function debugChart() {
-  console.log('Chart Status:', {
-    chartExists: !!progressChart,
-    goalsCount: JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').length,
-    canvasElement: !!document.getElementById('progressChart')
-  });
-}
 
 function showNotification(message, type = 'info') {
   // Create notification element
@@ -1339,7 +1240,6 @@ function clearAllData() {
     renderGoals();
     renderArchivedGoals();
     updateStats();
-    updateChart();
     showNotification('All data cleared successfully!', 'success');
   }
 }

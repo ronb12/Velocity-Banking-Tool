@@ -240,15 +240,15 @@ class ActivityLogger {
 window.activityLogger = new ActivityLogger();
 
 // Auto-initialize when Firebase is available
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async function() {
   // Wait for Firebase to be available
-  const checkFirebase = () => {
+  function checkFirebase() {
     if (window.db && window.auth) {
       window.activityLogger.initialize(window.db, window.auth);
     } else {
       setTimeout(checkFirebase, 100);
     }
-  };
+  }
   checkFirebase();
 });
 
