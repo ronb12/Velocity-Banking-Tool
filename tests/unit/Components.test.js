@@ -84,10 +84,18 @@ describe('Components', () => {
       expect(notificationSystem.notifications.length).toBeGreaterThan(0);
     });
 
-    test('should remove notification', () => {
+    test('should remove notification', (done) => {
       const notificationId = notificationSystem.show('Test', 'info');
+      expect(notificationSystem.notifications.find(n => n.id === notificationId)).toBeDefined();
+      
       notificationSystem.remove(notificationId);
-      expect(notificationSystem.notifications.find(n => n.id === notificationId)).toBeUndefined();
+      
+      // Removal is asynchronous (uses setTimeout), so wait a bit
+      setTimeout(() => {
+        const found = notificationSystem.notifications.find(n => n.id === notificationId);
+        expect(found).toBeUndefined();
+        done();
+      }, 350); // Wait slightly longer than the 300ms animation
     });
   });
 
