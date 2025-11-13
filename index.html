@@ -2956,83 +2956,121 @@
       margin-bottom: 1rem;
     }
     
-    /* Theme Selector List Styles */
+    /* Special styling for theme selector setting item */
+    .setting-item:has(.theme-selector-list) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    
+    /* Theme Selector List Styles - Improved Layout */
     .theme-selector-list {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.625rem;
       width: 100%;
-      margin-top: 0.5rem;
-      min-height: 300px;
-      max-height: 400px;
+      margin-top: 0;
+      min-height: auto;
+      max-height: 450px;
       overflow-y: auto;
-      padding: 0.5rem 0;
+      overflow-x: hidden;
+      padding: 0.25rem 0;
+      box-sizing: border-box;
+    }
+    
+    /* Custom scrollbar for theme list */
+    .theme-selector-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .theme-selector-list::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 3px;
+    }
+    
+    .theme-selector-list::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    
+    .theme-selector-list::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
     }
     
     .theme-option {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem;
+      gap: 0.875rem;
+      padding: 0.875rem 1rem;
       border: 2px solid var(--border-color);
-      border-radius: 0.75rem;
+      border-radius: 0.625rem;
       background: #ffffff;
       cursor: pointer;
       transition: all 0.2s ease;
       user-select: none;
       position: relative;
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 56px;
+      overflow: hidden;
     }
     
     .theme-option:hover {
       border-color: var(--primary-color);
       background: #f0f4f8;
-      transform: translateX(4px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transform: translateX(2px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     
     .theme-option.active {
       border-color: var(--primary-color);
       background: #e0f2fe;
       font-weight: 600;
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.1), 0 4px 12px rgba(0,123,255,0.15);
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.1), 0 4px 12px rgba(0,123,255,0.12);
+      transform: none;
     }
     
     .theme-option input[type="radio"] {
       margin: 0;
       cursor: pointer;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       accent-color: var(--primary-color);
       flex-shrink: 0;
     }
     
     .theme-swatch {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
-      border: 2px solid rgba(0,0,0,0.1);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border: 2px solid rgba(0,0,0,0.08);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
       flex-shrink: 0;
-      display: inline-block;
+      display: block;
     }
     
     .theme-option.active .theme-swatch {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(0,123,255,0.2), 0 2px 8px rgba(0,0,0,0.15);
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.15), 0 2px 6px rgba(0,0,0,0.1);
     }
     
     .theme-option-icon {
-      font-size: 1.2rem;
-      width: 24px;
+      font-size: 1.15rem;
+      width: 20px;
       text-align: center;
       flex-shrink: 0;
+      line-height: 1;
     }
     
     .theme-option-name {
       flex: 1;
-      font-size: 0.95rem;
+      font-size: 0.9375rem;
       color: #1e293b;
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
     }
     
     .theme-option.active .theme-option-name {
@@ -3043,8 +3081,33 @@
     .theme-option .check-mark {
       color: var(--primary-color);
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 1.125rem;
       flex-shrink: 0;
+      width: 20px;
+      text-align: center;
+      line-height: 1;
+    }
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+      .theme-option {
+        padding: 0.75rem 0.875rem;
+        gap: 0.75rem;
+        min-height: 52px;
+      }
+      
+      .theme-swatch {
+        width: 32px;
+        height: 32px;
+      }
+      
+      .theme-option-name {
+        font-size: 0.875rem;
+      }
+      
+      .theme-selector-list {
+        max-height: 400px;
+      }
     }
     
     /* Dark theme styling */
