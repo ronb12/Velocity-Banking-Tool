@@ -22,7 +22,14 @@ jobs:
         run: npm ci
       
       - name: Build project
-        run: DISABLE_PWA=true npm run build
+        run: |
+          echo "Building project with PWA disabled..."
+          npm run build
+          if [ $? -ne 0 ]; then
+            echo "❌ Build failed - check errors above"
+            exit 1
+          fi
+          echo "✅ Build completed successfully"
         env:
           NODE_ENV: production
           DISABLE_PWA: 'true'
