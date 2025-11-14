@@ -84,6 +84,8 @@ export default defineConfig({
         const filesToCopy = [
           { src: 'service-worker.js', dest: 'service-worker.js' },
           { src: 'config.js', dest: 'config.js' },
+          { src: 'icons/icon-192.png', dest: 'icons/icon-192.png' },
+          { src: 'icons/icon-512.png', dest: 'icons/icon-512.png' },
           { src: 'utils/validation.js', dest: 'utils/validation.js' },
           { src: 'utils/errorHandler.js', dest: 'utils/errorHandler.js' },
           { src: 'utils/performance.js', dest: 'utils/performance.js' },
