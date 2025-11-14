@@ -95,6 +95,7 @@ export default defineConfig({
           { src: 'utils/analytics.js', dest: 'utils/analytics.js' },
           { src: 'utils/financialInsights.js', dest: 'utils/financialInsights.js' },
           { src: 'utils/themeManager.js', dest: 'utils/themeManager.js' },
+          { src: 'utils/authHelper.js', dest: 'utils/authHelper.js' },
           { src: 'app-updater.js', dest: 'app-updater.js' },
         ];
         
