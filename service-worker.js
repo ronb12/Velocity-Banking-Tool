@@ -88,6 +88,36 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  const url = new URL(event.request.url);
+  const pathname = url.pathname;
+
+  // CRITICAL: Don't intercept JS, CSS, or other static assets - let the browser handle them
+  // Only intercept HTML navigation requests and API calls
+  const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|webp)$/i.test(pathname);
+  
+  if (isStaticAsset) {
+    // For static assets, use network-first but don't interfere with module loading
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Only cache successful responses
+          if (response.status === 200 && response.headers.get('content-type')?.includes('javascript')) {
+            const responseToCache = response.clone();
+            caches.open(DYNAMIC_CACHE)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
   // For navigation requests (HTML), always fetch from network first
   // This ensures we get the correct page (login.html, register.html, etc.)
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
@@ -119,15 +149,15 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // For non-navigation requests (assets, API calls), use network-first with cache fallback
+  // For API requests and other non-static assets
   event.respondWith(
     fetch(event.request)
       .then(response => {
         // Clone the response
         const responseToCache = response.clone();
 
-        // Cache the response
-        if (response.status === 200) {
+        // Cache the response (but not for API calls)
+        if (response.status === 200 && !pathname.includes('/api/')) {
           caches.open(DYNAMIC_CACHE)
             .then(cache => {
               cache.put(event.request, responseToCache);
