@@ -56,7 +56,11 @@ const CONFIG = {
 
   try {
     const host = window.location && window.location.hostname;
-    if (host && (host === 'localhost' || host === '127.0.0.1')) {
+    const isLocalhost = host && (host === 'localhost' || host === '127.0.0.1' || host.includes('localhost'));
+    const isProduction = host && (host.includes('firebaseapp.com') || host.includes('web.app') || host.includes('github.io'));
+    
+    // Only load on localhost, never on production
+    if (isLocalhost && !isProduction) {
       const existing = document.querySelector('script[data-local-test-data="true"]');
       if (!existing) {
         const script = document.createElement('script');
@@ -64,10 +68,20 @@ const CONFIG = {
         script.src = '/local-test-data.js';
         script.defer = true;
         script.dataset.localTestData = 'true';
+        // Add error handler to prevent MIME type errors from showing in console
+        script.onerror = () => {
+          // Silently fail - this is expected if file doesn't exist
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        };
         document.head.appendChild(script);
       }
     }
   } catch (err) {
-    console.warn('Unable to load local test data helper:', err);
+    // Silently fail - don't log errors in production
+    if (window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      console.warn('Unable to load local test data helper:', err);
+    }
   }
 })();
