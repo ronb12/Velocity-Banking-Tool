@@ -490,16 +490,24 @@ auth.onAuthStateChanged(async user => {
       const isIndexPage = currentPage === 'index.html' || currentPage === '' || currentPage === '/';
       const isUnderSrcPages = currentPath.includes('/src/pages/') && !currentPath.includes('/src/pages/auth/');
       
-      // CRITICAL: Add a small delay before redirecting to allow navigation to complete
-      // This prevents auth.js from blocking user-initiated navigation
-      // Only redirect if we've been on this page for more than 500ms (not mid-navigation)
-      const navigationStartTime = parseInt(sessionStorage.getItem('navigation-start-time') || '0');
-      const timeOnPage = Date.now() - navigationStartTime;
-      const isMidNavigation = timeOnPage < 500;
+      // CRITICAL: Prevent redirect loops on production
+      // Only redirect unauthenticated users from protected pages to login
+      // But allow them to stay on index.html (public landing page)
+      // This prevents infinite redirect loops between index.html and login.html
       
-      // Redirect if on a protected page (any page under /src/pages/ except auth, or index.html)
-      // but NOT if already on auth page, and NOT if we're mid-navigation
-      if ((isUnderSrcPages || isIndexPage) && !isAuthPage && !isMidNavigation) {
+      // Check if we've already attempted a redirect recently
+      const lastRedirectAttempt = parseInt(sessionStorage.getItem('last-redirect-attempt') || '0');
+      const timeSinceRedirect = Date.now() - lastRedirectAttempt;
+      const hasRecentRedirect = timeSinceRedirect < 3000; // 3 seconds
+      
+      // Don't redirect from index.html - it's a public page that shows the dashboard
+      // Only redirect from actual protected pages under /src/pages/
+      const shouldRedirect = isUnderSrcPages && !isAuthPage && !hasRecentRedirect;
+      
+      if (shouldRedirect) {
+        // Mark redirect attempt
+        sessionStorage.setItem('last-redirect-attempt', Date.now().toString());
+        
         // Check reload guard before redirecting - be very strict
         const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
         const recent = history.filter(t => (Date.now() - t) < 10000); // 10 second window
@@ -514,13 +522,25 @@ auth.onAuthStateChanged(async user => {
               loginPath = '../auth/login.html';
             }
             console.log('[Auth] Redirecting unauthenticated user to login:', loginPath, 'from:', currentPath);
+            
+            // Add to reload history to prevent loops
+            history.push(Date.now());
+            sessionStorage.setItem('reload-history', JSON.stringify(history));
+            
             window.location.replace(loginPath);
           }
         } else {
           console.log('[Auth] Redirect to login blocked by reload guard - too many recent redirects');
+          // Clear the redirect attempt flag if blocked
+          sessionStorage.removeItem('last-redirect-attempt');
         }
-      } else if (isMidNavigation) {
-        console.log('[Auth] Skipping redirect - navigation in progress');
+      } else if (isIndexPage && !hasRecentRedirect) {
+        // On index.html without recent redirect - this is fine, user can view public dashboard
+        console.log('[Auth] User on index.html (public page), allowing access');
+        // Clear redirect attempt flag
+        sessionStorage.removeItem('last-redirect-attempt');
+      } else if (hasRecentRedirect) {
+        console.log('[Auth] Skipping redirect - recent redirect attempt detected (within 3s)');
       }
     }
     
