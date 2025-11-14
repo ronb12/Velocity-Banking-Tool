@@ -82,7 +82,6 @@ export default defineConfig({
       name: 'copy-utils-scripts',
       writeBundle() {
         const filesToCopy = [
-          { src: 'prevent-reload-loop.js', dest: 'prevent-reload-loop.js' },
           { src: 'service-worker.js', dest: 'service-worker.js' },
           { src: 'config.js', dest: 'config.js' },
           { src: 'utils/validation.js', dest: 'utils/validation.js' },
