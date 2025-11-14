@@ -26,7 +26,11 @@ self.addEventListener('install', event => {
       caches.open(STATIC_CACHE)
         .then(cache => {
           console.log('Caching static assets');
-          return cache.addAll(STATIC_ASSETS);
+          return cache.addAll(STATIC_ASSETS).catch(err => {
+            console.warn('Failed to cache some assets:', err);
+            // Continue even if some assets fail to cache
+            return Promise.resolve();
+          });
         }),
       // Create offline page
       caches.open(STATIC_CACHE)
@@ -41,8 +45,8 @@ self.addEventListener('install', event => {
         })
     ])
   );
-  // Activate new service worker immediately
-  self.skipWaiting();
+  // DO NOT skip waiting automatically - wait for user confirmation
+  // This prevents aggressive reloads that cause loops
 });
 
 // Activate event - clean up old caches and take control
@@ -60,11 +64,19 @@ self.addEventListener('activate', event => {
           })
         );
       }),
-      // Take control of all clients
-      clients.claim(),
-      // Enable background sync
-      self.registration.sync.register('sync-data')
-    ])
+      // Only claim clients if explicitly requested (not automatically)
+      // This prevents automatic reload loops
+      // clients.claim() is now only called when user explicitly updates
+    ]).then(() => {
+      // Try to register background sync, but don't fail if it's not supported
+      if (self.registration.sync) {
+        return self.registration.sync.register('sync-data').catch(err => {
+          console.warn('Background sync registration failed (non-fatal):', err);
+          return Promise.resolve();
+        });
+      }
+      return Promise.resolve();
+    })
   );
 });
 
@@ -218,12 +230,41 @@ self.addEventListener('periodicsync', event => {
 });
 
 // Function to check for updates
+// Rate limited to prevent excessive checks
+let lastUpdateCheck = 0;
+const UPDATE_CHECK_INTERVAL = 300000; // 5 minutes minimum between checks
+
 async function checkForUpdates() {
+  const now = Date.now();
+  
+  // Rate limit update checks to prevent loops
+  if (now - lastUpdateCheck < UPDATE_CHECK_INTERVAL) {
+    console.log('[SW] Update check skipped - too soon since last check');
+    return;
+  }
+  
+  lastUpdateCheck = now;
+  
   try {
-    const response = await fetch('/version.json', { cache: 'no-store' });
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch('/version.json', { 
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      return; // Silently fail if version file doesn't exist
+    }
+    
     const data = await response.json();
     
-    if (data.version !== VERSION) {
+    if (data.version && data.version !== VERSION) {
+      // Only show notification if version actually changed
       self.registration.showNotification('Update Available', {
         body: 'A new version is available. Click to update.',
         icon: '/icon-192.png',
@@ -232,6 +273,7 @@ async function checkForUpdates() {
       });
     }
   } catch (error) {
-    console.error('Update check failed:', error);
+    // Silently fail - don't log errors that might spam console
+    // This prevents update check failures from causing issues
   }
 }

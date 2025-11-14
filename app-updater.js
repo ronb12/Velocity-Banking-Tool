@@ -1,17 +1,28 @@
 // Current version of the app
 const CURRENT_VERSION = '1.0.0';
 
-// Update check interval (5 minutes)
-const UPDATE_INTERVAL = 5 * 60 * 1000;
+// Update check interval (10 minutes - less frequent to avoid conflicts)
+const UPDATE_INTERVAL = 10 * 60 * 1000;
+
+// Flag to prevent multiple reloads
+let isReloading = false;
+
+// Flag to prevent multiple update check intervals
+let updateCheckInterval = null;
+let isInitialized = false;
 
 // Function to show update notification
 function showUpdateNotification() {
+  // Don't show if already reloading
+  if (isReloading) return;
+  
   const notification = document.createElement('div');
   notification.className = 'update-notification';
   notification.innerHTML = `
     <div class="update-content">
       <p>A new version is available!</p>
-      <button onclick="window.location.reload()">Update Now</button>
+      <button id="update-now-btn">Update Now</button>
+      <button id="update-later-btn">Later</button>
     </div>
   `;
   document.body.appendChild(notification);
@@ -59,54 +70,164 @@ function showUpdateNotification() {
     `;
     document.head.appendChild(styles);
   }
+
+  // Add event listeners
+  document.getElementById('update-now-btn').addEventListener('click', () => {
+    if (!isReloading) {
+      isReloading = true;
+      
+      // Use safe reload wrapper if available, otherwise check before reloading
+      if (window.safeLocationReload) {
+        window.safeLocationReload();
+      } else {
+        // Check reload guard before reloading
+        const reloadHistory = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+        const now = Date.now();
+        const recent = reloadHistory.filter(t => (now - t) < 10000);
+        
+        if (recent.length < 2 && sessionStorage.getItem('reload-blocked') !== 'true') {
+          window.location.reload();
+        } else {
+          console.warn('[App Updater] Reload blocked by reload guard');
+          isReloading = false;
+        }
+      }
+    }
+  });
+
+  document.getElementById('update-later-btn').addEventListener('click', () => {
+    notification.remove();
+  });
 }
+
+// Rate limiting for update checks
+let lastUpdateCheck = 0;
+const MIN_UPDATE_CHECK_INTERVAL = 60000; // 1 minute minimum between checks
 
 // Function to check for updates
 async function checkForUpdates() {
+  // Rate limit update checks to prevent excessive checks
+  const now = Date.now();
+  if (now - lastUpdateCheck < MIN_UPDATE_CHECK_INTERVAL) {
+    console.log('[App Updater] Update check skipped - too soon since last check');
+    return;
+  }
+  lastUpdateCheck = now;
+  
   try {
-    // Get the service worker registration
-    const registration = await navigator.serviceWorker.ready;
+    if (!('serviceWorker' in navigator)) return;
     
-    // Create a message channel for version check
-    const messageChannel = new MessageChannel();
+    // Check if there's an existing service worker registration
+    const registration = await navigator.serviceWorker.getRegistration();
     
-    // Send version check message to service worker
-    registration.active.postMessage({
-      action: 'CHECK_VERSION'
-    }, [messageChannel.port2]);
+    // If no service worker is registered, don't try to check for updates
+    if (!registration) {
+      console.log('[App Updater] No service worker registered, skipping update check');
+      return;
+    }
     
-    // Listen for version response
-    messageChannel.port1.onmessage = (event) => {
-      const serverVersion = event.data.version;
+    // Wait for service worker to be ready (with timeout)
+    const readyRegistration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Service worker ready timeout')), 5000))
+    ]).catch(error => {
+      console.log('[App Updater] Service worker not ready or timeout:', error.message);
+      return null;
+    });
+    
+    if (!readyRegistration) {
+      return;
+    }
+    
+    // Check if there's an update available (this triggers update check)
+    // Only do this if not already checking
+    try {
+      await readyRegistration.update();
+    } catch (updateError) {
+      // Silently fail update check errors
+      console.log('[App Updater] Update check failed (non-fatal):', updateError.message);
+      return;
+    }
+    
+    // Listen for updates (only if registration exists)
+    // Only check once per registration to avoid duplicate listeners
+    if (!readyRegistration._updateListenerAdded) {
+      readyRegistration._updateListenerAdded = true;
       
-      // Compare versions
-      if (serverVersion !== CURRENT_VERSION) {
-        showUpdateNotification();
+      if (readyRegistration.installing || readyRegistration.waiting) {
+        const worker = readyRegistration.installing || readyRegistration.waiting;
+        if (worker) {
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker is installed, show notification (user must confirm)
+              // Do NOT auto-reload - let user decide
+              showUpdateNotification();
+            }
+          });
+        }
       }
-    };
+    }
   } catch (error) {
-    console.error('Error checking for updates:', error);
+    // Silently fail - don't cause reload loops
+    console.log('[App Updater] Error checking for updates (non-fatal):', error.message);
   }
 }
 
 // Function to initialize the updater
 function initializeUpdater() {
-  // Check for updates immediately
-  checkForUpdates();
+  // Prevent multiple initializations
+  if (isInitialized) {
+    console.log('[App Updater] Already initialized, skipping');
+    return;
+  }
   
-  // Set up periodic update checks
-  setInterval(checkForUpdates, UPDATE_INTERVAL);
+  // Only initialize if service workers are supported
+  if (!('serviceWorker' in navigator)) {
+    console.log('[App Updater] Service workers not supported, disabling updater');
+    return;
+  }
   
-  // Listen for service worker updates
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    showUpdateNotification();
-  });
-  
-  // Listen for messages from service worker
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data.action === 'UPDATE_AVAILABLE') {
-      showUpdateNotification();
+  // Check if there's actually a service worker registered
+  navigator.serviceWorker.getRegistration().then(registration => {
+    if (!registration) {
+      console.log('[App Updater] No service worker registered, disabling updater');
+      return;
     }
+    
+    // Mark as initialized before setting up intervals
+    isInitialized = true;
+    
+    // Only set up update checks if service worker exists
+    // Check for updates after a longer delay to avoid immediate reloads
+    setTimeout(() => {
+      checkForUpdates();
+    }, 10000); // Increased delay to avoid conflicts during page load
+    
+    // Clear any existing interval first
+    if (updateCheckInterval) {
+      clearInterval(updateCheckInterval);
+    }
+    
+    // Set up periodic update checks (less frequent)
+    updateCheckInterval = setInterval(checkForUpdates, UPDATE_INTERVAL);
+    
+    // Listen for messages from service worker (but don't auto-reload)
+    // Use a single listener that checks for duplicate messages
+    let lastMessageTime = 0;
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      // Rate limit message handling
+      const now = Date.now();
+      if (now - lastMessageTime < 5000) {
+        return; // Ignore messages too close together
+      }
+      lastMessageTime = now;
+      
+      if (event.data && event.data.action === 'UPDATE_AVAILABLE') {
+        showUpdateNotification();
+      }
+    });
+  }).catch(error => {
+    console.log('[App Updater] Error checking service worker registration (non-fatal):', error.message);
   });
 }
 
@@ -115,4 +236,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initializeUpdater);
 } else {
   initializeUpdater();
-} 
+}

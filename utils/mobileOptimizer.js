@@ -221,7 +221,21 @@ class MobileOptimizer {
   
   // Trigger refresh
   triggerRefresh() {
-    window.location.reload();
+    // Use safe reload wrapper if available to prevent reload loops
+    if (window.safeLocationReload) {
+      window.safeLocationReload();
+    } else {
+      // Check reload guard before reloading
+      const reloadHistory = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+      const now = Date.now();
+      const recent = reloadHistory.filter(t => (now - t) < 10000);
+      
+      if (recent.length < 2 && sessionStorage.getItem('reload-blocked') !== 'true') {
+        window.location.reload();
+      } else {
+        console.warn('[Mobile Optimizer] Reload blocked by reload guard');
+      }
+    }
   }
   
   // Optimize viewport for mobile

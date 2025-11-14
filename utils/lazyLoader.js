@@ -130,12 +130,16 @@ class LazyLoader {
       
       return tool;
     } catch (error) {
-      // Show error state
+      // Show error state with safe reload
+      const reloadFn = window.safeLocationReload ? 
+        `window.safeLocationReload()` : 
+        `(function(){const h=JSON.parse(sessionStorage.getItem('reload-history')||'[]');const n=Date.now();const r=h.filter(t=>(n-t)<10000);if(r.length<2&&sessionStorage.getItem('reload-blocked')!=='true'){window.location.reload();}else{console.warn('Reload blocked');}})()`;
+      
       container.innerHTML = `
         <div class="error-container">
           <h3>Failed to load ${toolName}</h3>
           <p>${error.message}</p>
-          <button onclick="location.reload()">Retry</button>
+          <button onclick="${reloadFn}">Retry</button>
         </div>
       `;
       throw error;
