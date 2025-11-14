@@ -75,12 +75,18 @@
                 console.log('[SW] ✅ Service Worker registered successfully!');
                 console.log('[SW] Scope:', registration.scope);
                 
-                // Don't immediately check for updates - wait a bit
-                setTimeout(() => {
-                  registration.update().catch(err => {
-                    console.log('[SW] Update check:', err.message);
-                  });
-                }, 5000);
+                // DON'T call registration.update() here - app-updater.js handles this
+                // Calling it here can cause conflicts and reload loops
+                // Only check for updates much later and only once
+                if (!registration._updateCheckScheduled) {
+                  registration._updateCheckScheduled = true;
+                  setTimeout(() => {
+                    // Check for updates only once, very delayed
+                    registration.update().catch(err => {
+                      console.log('[SW] Update check (delayed):', err.message);
+                    });
+                  }, 60000); // Wait 60 seconds before first update check
+                }
               })
               .catch(error => {
                 console.error('[SW] ❌ Service Worker registration failed:', error);

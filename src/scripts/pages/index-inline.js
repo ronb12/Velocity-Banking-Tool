@@ -360,10 +360,23 @@ async function updateFinancialInsights() {
 }
 
 // Update insights when data changes
+// NOTE: Don't add another onAuthStateChanged listener here - it's already handled in auth.js
+// Instead, listen for a custom event or check auth state directly
 if (typeof auth !== 'undefined') {
-  auth.onAuthStateChanged(() => {
-    setTimeout(updateFinancialInsights, 1000);
-  });
+  // Only update insights if user is logged in and data is available
+  // Use a one-time check after a delay instead of another listener
+  const updateInsightsOnAuth = () => {
+    if (auth.currentUser) {
+      setTimeout(updateFinancialInsights, 1000);
+    }
+  };
+  
+  // Check once after page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateInsightsOnAuth);
+  } else {
+    setTimeout(updateInsightsOnAuth, 2000);
+  }
 }
 
 // Initialize on DOM ready

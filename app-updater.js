@@ -140,10 +140,22 @@ async function checkForUpdates() {
     }
     
     // Check if there's an update available (this triggers update check)
-    // Only do this if not already checking
+    // Only do this if not already checking and if enough time has passed
+    // Add a flag to prevent multiple simultaneous update checks
+    if (readyRegistration._updateChecking) {
+      console.log('[App Updater] Update check already in progress, skipping');
+      return;
+    }
+    
     try {
+      readyRegistration._updateChecking = true;
       await readyRegistration.update();
+      // Clear flag after a delay to allow future checks
+      setTimeout(() => {
+        readyRegistration._updateChecking = false;
+      }, 10000); // 10 second cooldown
     } catch (updateError) {
+      readyRegistration._updateChecking = false;
       // Silently fail update check errors
       console.log('[App Updater] Update check failed (non-fatal):', updateError.message);
       return;

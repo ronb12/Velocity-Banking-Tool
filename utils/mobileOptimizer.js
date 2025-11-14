@@ -219,23 +219,28 @@ class MobileOptimizer {
     document.body.appendChild(pullElement);
   }
   
-  // Trigger refresh
+  // Trigger refresh - DISABLED to prevent reload loops
+  // Use this only when absolutely necessary
   triggerRefresh() {
-    // Use safe reload wrapper if available to prevent reload loops
-    if (window.safeLocationReload) {
-      window.safeLocationReload();
-    } else {
-      // Check reload guard before reloading
-      const reloadHistory = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
-      const now = Date.now();
-      const recent = reloadHistory.filter(t => (now - t) < 10000);
-      
-      if (recent.length < 2 && sessionStorage.getItem('reload-blocked') !== 'true') {
-        window.location.reload();
-      } else {
-        console.warn('[Mobile Optimizer] Reload blocked by reload guard');
-      }
+    // Check reload guard FIRST
+    const reloadHistory = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+    const now = Date.now();
+    const recent = reloadHistory.filter(t => (now - t) < 30000); // 30 second window
+    
+    // More strict: only allow reload if no recent reloads AND not blocked
+    if (recent.length >= 1 || sessionStorage.getItem('reload-blocked') === 'true') {
+      console.warn('[Mobile Optimizer] Reload blocked - too many recent reloads or blocked flag set');
+      console.warn('[Mobile Optimizer] Recent reloads:', recent.length, 'Blocked:', sessionStorage.getItem('reload-blocked'));
+      return; // Don't reload at all
     }
+    
+    // Add to reload history before reloading
+    reloadHistory.push(now);
+    sessionStorage.setItem('reload-history', JSON.stringify(reloadHistory));
+    
+    // Only reload if absolutely necessary
+    console.warn('[Mobile Optimizer] Triggering refresh - this should be rare!');
+    window.location.reload();
   }
   
   // Optimize viewport for mobile

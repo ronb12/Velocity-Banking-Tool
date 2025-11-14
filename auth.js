@@ -162,6 +162,7 @@ function updateUIForLoggedInUser(user) {
 let authStateChangeTimeout = null;
 let lastAuthState = null;
 let authStateChangeCount = 0;
+let isProcessingAuthState = false; // Flag to prevent concurrent processing
 
 // Authentication state observer with debouncing
 auth.onAuthStateChanged(async user => {
@@ -177,33 +178,42 @@ auth.onAuthStateChanged(async user => {
     return;
   }
   
+  // Prevent concurrent processing
+  if (isProcessingAuthState) {
+    console.log('[Auth] Already processing auth state change, skipping');
+    return;
+  }
+  
   authStateChangeCount++;
   console.log('[Auth] onAuthStateChanged fired (#', authStateChangeCount, '), user:', user?.email || 'null', 'authStateResolved:', authStateResolved);
   
   // Debounce processing
   authStateChangeTimeout = setTimeout(async () => {
     // Prevent multiple simultaneous auth state changes
-    if (authStateChangeTimeout === null) {
+    if (isProcessingAuthState || authStateChangeTimeout === null) {
       return; // Already processed
     }
     
+    isProcessingAuthState = true;
     lastAuthState = currentUserId;
     currentUser = user;
     
     // Check if we're in a reload loop (prevent processing if too many changes)
-    if (authStateChangeCount > 5) {
-      console.error('[Auth] Too many auth state changes detected, ignoring to prevent loop');
+    if (authStateChangeCount > 10) { // Increased threshold
+      console.error('[Auth] Too many auth state changes detected (', authStateChangeCount, '), ignoring to prevent loop');
       authStateChangeTimeout = null;
+      isProcessingAuthState = false;
       return;
     }
     
-    // Check reload guard
+    // Check reload guard - more strict
     const reloadHistory = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
     const now = Date.now();
-    const recentReloads = reloadHistory.filter(timestamp => (now - timestamp) < 5000);
-    if (recentReloads.length >= 3) {
-      console.error('[Auth] Reload loop detected, blocking auth state change processing');
+    const recentReloads = reloadHistory.filter(timestamp => (now - timestamp) < 10000); // 10 second window
+    if (recentReloads.length >= 2) { // Reduced threshold
+      console.error('[Auth] Reload loop detected (', recentReloads.length, ' recent reloads), blocking auth state change processing');
       authStateChangeTimeout = null;
+      isProcessingAuthState = false;
       return;
     }
     
@@ -306,9 +316,10 @@ auth.onAuthStateChanged(async user => {
         } else {
           console.log('[Auth] Redirect blocked - too many recent redirects or already redirected');
         }
-        authStateChangeTimeout = null;
-        return;
-      } else {
+    authStateChangeTimeout = null;
+    isProcessingAuthState = false;
+    return;
+  } else {
         // Clear the redirect flags if we're on a non-auth page (like index.html)
         // But only after a delay to ensure we're not in the middle of a redirect
         setTimeout(() => {
