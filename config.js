@@ -29,6 +29,7 @@ const CONFIG = {
     allowUnverifiedLocalLogin: true,
     allowUnverifiedAccounts: [
       'testuser@bfh.com',
+      'testuser@BFH.com', // Also allow uppercase variant
     ]
   },
   

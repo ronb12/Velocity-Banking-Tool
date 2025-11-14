@@ -376,20 +376,33 @@
           console.log('[Login] Redirecting to index.html, current auth user:', auth.currentUser?.email || 'null');
           
           // Determine correct redirect path based on current location
+          // In production, path is usually /src/pages/auth/login.html, so go up 2 levels
           let redirectPath = '../../index.html';
-          if (window.location.pathname.includes('/src/pages/auth/')) {
+          const currentPath = window.location.pathname;
+          
+          // Check if we're on a subpath
+          if (currentPath.includes('/src/pages/auth/')) {
             redirectPath = '../../index.html';
-          } else if (window.location.pathname.includes('/auth/')) {
+          } else if (currentPath.includes('/auth/')) {
             redirectPath = '../../index.html';
-          } else {
+          } else if (currentPath === '/login.html' || currentPath.endsWith('/login.html')) {
             redirectPath = 'index.html';
+          } else {
+            // Fallback: use absolute path
+            redirectPath = '/index.html';
           }
           
-          console.log('[Login] Redirect path:', redirectPath, 'Current path:', window.location.pathname);
+          console.log('[Login] Redirect path:', redirectPath, 'Current path:', currentPath, 'Origin:', window.location.origin);
           
           // Redirect with flag still set - auth.js will respect it
           setTimeout(() => {
-            window.location.replace(redirectPath);
+            try {
+              window.location.replace(redirectPath);
+            } catch (error) {
+              console.error('[Login] Redirect error:', error);
+              // Fallback to absolute path
+              window.location.replace(window.location.origin + '/index.html');
+            }
           }, 500);
         }
         
@@ -451,19 +464,28 @@
           
           // Use consistent redirect path and method
           let redirectPath = '../../index.html';
-          if (window.location.pathname.includes('/src/pages/auth/')) {
+          const currentPath = window.location.pathname;
+          
+          if (currentPath.includes('/src/pages/auth/')) {
             redirectPath = '../../index.html';
-          } else if (window.location.pathname.includes('/auth/')) {
+          } else if (currentPath.includes('/auth/')) {
             redirectPath = '../../index.html';
-          } else {
+          } else if (currentPath === '/login.html' || currentPath.endsWith('/login.html')) {
             redirectPath = 'index.html';
+          } else {
+            redirectPath = '/index.html';
           }
           
-          console.log('[Login] Google login redirect path:', redirectPath);
+          console.log('[Login] Google login redirect path:', redirectPath, 'Current path:', currentPath);
           
           // Wait a bit to ensure auth state is set
           setTimeout(() => {
-            window.location.replace(redirectPath);
+            try {
+              window.location.replace(redirectPath);
+            } catch (error) {
+              console.error('[Login] Google redirect error:', error);
+              window.location.replace(window.location.origin + '/index.html');
+            }
           }, 500);
         })
         .catch(error => {

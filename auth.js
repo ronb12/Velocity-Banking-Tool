@@ -278,21 +278,30 @@ auth.onAuthStateChanged(async user => {
           
           // Determine correct redirect path
           let redirectPath = 'index.html';
+          const currentPath = window.location.pathname;
+          
           if (currentPage === 'login.html') {
-            if (window.location.pathname.includes('/src/pages/auth/')) {
+            if (currentPath.includes('/src/pages/auth/')) {
               redirectPath = '../../index.html';
-            } else if (window.location.pathname.includes('/auth/')) {
+            } else if (currentPath.includes('/auth/')) {
               redirectPath = '../../index.html';
-            } else {
+            } else if (currentPath === '/login.html' || currentPath.endsWith('/login.html')) {
               redirectPath = 'index.html';
+            } else {
+              redirectPath = '/index.html';
             }
           }
           
-          console.log('[Auth] Redirecting to:', redirectPath);
+          console.log('[Auth] Redirecting to:', redirectPath, 'Current path:', currentPath);
           
           // Use a small delay to prevent immediate redirect loops
           setTimeout(() => {
-            window.location.replace(redirectPath);
+            try {
+              window.location.replace(redirectPath);
+            } catch (error) {
+              console.error('[Auth] Redirect error:', error);
+              window.location.replace(window.location.origin + '/index.html');
+            }
           }, 200);
         } else {
           console.log('[Auth] Redirect blocked - too many recent redirects or already redirected');
