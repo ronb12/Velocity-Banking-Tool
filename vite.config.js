@@ -178,8 +178,26 @@ export default defineConfig({
     fs: {
       allow: ['..'],
     },
+    // Exclude utility scripts from Vite transformation in dev mode
+    // This prevents import statement injection into non-module scripts
+    middlewareMode: false,
   },
+  // Configure which files Vite should pre-bundle
   optimizeDeps: {
     include: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+    // Exclude utility scripts from pre-bundling to prevent import injection
+    exclude: [
+      './utils/validation.js',
+      './utils/errorHandler.js',
+      './utils/performance.js',
+      './utils/lazyLoader.js',
+      './utils/mobileOptimizer.js',
+      './utils/accessibility.js',
+      './utils/analytics.js',
+      './utils/financialInsights.js',
+      './utils/themeManager.js',
+      './config.js',
+      './app-updater.js',
+    ],
   },
 });
