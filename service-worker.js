@@ -6,16 +6,19 @@ const VERSION = '1.1.0';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/budget.html',
-  '/Debt_Tracker.html',
-  '/Velocity_Calculator.html',
-  '/Credit_Score_Estimator.html',
-  '/theme.css',
-  '/global.js',
+  '/src/pages/other/budget.html',
+  '/src/pages/debt/Debt_Tracker.html',
+  '/src/pages/calculators/Velocity_Calculator.html',
+  '/src/pages/calculators/Credit_Score_Estimator.html',
+  '/src/pages/auth/login.html',
+  '/src/pages/auth/register.html',
   '/app-updater.js',
+  '/config.js',
   '/icon-192.png',
   '/icon-512.png',
-  '/offline.html'
+  '/offline.html',
+  '/prevent-reload-loop.js',
+  '/unregister-sw.js'
 ];
 
 // Install event - cache static assets
@@ -157,28 +160,64 @@ self.addEventListener('sync', event => {
 });
 
 // Function to handle background sync
+// Note: This uses IndexedDB for offline data storage
 async function syncData() {
   try {
+    // Simple IndexedDB wrapper for background sync
+    const dbName = 'offline-sync-db';
+    const dbVersion = 1;
+    const storeName = 'pendingData';
+    
+    const openDB = () => {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(dbName, dbVersion);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(storeName)) {
+            db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+          }
+        };
+      });
+    };
+    
     const db = await openDB();
-    const pendingData = await db.getAll('pendingData');
+    const transaction = db.transaction([storeName], 'readwrite');
+    const store = transaction.objectStore(storeName);
+    
+    // Get all pending data
+    const getAllRequest = store.getAll();
+    const pendingData = await new Promise((resolve, reject) => {
+      getAllRequest.onsuccess = () => resolve(getAllRequest.result);
+      getAllRequest.onerror = () => reject(getAllRequest.error);
+    });
     
     for (const data of pendingData) {
       try {
         const response = await fetch(data.url, {
-          method: data.method,
-          headers: data.headers,
+          method: data.method || 'GET',
+          headers: data.headers || {},
           body: data.body
         });
         
         if (response.ok) {
-          await db.delete('pendingData', data.id);
+          // Delete synced data
+          store.delete(data.id);
         }
       } catch (error) {
-        console.error('Sync failed:', error);
+        console.error('Sync failed for data:', data.id, error);
       }
     }
+    
+    transaction.oncomplete = () => {
+      console.log('[SW] Background sync completed');
+    };
   } catch (error) {
-    console.error('Background sync failed:', error);
+    // Silently fail - background sync is optional
+    console.warn('[SW] Background sync failed (non-fatal):', error);
   }
 }
 

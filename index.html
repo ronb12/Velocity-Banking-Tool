@@ -27,6 +27,10 @@
   <!-- Theme Color for Android + iOS -->
   <meta name="theme-color" content="#007bff">
 
+  <!-- Prevent reload loops - MUST be first -->
+  <script src="prevent-reload-loop.js"></script>
+  <!-- Unregister any existing service workers first to prevent reload loops -->
+  <script src="unregister-sw.js"></script>
   <script src="config.js"></script>
   <script src="utils/validation.js"></script>
   <script src="utils/errorHandler.js"></script>
@@ -46,6 +50,40 @@
   <script type="module" src="auth.js"></script>
   <script type="module" src="sync.js"></script>
   <script src="app-updater.js"></script>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    // Register service worker after page loads and only if not unregistered
+    if ('serviceWorker' in navigator) {
+      // Wait for unregister script to finish
+      window.addEventListener('load', () => {
+        // Small delay to ensure unregister-sw.js has run
+        setTimeout(() => {
+          // Only register if service worker was not explicitly unregistered
+          if (sessionStorage.getItem('sw-unregistered') !== 'true') {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+              // Only register if no existing registration
+              if (registrations.length === 0) {
+                navigator.serviceWorker.register('/service-worker.js')
+                  .then(registration => {
+                    console.log('[SW] Service Worker registered successfully:', registration.scope);
+                  })
+                  .catch(error => {
+                    console.warn('[SW] Service Worker registration failed (non-fatal):', error);
+                  });
+              } else {
+                console.log('[SW] Service Worker already registered, skipping');
+              }
+            }).catch(error => {
+              console.warn('[SW] Service Worker check failed (non-fatal):', error);
+            });
+          } else {
+            console.log('[SW] Service Worker registration skipped - was unregistered');
+          }
+        }, 1000); // 1 second delay to let unregister script finish
+      });
+    }
+  </script>
   
   <!-- PWA Scrolling Fix -->
   <!-- Inline scripts moved to src/scripts/pages/index-inline.js -->

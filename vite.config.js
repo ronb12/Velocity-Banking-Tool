@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import legacy from '@vitejs/plugin-legacy';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { copyFileSync, mkdirSync, existsSync } from 'fs';
 
 export default defineConfig({
   root: '.',
@@ -76,11 +77,51 @@ export default defineConfig({
     },
   },
   plugins: [
+    // Plugin to copy non-module script files to dist
+    {
+      name: 'copy-utils-scripts',
+      writeBundle() {
+        const filesToCopy = [
+          { src: 'prevent-reload-loop.js', dest: 'prevent-reload-loop.js' },
+          { src: 'unregister-sw.js', dest: 'unregister-sw.js' },
+          { src: 'service-worker.js', dest: 'service-worker.js' },
+          { src: 'config.js', dest: 'config.js' },
+          { src: 'utils/validation.js', dest: 'utils/validation.js' },
+          { src: 'utils/errorHandler.js', dest: 'utils/errorHandler.js' },
+          { src: 'utils/performance.js', dest: 'utils/performance.js' },
+          { src: 'utils/lazyLoader.js', dest: 'utils/lazyLoader.js' },
+          { src: 'utils/mobileOptimizer.js', dest: 'utils/mobileOptimizer.js' },
+          { src: 'utils/accessibility.js', dest: 'utils/accessibility.js' },
+          { src: 'utils/analytics.js', dest: 'utils/analytics.js' },
+          { src: 'utils/financialInsights.js', dest: 'utils/financialInsights.js' },
+          { src: 'utils/themeManager.js', dest: 'utils/themeManager.js' },
+          { src: 'app-updater.js', dest: 'app-updater.js' },
+        ];
+        
+        const distDir = resolve(__dirname, 'dist');
+        
+        filesToCopy.forEach(({ src, dest }) => {
+          const srcPath = resolve(__dirname, src);
+          const destPath = resolve(distDir, dest);
+          const destDirPath = dirname(destPath);
+          
+          if (existsSync(srcPath)) {
+            if (!existsSync(destDirPath)) {
+              mkdirSync(destDirPath, { recursive: true });
+            }
+            copyFileSync(srcPath, destPath);
+            console.log(`✓ Copied ${src} to ${dest}`);
+          } else {
+            console.warn(`⚠ Warning: ${src} not found, skipping copy`);
+          }
+        });
+      },
+    },
     legacy({
       targets: ['defaults', 'not IE 11'],
     }),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'icons/*.png'],
       manifest: {
         name: "Bradley's Finance Hub",
@@ -121,9 +162,11 @@ export default defineConfig({
       },
       // Disable PWA plugin in development or when DISABLE_PWA is set
       // This prevents service worker generation issues with paths containing spaces
+      // Temporarily disabled in production due to path space issues
       disable: process.env.NODE_ENV === 'development' || 
                process.env.DISABLE_PWA === 'true' || 
-               process.env.DISABLE_PWA === true,
+               process.env.DISABLE_PWA === true ||
+               true, // Temporarily disabled until path issue is resolved
       // Fix path issues with spaces in directory names
       swDest: 'sw.js',
       mode: 'production',
