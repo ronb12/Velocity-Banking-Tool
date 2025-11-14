@@ -361,6 +361,7 @@
           // Set flag to prevent auth.js from redirecting (we'll handle it here)
           sessionStorage.setItem('login-handling-redirect', 'true');
           sessionStorage.removeItem('auth-redirect-done'); // Clear any existing redirect flag
+          sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
           
           console.log('[Login] Login successful for', email, 'handling redirect...');
           const successMessage = 'Login successful! Redirecting...';
@@ -371,19 +372,16 @@
             document.getElementById('error').style.color = '#10b981';
           }
           
-          // Redirect immediately (don't wait, auth.js will try to redirect too)
+          // Wait a bit longer to ensure auth state is fully set before redirecting
           console.log('[Login] Redirecting to index.html, current auth user:', auth.currentUser?.email || 'null');
           const redirectPath = '../../index.html';
           
-          // Use safe redirect wrapper if available
-          if (window.safeLocationReplace) {
-            window.safeLocationReplace(redirectPath);
-          } else {
-            // Small delay to ensure flag is set
-            setTimeout(() => {
-              window.location.replace(redirectPath);
-            }, 100);
-          }
+          // Use a small delay to prevent redirect conflicts
+          setTimeout(() => {
+            // Clear flag just before redirect
+            sessionStorage.removeItem('login-handling-redirect');
+            window.location.replace(redirectPath);
+          }, 300);
         }
         
       } catch (error) {
@@ -440,16 +438,16 @@
           // Set flag to prevent auth.js from redirecting
           sessionStorage.setItem('login-handling-redirect', 'true');
           sessionStorage.removeItem('auth-redirect-done');
+          sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
           
           // Use consistent redirect path and method
           const redirectPath = '../../index.html';
-          if (window.safeLocationReplace) {
-            window.safeLocationReplace(redirectPath);
-          } else {
-            setTimeout(() => {
-              window.location.replace(redirectPath);
-            }, 100);
-          }
+          // Wait a bit to ensure auth state is set
+          setTimeout(() => {
+            // Clear flag just before redirect
+            sessionStorage.removeItem('login-handling-redirect');
+            window.location.replace(redirectPath);
+          }, 300);
         })
         .catch(error => {
           const errorElement = document.getElementById("error");

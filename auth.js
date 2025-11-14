@@ -242,18 +242,23 @@ auth.onAuthStateChanged(async user => {
         // CRITICAL: Check if login.html is handling the redirect itself
         if (sessionStorage.getItem('login-handling-redirect') === 'true') {
           console.log('[Auth] Login page is handling redirect, skipping auth.js redirect');
-          // Clear the flag after a short delay
+          // Clear the flag after a delay
           setTimeout(() => {
             sessionStorage.removeItem('login-handling-redirect');
-          }, 2000);
+          }, 3000);
           authStateChangeTimeout = null;
           return;
         }
         
-        console.log('[Auth] Redirecting authenticated user away from auth page:', currentPage);
-        // Use a flag to prevent redirect loops - check reload guard
-        const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
-        const recent = history.filter(t => (Date.now() - t) < 5000);
+        // Additional check: If we just redirected, don't redirect again
+        const lastRedirectTime = parseInt(sessionStorage.getItem('last-auth-redirect-time') || '0');
+        const timeSinceRedirect = Date.now() - lastRedirectTime;
+        if (timeSinceRedirect < 3000) { // Within 3 seconds of last redirect
+          console.log('[Auth] Too soon after last redirect, skipping');
+          authStateChangeTimeout = null;
+          return;
+        }
+        
         // CRITICAL: Check reload guard FIRST before any navigation
         if (sessionStorage.getItem('reload-blocked') === 'true') {
           console.error('[Auth] Navigation blocked by reload guard - reload loop detected');
@@ -261,35 +266,34 @@ auth.onAuthStateChanged(async user => {
           return;
         }
         
-        if (recent.length < 1 && !sessionStorage.getItem('auth-redirect-done')) { // Changed to < 1 (only 0 allowed)
+        // Check if we already redirected recently
+        const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+        const recent = history.filter(t => (Date.now() - t) < 5000);
+        
+        if (recent.length === 0 && !sessionStorage.getItem('auth-redirect-done')) {
+          console.log('[Auth] Redirecting authenticated user away from auth page:', currentPage);
           sessionStorage.setItem('auth-redirect-done', 'true');
+          sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
+          
           // For login.html, use correct relative path
           let redirectPath = 'index.html';
           if (currentPage === 'login.html' && window.location.pathname.includes('/auth/')) {
             redirectPath = '../../index.html';
           }
           
-          // Use safe navigation if available, otherwise check before navigating
-          if (window.safeLocationReplace) {
-            window.safeLocationReplace(redirectPath);
-          } else {
-            // Final check - make absolutely sure we're not in a loop
-            const finalCheck = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
-            const finalRecent = finalCheck.filter(t => (Date.now() - t) < 5000);
-            if (finalRecent.length === 0 && sessionStorage.getItem('reload-blocked') !== 'true') {
-              window.location.replace(redirectPath);
-            } else {
-              console.log('[Auth] Final check blocked redirect - reload loop detected');
-            }
-          }
+          // Use a small delay to prevent immediate redirect loops
+          setTimeout(() => {
+            window.location.replace(redirectPath);
+          }, 100);
         } else {
-          console.log('[Auth] Redirect blocked by reload guard or already redirected');
+          console.log('[Auth] Redirect blocked - too many recent redirects or already redirected');
         }
         authStateChangeTimeout = null;
         return;
       } else {
         // Clear the redirect flag if we're on a non-auth page
         sessionStorage.removeItem('auth-redirect-done');
+        sessionStorage.removeItem('last-auth-redirect-time');
       }
       
       // Start session timer
