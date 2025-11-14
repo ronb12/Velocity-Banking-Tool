@@ -83,7 +83,6 @@ export default defineConfig({
       writeBundle() {
         const filesToCopy = [
           { src: 'prevent-reload-loop.js', dest: 'prevent-reload-loop.js' },
-          { src: 'unregister-sw.js', dest: 'unregister-sw.js' },
           { src: 'service-worker.js', dest: 'service-worker.js' },
           { src: 'config.js', dest: 'config.js' },
           { src: 'utils/validation.js', dest: 'utils/validation.js' },
