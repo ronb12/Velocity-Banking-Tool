@@ -17,8 +17,7 @@ const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/offline.html',
-  '/prevent-reload-loop.js',
-  '/unregister-sw.js'
+  '/prevent-reload-loop.js'
 ];
 
 // Install event - cache static assets

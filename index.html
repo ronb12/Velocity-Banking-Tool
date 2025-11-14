@@ -96,7 +96,16 @@
       
       // Service worker registration function
       function registerServiceWorker() {
-        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        // In dev mode, check if service worker exists first
+        const swPath = '/service-worker.js';
+        
+        // Skip service worker registration in development to avoid errors
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          console.log('[SW] Skipping service worker registration in development mode');
+          return;
+        }
+        
+        navigator.serviceWorker.register(swPath, { scope: '/' })
           .then(registration => {
             console.log('[SW] ✅ Service Worker registered successfully!');
             console.log('[SW] Scope:', registration.scope);
