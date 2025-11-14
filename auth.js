@@ -242,10 +242,11 @@ auth.onAuthStateChanged(async user => {
         // CRITICAL: Check if login.html is handling the redirect itself
         if (sessionStorage.getItem('login-handling-redirect') === 'true') {
           console.log('[Auth] Login page is handling redirect, skipping auth.js redirect');
-          // Clear the flag after a delay
+          // Don't clear the flag immediately - let it persist for a few seconds
+          // Clear it after navigation completes
           setTimeout(() => {
             sessionStorage.removeItem('login-handling-redirect');
-          }, 3000);
+          }, 5000);
           authStateChangeTimeout = null;
           return;
         }
@@ -253,8 +254,8 @@ auth.onAuthStateChanged(async user => {
         // Additional check: If we just redirected, don't redirect again
         const lastRedirectTime = parseInt(sessionStorage.getItem('last-auth-redirect-time') || '0');
         const timeSinceRedirect = Date.now() - lastRedirectTime;
-        if (timeSinceRedirect < 3000) { // Within 3 seconds of last redirect
-          console.log('[Auth] Too soon after last redirect, skipping');
+        if (timeSinceRedirect < 5000) { // Within 5 seconds of last redirect - increased window
+          console.log('[Auth] Too soon after last redirect, skipping (within 5 seconds)');
           authStateChangeTimeout = null;
           return;
         }
@@ -268,32 +269,44 @@ auth.onAuthStateChanged(async user => {
         
         // Check if we already redirected recently
         const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
-        const recent = history.filter(t => (Date.now() - t) < 5000);
+        const recent = history.filter(t => (Date.now() - t) < 10000); // 10 second window
         
         if (recent.length === 0 && !sessionStorage.getItem('auth-redirect-done')) {
           console.log('[Auth] Redirecting authenticated user away from auth page:', currentPage);
           sessionStorage.setItem('auth-redirect-done', 'true');
           sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
           
-          // For login.html, use correct relative path
+          // Determine correct redirect path
           let redirectPath = 'index.html';
-          if (currentPage === 'login.html' && window.location.pathname.includes('/auth/')) {
-            redirectPath = '../../index.html';
+          if (currentPage === 'login.html') {
+            if (window.location.pathname.includes('/src/pages/auth/')) {
+              redirectPath = '../../index.html';
+            } else if (window.location.pathname.includes('/auth/')) {
+              redirectPath = '../../index.html';
+            } else {
+              redirectPath = 'index.html';
+            }
           }
+          
+          console.log('[Auth] Redirecting to:', redirectPath);
           
           // Use a small delay to prevent immediate redirect loops
           setTimeout(() => {
             window.location.replace(redirectPath);
-          }, 100);
+          }, 200);
         } else {
           console.log('[Auth] Redirect blocked - too many recent redirects or already redirected');
         }
         authStateChangeTimeout = null;
         return;
       } else {
-        // Clear the redirect flag if we're on a non-auth page
-        sessionStorage.removeItem('auth-redirect-done');
-        sessionStorage.removeItem('last-auth-redirect-time');
+        // Clear the redirect flags if we're on a non-auth page (like index.html)
+        // But only after a delay to ensure we're not in the middle of a redirect
+        setTimeout(() => {
+          sessionStorage.removeItem('auth-redirect-done');
+          sessionStorage.removeItem('last-auth-redirect-time');
+          sessionStorage.removeItem('login-handling-redirect');
+        }, 2000);
       }
       
       // Start session timer
