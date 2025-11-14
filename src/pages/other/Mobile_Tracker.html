@@ -302,22 +302,37 @@ window.onload = () => {
     update();
   });
 
-  // ✅ Register service worker for offline support (only if not unregistered)
-  // Check if service worker was unregistered to prevent conflicts
-  if ('serviceWorker' in navigator && sessionStorage.getItem('sw-unregistered') !== 'true') {
+  // ✅ Force register service worker for offline support
+  if ('serviceWorker' in navigator) {
+    // Clear unregister flag
+    sessionStorage.removeItem('sw-unregistered');
+    
     navigator.serviceWorker.getRegistrations().then(registrations => {
-      // Only register if no existing registration
-      if (registrations.length === 0) {
-        navigator.serviceWorker.register('/service-worker.js').then(() => {
-          console.log('Service Worker Registered ✅');
-        }).catch(e => {
-          console.warn('Service Worker registration failed (non-fatal):', e);
+      // Unregister any existing ones first
+      if (registrations.length > 0) {
+        Promise.all(registrations.map(reg => reg.unregister())).then(() => {
+          navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+            .then(registration => {
+              console.log('✅ Service Worker Registered:', registration.scope);
+            })
+            .catch(e => {
+              console.error('❌ Service Worker registration failed:', e);
+            });
         });
       } else {
-        console.log('Service Worker already registered, skipping');
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+          .then(registration => {
+            console.log('✅ Service Worker Registered:', registration.scope);
+          })
+          .catch(e => {
+            console.error('❌ Service Worker registration failed:', e);
+          });
       }
     }).catch(e => {
-      console.warn('Service Worker check failed (non-fatal):', e);
+      console.warn('Service Worker check failed:', e);
+      // Still try to register
+      navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+        .catch(err => console.error('Registration failed:', err));
     });
   }
 };

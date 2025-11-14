@@ -51,37 +51,83 @@
   <script type="module" src="sync.js"></script>
   <script src="app-updater.js"></script>
   
-  <!-- Service Worker Registration -->
+  <!-- Service Worker Registration - FORCED -->
   <script>
-    // Register service worker after page loads and only if not unregistered
+    // Force register service worker after page loads
     if ('serviceWorker' in navigator) {
-      // Wait for unregister script to finish
       window.addEventListener('load', () => {
-        // Small delay to ensure unregister-sw.js has run
+        // Clear the unregister flag to force registration
+        sessionStorage.removeItem('sw-unregistered');
+        
+        // Small delay to ensure page is fully loaded
         setTimeout(() => {
-          // Only register if service worker was not explicitly unregistered
-          if (sessionStorage.getItem('sw-unregistered') !== 'true') {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-              // Only register if no existing registration
-              if (registrations.length === 0) {
-                navigator.serviceWorker.register('/service-worker.js')
-                  .then(registration => {
-                    console.log('[SW] Service Worker registered successfully:', registration.scope);
-                  })
-                  .catch(error => {
-                    console.warn('[SW] Service Worker registration failed (non-fatal):', error);
+          // Force unregister any existing service workers first, then register fresh
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            if (registrations.length > 0) {
+              console.log('[SW] Found', registrations.length, 'existing registration(s), unregistering first...');
+              // Unregister all existing service workers
+              Promise.all(registrations.map(reg => reg.unregister())).then(() => {
+                console.log('[SW] Existing service workers unregistered, registering fresh...');
+                // Clear caches
+                if ('caches' in window) {
+                  caches.keys().then(cacheNames => {
+                    return Promise.all(cacheNames.map(name => caches.delete(name)));
+                  }).then(() => {
+                    // Register new service worker
+                    registerServiceWorker();
                   });
-              } else {
-                console.log('[SW] Service Worker already registered, skipping');
-              }
-            }).catch(error => {
-              console.warn('[SW] Service Worker check failed (non-fatal):', error);
-            });
-          } else {
-            console.log('[SW] Service Worker registration skipped - was unregistered');
-          }
-        }, 1000); // 1 second delay to let unregister script finish
+                } else {
+                  registerServiceWorker();
+                }
+              }).catch(err => {
+                console.warn('[SW] Error unregistering existing workers:', err);
+                // Still try to register
+                registerServiceWorker();
+              });
+            } else {
+              // No existing registrations, just register
+              registerServiceWorker();
+            }
+          }).catch(error => {
+            console.warn('[SW] Error checking registrations:', error);
+            // Still try to register
+            registerServiceWorker();
+          });
+        }, 1500); // 1.5 second delay to ensure page is ready
       });
+      
+      // Service worker registration function
+      function registerServiceWorker() {
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+          .then(registration => {
+            console.log('[SW] ✅ Service Worker registered successfully!');
+            console.log('[SW] Scope:', registration.scope);
+            console.log('[SW] Update via:', registration.update);
+            
+            // Check for updates
+            registration.update().catch(err => {
+              console.log('[SW] Update check:', err.message);
+            });
+            
+            // Listen for updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              console.log('[SW] New service worker found, installing...');
+              
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log('[SW] New service worker installed and ready');
+                }
+              });
+            });
+          })
+          .catch(error => {
+            console.error('[SW] ❌ Service Worker registration failed:', error);
+            console.error('[SW] Error details:', error.message, error.stack);
+          });
+      }
+    } else {
+      console.warn('[SW] Service Workers not supported in this browser');
     }
   </script>
   
