@@ -244,8 +244,25 @@ function initializeUpdater() {
 }
 
 // Initialize updater when the page loads
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeUpdater);
-} else {
-  initializeUpdater();
+// CRITICAL: Disable auto-update checks on production to prevent reload loops
+// Only enable on localhost for development testing
+const isProduction = window.location && (
+  window.location.hostname.includes('firebaseapp.com') || 
+  window.location.hostname.includes('web.app') || 
+  window.location.hostname.includes('github.io')
+);
+const isLocalhost = window.location && (
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1'
+);
+
+// Only initialize updater on localhost to prevent production reload loops
+if (isLocalhost && !isProduction) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeUpdater);
+  } else {
+    initializeUpdater();
+  }
+} else if (isProduction) {
+  console.log('[App Updater] Disabled on production to prevent reload loops');
 }

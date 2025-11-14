@@ -124,6 +124,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request, { 
         cache: 'no-store', // Don't use browser cache, always fetch fresh
+        redirect: 'follow', // Follow redirects normally
         headers: {
           'Cache-Control': 'no-cache'
         }

@@ -8,10 +8,6 @@
     ],
     "rewrites": [
       {
-        "source": "**/*.@(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|webp|pdf)",
-        "destination": "/404.html"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
