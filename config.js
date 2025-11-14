@@ -60,7 +60,8 @@ const CONFIG = {
       const existing = document.querySelector('script[data-local-test-data="true"]');
       if (!existing) {
         const script = document.createElement('script');
-        script.src = 'local-test-data.js';
+        // Always use absolute path from root to prevent path doubling issues
+        script.src = '/local-test-data.js';
         script.defer = true;
         script.dataset.localTestData = 'true';
         document.head.appendChild(script);

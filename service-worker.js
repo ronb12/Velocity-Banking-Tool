@@ -122,14 +122,29 @@ self.addEventListener('fetch', event => {
   // This ensures we get the correct page (login.html, register.html, etc.)
   if (event.request.mode === 'navigate' || event.request.destination === 'document') {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { 
+        cache: 'no-store', // Don't use browser cache, always fetch fresh
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
         .then(response => {
-          // Only cache successful responses
-          if (response.status === 200) {
+          // Verify we got the right page - check the URL matches
+          const requestUrl = new URL(event.request.url);
+          const responseUrl = response.url ? new URL(response.url) : requestUrl;
+          
+          // Only cache if the response URL matches the request URL (prevent redirects being cached)
+          if (response.status === 200 && requestUrl.pathname === responseUrl.pathname) {
             const responseToCache = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then(cache => {
-                cache.put(event.request, responseToCache);
+                // Don't cache auth pages to prevent them being served as index.html
+                const isAuthPage = requestUrl.pathname.includes('login.html') || 
+                                 requestUrl.pathname.includes('register.html') || 
+                                 requestUrl.pathname.includes('reset.html');
+                if (!isAuthPage) {
+                  cache.put(event.request, responseToCache);
+                }
               });
           }
           return response;
@@ -139,6 +154,17 @@ self.addEventListener('fetch', event => {
           return caches.match(event.request)
             .then(response => {
               if (response) {
+                // Double-check we're not serving index.html when login.html was requested
+                const requestUrl = new URL(event.request.url);
+                const cachedUrl = response.url ? new URL(response.url) : null;
+                if (cachedUrl && requestUrl.pathname !== cachedUrl.pathname && 
+                    requestUrl.pathname.includes('login.html')) {
+                  // Don't serve wrong cached page - return a basic response
+                  return new Response('Network unavailable', { 
+                    status: 503,
+                    headers: { 'Content-Type': 'text/html' }
+                  });
+                }
                 return response;
               }
               // Return offline page as last resort

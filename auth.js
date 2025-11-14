@@ -3,6 +3,13 @@ import { auth, db } from './firebase-config.js';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
+// Make auth and db globally available immediately
+// This ensures they're available for non-module scripts and tests
+if (typeof window !== 'undefined') {
+  window.auth = auth;
+  window.db = db;
+}
+
 // Session management
 let currentUser = null;
 let sessionTimer = null;
@@ -58,19 +65,98 @@ function extendSession() {
 
 // Enhanced logout function
 async function logout() {
-  clearTimeout(sessionTimer);
-  currentUser = null;
-  loginAttempts = 0;
-  lockoutUntil = null;
-  
   try {
-    await signOut(auth);
+    console.log('[Auth] Logging out user...');
+    
+    // Set a flag to prevent onAuthStateChanged from redirecting back
+    sessionStorage.setItem('logout-in-progress', 'true');
+    
+    // Determine correct login.html path BEFORE clearing storage
+    let loginPath = 'src/pages/auth/login.html';
+    const currentPath = window.location.pathname;
+    
+    // If we're on index.html or root, login.html should be at src/pages/auth/login.html
+    if (currentPath.includes('index.html') || currentPath === '/' || currentPath.endsWith('/')) {
+      loginPath = 'src/pages/auth/login.html';
+    } else if (currentPath.includes('/src/pages/')) {
+      loginPath = '../../src/pages/auth/login.html';
+    } else if (currentPath.includes('/pages/')) {
+      loginPath = '../auth/login.html';
+    } else if (currentPath === '/login.html' || currentPath.endsWith('/login.html')) {
+      // Already on login page, just clear and reload
+      loginPath = 'src/pages/auth/login.html';
+    }
+    
+    console.log('[Auth] Logout - redirect path:', loginPath, 'Current path:', currentPath);
+    
+    // Clear timeout first
+    clearTimeout(sessionTimer);
+    currentUser = null;
+    loginAttempts = 0;
+    lockoutUntil = null;
+    
     // Clear any stored data
     localStorage.removeItem('userSession');
+    localStorage.clear(); // Clear all localStorage
+    
+    // Sign out from Firebase (this will trigger onAuthStateChanged)
+    if (auth) {
+      try {
+        await signOut(auth);
+        console.log('[Auth] User signed out from Firebase');
+      } catch (signOutError) {
+        console.error('[Auth] Error signing out from Firebase:', signOutError);
+        // Continue anyway - clear storage and redirect
+      }
+    }
+    
+    // Clear session storage AFTER signOut to preserve the flag temporarily
+    const logoutFlag = sessionStorage.getItem('logout-in-progress');
     sessionStorage.clear();
-    window.location.href = "login.html";
+    sessionStorage.setItem('logout-in-progress', 'true'); // Re-set flag
+    
+    console.log('[Auth] Cleared local and session storage');
+    console.log('[Auth] Redirecting to login:', loginPath);
+    
+    // Redirect immediately - use setTimeout to ensure it happens after signOut completes
+    setTimeout(() => {
+      try {
+        // Use absolute path to be safe
+        const absolutePath = loginPath.startsWith('/') ? loginPath : '/' + loginPath;
+        const fullUrl = window.location.origin + absolutePath;
+        console.log('[Auth] Redirecting to:', fullUrl);
+        window.location.replace(fullUrl);
+      } catch (redirectError) {
+        console.error('[Auth] Redirect error, trying href:', redirectError);
+        // Fallback to href
+        window.location.href = loginPath.startsWith('/') ? loginPath : '/' + loginPath;
+      }
+    }, 100);
+    
   } catch (error) {
-    ErrorHandler.handleFirebaseError(error);
+    console.error('[Auth] Logout error:', error);
+    // Even if there's an error, try to clear storage and redirect
+    try {
+      sessionStorage.setItem('logout-in-progress', 'true');
+      localStorage.clear();
+      sessionStorage.clear();
+      sessionStorage.setItem('logout-in-progress', 'true');
+      
+      if (window.ErrorHandler && typeof window.ErrorHandler.handleFirebaseError === 'function') {
+        window.ErrorHandler.handleFirebaseError(error);
+      } else {
+        console.error('Error during logout: ' + error.message);
+      }
+      // Still try to redirect - use absolute path
+      const loginPath = window.location.pathname.includes('/src/pages/') 
+        ? '../../src/pages/auth/login.html' 
+        : 'src/pages/auth/login.html';
+      window.location.replace(window.location.origin + '/' + loginPath);
+    } catch (redirectError) {
+      console.error('[Auth] Error during logout redirect:', redirectError);
+      // Last resort - hard redirect
+      window.location.href = window.location.origin + '/src/pages/auth/login.html';
+    }
   }
 }
 
@@ -387,28 +473,79 @@ auth.onAuthStateChanged(async user => {
         return;
       }
       
-      // Redirect to login if on protected page - but ONLY if not already on auth page
-      const protectedPages = ['dashboard.html', 'budget.html', 'debt-tracker.html', 'velocity-calculator.html'];
+      // Check if logout is in progress - if so, let logout function handle redirect
+      if (sessionStorage.getItem('logout-in-progress') === 'true') {
+        console.log('[Auth] Logout in progress, skipping onAuthStateChanged redirect');
+        // Clear the flag after a short delay
+        setTimeout(() => {
+          sessionStorage.removeItem('logout-in-progress');
+        }, 2000);
+        authStateChangeTimeout = null;
+        return;
+      }
       
-      // Only redirect if we're on a protected page
-      if (protectedPages.includes(currentPage)) {
+      // Redirect to login if on protected page OR index.html - but ONLY if not already on auth page
+      // Protected pages are ALL pages under /src/pages/ (except auth pages), plus index.html
+      const currentPath = window.location.pathname;
+      const isIndexPage = currentPage === 'index.html' || currentPage === '' || currentPage === '/';
+      const isUnderSrcPages = currentPath.includes('/src/pages/') && !currentPath.includes('/src/pages/auth/');
+      
+      // CRITICAL: Add a small delay before redirecting to allow navigation to complete
+      // This prevents auth.js from blocking user-initiated navigation
+      // Only redirect if we've been on this page for more than 500ms (not mid-navigation)
+      const navigationStartTime = parseInt(sessionStorage.getItem('navigation-start-time') || '0');
+      const timeOnPage = Date.now() - navigationStartTime;
+      const isMidNavigation = timeOnPage < 500;
+      
+      // Redirect if on a protected page (any page under /src/pages/ except auth, or index.html)
+      // but NOT if already on auth page, and NOT if we're mid-navigation
+      if ((isUnderSrcPages || isIndexPage) && !isAuthPage && !isMidNavigation) {
         // Check reload guard before redirecting - be very strict
         const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
         const recent = history.filter(t => (Date.now() - t) < 10000); // 10 second window
         if (recent.length < 1) { // Only allow 1 redirect per 10 seconds
           // Double-check we're not already going to login
           if (!window.location.href.includes('login.html')) {
-            window.location.href = "login.html";
+            // Determine correct login path
+            let loginPath = 'src/pages/auth/login.html';
+            if (currentPath.includes('/src/pages/')) {
+              loginPath = '../../src/pages/auth/login.html';
+            } else if (currentPath.includes('/pages/')) {
+              loginPath = '../auth/login.html';
+            }
+            console.log('[Auth] Redirecting unauthenticated user to login:', loginPath, 'from:', currentPath);
+            window.location.replace(loginPath);
           }
         } else {
           console.log('[Auth] Redirect to login blocked by reload guard - too many recent redirects');
         }
+      } else if (isMidNavigation) {
+        console.log('[Auth] Skipping redirect - navigation in progress');
       }
     }
     
     authStateChangeTimeout = null;
   }, 500); // 500ms debounce
 });
+
+// Ensure window.auth and window.db are set (in case they weren't set earlier)
+// This is critical for non-module scripts and tests
+if (typeof window !== 'undefined') {
+  window.auth = auth;
+  window.db = db;
+  // Also export functions globally for backward compatibility
+  // Make sure these are set immediately so onclick handlers can access them
+  window.logout = logout;
+  window.extendSession = extendSession;
+  window.login = login;
+  window.register = register;
+  console.log('[Auth] Global functions set:', {
+    hasLogout: typeof window.logout === 'function',
+    hasExtendSession: typeof window.extendSession === 'function',
+    hasLogin: typeof window.login === 'function',
+    hasRegister: typeof window.register === 'function'
+  });
+}
 
 // Export functions and variables
 export {

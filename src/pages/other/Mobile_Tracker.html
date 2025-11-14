@@ -13,17 +13,27 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  
+  <!-- ✅ Load authHelper for waiting for auth.js -->
+  <script type="module" src="../../../auth.js"></script>
+  <script src="../../../utils/authHelper.js"></script>
 
-  <!-- ✅ Firebase Initialization -->
+  <!-- ✅ Firebase Initialization (fallback if auth.js not available) -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDrdga_hOO52nicYN3AwqqDjSbcnre6iM4",
       authDomain: "mobile-debt-tracker.firebaseapp.com",
       projectId: "mobile-debt-tracker"
     };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    // Prefer auth.js auth/db, fallback to compat mode
+    const compatAuth = firebase.auth();
+    const compatDb = firebase.firestore();
+    // Will be overridden by auth.js if available
+    if (!window.auth) window.auth = compatAuth;
+    if (!window.db) window.db = compatDb;
   </script>
 
   <style>
@@ -288,22 +298,34 @@ function importCSV(event) {
   reader.readAsText(file);
 }
 
-window.onload = () => {
-  auth.onAuthStateChanged(async user => {
-    if (!user) return window.location.href = "login.html";
-    const doc = await db.collection("debts").doc(user.uid).get();
-    if (doc.exists) {
-      const debts = doc.data().debts || [];
-      debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
-    } else if (localStorage.getItem("debtData")) {
-      const localDebts = JSON.parse(localStorage.getItem("debtData"));
-      localDebts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
-    }
-    update();
-  });
+window.onload = async () => {
+  // Wait for auth to be available before using it
+  try {
+    const { auth: authInstance, db: dbInstance } = await waitForAuth(10000);
+    window.auth = authInstance; // Make globally available
+    window.db = dbInstance;
+    
+    authInstance.onAuthStateChanged(async user => {
+      if (!user) {
+        // Add delay to prevent immediate redirect
+        setTimeout(() => {
+          window.location.href = "../../../index.html";
+        }, 500);
+        return;
+      }
+      const doc = await window.db.collection("debts").doc(user.uid).get();
+      if (doc.exists) {
+        const debts = doc.data().debts || [];
+        debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+      } else if (localStorage.getItem("debtData")) {
+        const localDebts = JSON.parse(localStorage.getItem("debtData"));
+        localDebts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+      }
+      update();
+    });
 
-  // ✅ Force register service worker for offline support
-  if ('serviceWorker' in navigator) {
+    // ✅ Force register service worker for offline support
+    if ('serviceWorker' in navigator) {
     // Clear unregister flag
     sessionStorage.removeItem('sw-unregistered');
     
@@ -334,6 +356,16 @@ window.onload = () => {
       navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
         .catch(err => console.error('Registration failed:', err));
     });
+    }
+  } catch (error) {
+    console.error('[MobileTracker] Error waiting for auth:', error);
+    // Only redirect if not localhost
+    const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+    if (!IS_LOCALHOST) {
+      setTimeout(() => {
+        window.location.href = "../../../index.html";
+      }, 1000);
+    }
   }
 };
 </script>

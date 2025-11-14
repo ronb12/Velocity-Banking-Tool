@@ -6,7 +6,7 @@
  * Now using component-based architecture
  */
 
-// Import components
+// Import components - use standard ES module imports
 import { financialInsights } from '../components/FinancialInsights.js';
 import { dataExport } from '../components/DataExport.js';
 import { financialTips } from '../components/FinancialTips.js';
@@ -24,69 +24,265 @@ import { logger } from '../core/Logger.js';
 import { inputValidator } from '../core/InputValidator.js';
 import { rateLimiter } from '../core/RateLimiter.js';
 
+// Don't import auth/db directly - use window.auth and window.db instead
+// This prevents "Cannot access before initialization" errors
+// auth.js already sets window.auth and window.db globally
+let auth, db, logout, extendSession, login, register;
+
+// Wait for window.auth to be available (set by auth.js)
+const initAuth = async () => {
+  try {
+    // Wait for window.auth to be set by auth.js
+    let retries = 0;
+    while ((!window.auth || !window.db) && retries < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    
+    if (window.auth && window.db) {
+      auth = window.auth;
+      db = window.db;
+      logout = window.logout;
+      extendSession = window.extendSession;
+      login = window.login;
+      register = window.register;
+    }
+  } catch (error) {
+    console.warn('[Index] Error initializing auth:', error);
+  }
+};
+
+// Initialize auth asynchronously
+initAuth();
+
 // Note: This code assumes global variables from index.html:
-// - window.auth, window.db, window.themeManager
+// - window.themeManager
 // - USE_FIRESTORE, ErrorHandler
 // - Firebase imports (doc, getDoc, setDoc, onSnapshot, etc.)
 
 // Initialize dashboard data manager
 let dashboardDataManager = null;
 
+// Function to set default values for dashboard stats
+function setDefaultDashboardValues() {
+  const elements = ['creditUtilizationValue', 'netWorthValue', 'debtSummaryValue', 'savingsValue'];
+  elements.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.textContent = 'No data yet';
+      element.style.color = '#64748b';
+    }
+  });
+}
+
 // Enhanced data loading with error handling
-(async function initializeDashboard() {
-  if (typeof auth !== 'undefined' && typeof db !== 'undefined') {
-    try {
-      dashboardDataManager = new DashboardData(auth, db);
+async function initializeDashboard() {
+  // Get auth and db - try multiple sources
+  const currentAuth = auth || window.auth;
+  const currentDb = db || window.db;
+  
+  if (!currentAuth || !currentDb) {
+    console.warn('[Index] Auth or DB not available, waiting...', {
+      hasAuth: !!currentAuth,
+      hasDb: !!currentDb,
+      hasWindowAuth: !!window.auth,
+      hasWindowDb: !!window.db
+    });
+    // Wait a bit and try again
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return initializeDashboard(); // Retry
+  }
+
+  if (!currentAuth.currentUser) {
+    console.log('[Index] No user logged in (currentUser is null)');
+    
+    // Set up auth state listener for when user logs in
+    // Note: onAuthStateChanged fires immediately if user is already logged in
+    let hasCalledLoad = false;
+    const unsubscribe = currentAuth.onAuthStateChanged((user) => {
+      if (user && !hasCalledLoad) {
+        hasCalledLoad = true;
+        console.log('[Index] User authenticated via listener, loading dashboard data for:', user.email);
+        // Small delay to ensure everything is ready
+        setTimeout(() => {
+          loadDashboardData();
+        }, 500);
+        // Don't unsubscribe immediately - keep listening for changes
+      } else if (!user) {
+        console.log('[Index] Auth state changed to logged out');
+        setDefaultDashboardValues();
+        hasCalledLoad = false; // Reset flag for next login
+      }
+    });
+    
+    // Set default values for dashboard stats when not logged in
+    setDefaultDashboardValues();
+    
+    // Don't wait - return immediately so page can load
+    // The listener will trigger if user is already logged in
+    return;
+  }
+
+  console.log('[Index] User is logged in:', currentAuth.currentUser.email);
+  await loadDashboardData();
+}
+
+async function loadDashboardData() {
+  if (!DashboardData) {
+    console.error('[Index] DashboardData class not loaded!');
+    return;
+  }
+
+  // Get auth and db - try multiple sources
+  const currentAuth = auth || window.auth;
+  const currentDb = db || window.db;
+
+  if (!currentAuth || !currentDb) {
+    console.error('[Index] Auth or DB not available for dashboard data');
+    return;
+  }
+
+  try {
+    dashboardDataManager = new DashboardData(currentAuth, currentDb);
+    const useFirestore = typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : true;
+    
+    if (errorBoundary && typeof errorBoundary.wrapAsync === 'function') {
       const loadData = errorBoundary.wrapAsync(
-        () => dashboardDataManager.loadDashboardData(typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : false),
+        () => dashboardDataManager.loadDashboardData(useFirestore),
         'dashboard_data_load'
       );
       await loadData();
-    } catch (error) {
+    } else {
+      await dashboardDataManager.loadDashboardData(useFirestore);
+    }
+    
+    if (logger && typeof logger.info === 'function') {
+      logger.info('Dashboard data initialized successfully');
+    } else {
+      console.log('[Index] Dashboard data initialized successfully');
+    }
+  } catch (error) {
+    console.error('[Index] Failed to initialize dashboard data:', error);
+    if (logger && typeof logger.error === 'function') {
       logger.error('Failed to initialize dashboard data', { error: error.message });
+    }
+    if (errorBoundary && typeof errorBoundary.handleError === 'function') {
       errorBoundary.handleError(error, { context: 'dashboard_initialization' });
     }
-  } else {
-    logger.warn('Auth or DB not available, skipping dashboard data initialization');
   }
-})();
+}
+
+// Start initialization when DOM is ready and auth/db are available
+async function startInitialization() {
+  // Use waitForAuth if available, otherwise fall back to polling
+  try {
+    if (typeof waitForAuth === 'function') {
+      const { auth: authInstance, db: dbInstance } = await waitForAuth(10000);
+      window.auth = authInstance;
+      window.db = dbInstance;
+      // Also set module-level variables if they weren't imported
+      if (!auth) auth = authInstance;
+      if (!db) db = dbInstance;
+    } else {
+      // Fallback: Wait for auth/db to be ready (check both module and window)
+      let retries = 0;
+      const maxRetries = 50; // 5 seconds - increased wait time
+
+      while ((!auth && !window.auth) || (!db && !window.db)) {
+        if (retries >= maxRetries) {
+          console.warn('[Index] Auth/DB not available after waiting, setting defaults');
+          setDefaultDashboardValues();
+          return;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+      }
+    }
+
+    // Ensure window.auth and window.db are set
+    if (!window.auth) window.auth = auth;
+    if (!window.db) window.db = db;
+
+    // Wait a bit more for auth state to be fully resolved
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const currentAuth = auth || window.auth;
+    const hasUser = !!(currentAuth?.currentUser);
+    
+    console.log('[Index] Starting dashboard initialization', {
+      hasAuth: !!(auth || window.auth),
+      hasDb: !!(db || window.db),
+      hasUser: hasUser,
+      userEmail: currentAuth?.currentUser?.email || 'none'
+    });
+
+    // Now initialize dashboard (won't block if no user)
+    initializeDashboard().catch(error => {
+      console.error('[Index] Dashboard initialization error:', error);
+    });
+    
+    // Also set up a delayed check - sometimes auth state resolves after initial load
+    if (!hasUser) {
+      setTimeout(() => {
+        const delayedAuth = auth || window.auth;
+        if (delayedAuth?.currentUser) {
+          console.log('[Index] User detected in delayed check, loading dashboard data');
+          loadDashboardData();
+        }
+      }, 1000);
+    }
+  } catch (error) {
+    console.error('[Index] Error waiting for auth:', error);
+    setDefaultDashboardValues();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startInitialization);
+} else {
+  startInitialization();
+}
 
 // Profile Modal Logic
 const profileButton = document.getElementById('profileButton');
 const profileModal = document.getElementById('profileModal');
 const closeProfileModal = document.getElementById('closeProfileModal');
 
-logger.debug('Profile button found', { exists: !!profileButton });
-logger.debug('Profile modal found', { exists: !!profileModal });
+if (logger) {
+  logger.debug('Profile button found', { exists: !!profileButton });
+  logger.debug('Profile modal found', { exists: !!profileModal });
+}
 
 if (profileButton) {
   profileButton.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    logger.debug('Profile button clicked, opening modal');
+    if (logger) logger.debug('Profile button clicked, opening modal');
     if (profileModal) {
       profileModal.style.display = 'flex';
-      logger.debug('Modal display set to flex');
-      profileStats.updateProfileStats(typeof auth !== 'undefined' ? auth : null);
+      if (logger) logger.debug('Modal display set to flex');
+      if (profileStats) profileStats.updateProfileStats(auth);
       initializeThemeSelector();
       
       // Debug: Check if avatar elements exist
       setTimeout(() => {
-        logger.debug('Avatar elements check', {
-          container: !!document.querySelector('.avatar-container'),
-          uploadButton: !!document.querySelector('.avatar-upload-btn'),
-          modalVisible: profileModal.style.display,
-          computedStyle: window.getComputedStyle(profileModal).display
-        });
+        if (logger) {
+          logger.debug('Avatar elements check', {
+            container: !!document.querySelector('.avatar-container'),
+            uploadButton: !!document.querySelector('.avatar-upload-btn'),
+            modalVisible: profileModal.style.display,
+            computedStyle: window.getComputedStyle(profileModal).display
+          });
+        }
       }, 100);
     } else {
-      logger.error('Profile modal not found');
-      errorBoundary.handleError(new Error('Profile modal not found'), { context: 'profile_modal' });
+      if (logger) logger.error('Profile modal not found');
+      if (errorBoundary) errorBoundary.handleError(new Error('Profile modal not found'), { context: 'profile_modal' });
     }
   });
 } else {
-  logger.error('Profile button not found');
-  errorBoundary.handleError(new Error('Profile button not found'), { context: 'profile_button' });
+  if (logger) logger.error('Profile button not found');
+  if (errorBoundary) errorBoundary.handleError(new Error('Profile button not found'), { context: 'profile_button' });
 }
 
 if (closeProfileModal) {
@@ -106,7 +302,7 @@ window.addEventListener('click', (e) => {
 // Theme Selector Initialization
 function initializeThemeSelector() {
   if (typeof window.themeManager === 'undefined') {
-    logger.warn('ThemeManager not available');
+    if (logger) logger.warn('ThemeManager not available');
     return;
   }
   
@@ -114,18 +310,33 @@ function initializeThemeSelector() {
   const menu = document.getElementById('themeDropdownMenu');
   
   if (!button || !menu) {
-    logger.warn('Theme selector elements not found');
+    if (logger) logger.warn('Theme selector elements not found');
     return;
   }
   
   // Populate theme options
-  const themes = window.themeManager.getThemes();
-  menu.innerHTML = themes.map(theme => `
-    <div class="theme-option" data-theme="${theme.id}">
-      <div class="theme-swatch" style="background: ${theme.primaryColor}"></div>
-      <span>${theme.name}</span>
-    </div>
-  `).join('');
+  // Use getAvailableThemes() which returns array of theme IDs, then get info for each
+  const themeIds = window.themeManager.getAvailableThemes ? window.themeManager.getAvailableThemes() : ['blue', 'pink', 'green', 'purple', 'orange', 'teal', 'red', 'auto'];
+  const themeInfo = {
+    blue: { name: 'Blue', color: '#007bff', icon: '🔵' },
+    pink: { name: 'Pink', color: '#ff4b91', icon: '🩷' },
+    green: { name: 'Green', color: '#28a745', icon: '🟢' },
+    purple: { name: 'Purple', color: '#6f42c1', icon: '🟣' },
+    orange: { name: 'Orange', color: '#fd7e14', icon: '🟠' },
+    teal: { name: 'Teal', color: '#20c997', icon: '🔷' },
+    red: { name: 'Red', color: '#dc3545', icon: '🔴' },
+    auto: { name: 'Auto', color: '#64748b', icon: '⚙️' }
+  };
+  
+  menu.innerHTML = themeIds.map(themeId => {
+    const info = themeInfo[themeId] || { name: themeId, color: '#007bff', icon: '🔵' };
+    return `
+      <div class="theme-option" data-theme="${themeId}">
+        <div class="theme-swatch" style="background: ${info.color}"></div>
+        <span>${info.name}</span>
+      </div>
+    `;
+  }).join('');
   
   // Add click handlers
   menu.querySelectorAll('.theme-option').forEach(option => {
@@ -143,12 +354,13 @@ function initializeThemeSelector() {
 function updateThemeSelector() {
   if (typeof window.themeManager === 'undefined') return;
   
-  const currentTheme = window.themeManager.getCurrentTheme();
+  // getCurrentTheme() returns the theme ID string, not an object
+  const currentTheme = window.themeManager.getCurrentTheme ? window.themeManager.getCurrentTheme() : 'blue';
   const menu = document.getElementById('themeDropdownMenu');
   
   if (menu) {
     menu.querySelectorAll('.theme-option').forEach(option => {
-      if (option.dataset.theme === currentTheme.id) {
+      if (option.dataset.theme === currentTheme) {
         option.classList.add('active');
       } else {
         option.classList.remove('active');
@@ -158,7 +370,7 @@ function updateThemeSelector() {
 }
 
 // Settings Management
-if (typeof settingsManager !== 'undefined') {
+if (settingsManager) {
   settingsManager.loadSettings();
   
   // Bind settings toggles
@@ -190,16 +402,14 @@ if (typeof settingsManager !== 'undefined') {
 
 // Advanced Settings
 const advancedSettingsBtn = document.getElementById('advancedSettingsBtn');
-if (advancedSettingsBtn) {
+if (advancedSettingsBtn && advancedSettings) {
   advancedSettingsBtn.addEventListener('click', () => {
-    if (typeof advancedSettings !== 'undefined') {
-      advancedSettings.openAdvancedSettings();
-    }
+    advancedSettings.openAdvancedSettings();
   });
 }
 
 // Financial Tips
-if (typeof financialTips !== 'undefined') {
+if (financialTips) {
   // Initialize tips if tips data exists
   const tipsData = [
     {
@@ -240,21 +450,21 @@ if (typeof financialTips !== 'undefined') {
 
 // Data Export
 async function handleExport(format) {
-  if (typeof dataExport === 'undefined') {
-    logger.error('DataExport component not available');
-    errorBoundary.handleError(new Error('DataExport component not available'), { context: 'data_export' });
+  if (!dataExport) {
+    if (logger) logger.error('DataExport component not available');
+    if (errorBoundary) errorBoundary.handleError(new Error('DataExport component not available'), { context: 'data_export' });
     return;
   }
 
   // Validate format input
   const validFormats = ['json', 'csv', 'pdf'];
   if (!validFormats.includes(format)) {
-    logger.error('Invalid export format', { format });
-    errorBoundary.handleError(new Error(`Invalid export format: ${format}`), { context: 'data_export' });
+    if (logger) logger.error('Invalid export format', { format });
+    if (errorBoundary) errorBoundary.handleError(new Error(`Invalid export format: ${format}`), { context: 'data_export' });
     return;
   }
   
-  const showNotification = typeof notificationSystem !== 'undefined' 
+  const showNotification = notificationSystem
     ? (msg, type) => notificationSystem.show(msg, type)
     : (msg, type) => console.log(`[${type}] ${msg}`);
   
@@ -283,22 +493,25 @@ if (exportPDFBtn) {
 
 // Financial Insights
 async function updateFinancialInsights() {
-  if (typeof financialInsights === 'undefined') {
-    logger.warn('FinancialInsights component not available');
+  if (!financialInsights) {
+    if (logger) logger.warn('FinancialInsights component not available');
     return;
   }
   
   try {
     // Rate limit check
-    const rateCheck = rateLimiter.check('financial_insights_update', {
-      window: 60000, // 1 minute
-      max: 10 // Max 10 updates per minute
-    });
+    if (rateLimiter) {
+      const rateCheck = rateLimiter.check('financial_insights_update', {
+        window: 60000, // 1 minute
+        max: 10 // Max 10 updates per minute
+      });
 
-    if (!rateCheck.allowed) {
-      logger.warn('Rate limit exceeded for financial insights update');
-      return;
+      if (!rateCheck.allowed) {
+        if (logger) logger.warn('Rate limit exceeded for financial insights update');
+        return;
+      }
     }
+    
     const data = await gatherAllFinancialData();
     const summary = calculateSummaryMetrics(data);
     
@@ -349,20 +562,20 @@ async function updateFinancialInsights() {
       });
     }
     
-    const recommendationsContainer = document.getElementById('recommendations');
+    const recommendationsContainer = document.getElementById('recommendationsContainer');
     if (recommendationsContainer) {
       financialInsights.renderRecommendations(recommendations, recommendationsContainer);
     }
   } catch (error) {
-    logger.error('Error updating financial insights', { error: error.message, stack: error.stack });
-    errorBoundary.handleError(error, { context: 'financial_insights_update' });
+    if (logger) logger.error('Error updating financial insights', { error: error.message, stack: error.stack });
+    if (errorBoundary) errorBoundary.handleError(error, { context: 'financial_insights_update' });
   }
 }
 
 // Update insights when data changes
 // NOTE: Don't add another onAuthStateChanged listener here - it's already handled in auth.js
 // Instead, listen for a custom event or check auth state directly
-if (typeof auth !== 'undefined') {
+if (auth) {
   // Only update insights if user is logged in and data is available
   // Use a one-time check after a delay instead of another listener
   const updateInsightsOnAuth = () => {
@@ -392,13 +605,13 @@ if (document.readyState === 'loading') {
 window.openProfileModal = () => {
   if (profileModal) {
     profileModal.style.display = 'flex';
-    profileStats.updateProfileStats(typeof auth !== 'undefined' ? auth : null);
+    if (profileStats) profileStats.updateProfileStats(auth);
     initializeThemeSelector();
   }
 };
 
 window.updateProfileStats = () => {
-  profileStats.updateProfileStats(typeof auth !== 'undefined' ? auth : null);
+  if (profileStats) profileStats.updateProfileStats(auth);
 };
 
 window.initializeThemeSelector = initializeThemeSelector;

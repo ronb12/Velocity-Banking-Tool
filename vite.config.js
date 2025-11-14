@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import legacy from '@vitejs/plugin-legacy';
 import { resolve, dirname } from 'path';
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 
 export default defineConfig({
   root: '.',
@@ -171,6 +171,42 @@ export default defineConfig({
       swDest: 'sw.js',
       mode: 'production',
     }),
+    // Custom plugin to prevent Vite from transforming utility scripts in dev mode
+    {
+      name: 'raw-utility-scripts',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const url = req.url.split('?')[0]; // Remove query params
+          const utilityPaths = [
+            '/utils/validation.js',
+            '/utils/errorHandler.js',
+            '/utils/performance.js',
+            '/utils/lazyLoader.js',
+            '/utils/mobileOptimizer.js',
+            '/utils/accessibility.js',
+            '/utils/analytics.js',
+            '/utils/financialInsights.js',
+            '/utils/themeManager.js',
+            '/config.js',
+            '/app-updater.js',
+            '/service-worker.js',
+          ];
+          
+          if (utilityPaths.includes(url)) {
+            // Serve these files as raw without Vite transformation
+            const filePath = resolve(__dirname, url.replace(/^\//, ''));
+            
+            if (existsSync(filePath)) {
+              const content = readFileSync(filePath, 'utf-8');
+              res.setHeader('Content-Type', 'application/javascript');
+              res.setHeader('Cache-Control', 'no-cache');
+              return res.end(content);
+            }
+          }
+          next();
+        });
+      },
+    },
   ],
   server: {
     port: 3000,
@@ -178,9 +214,6 @@ export default defineConfig({
     fs: {
       allow: ['..'],
     },
-    // Exclude utility scripts from Vite transformation in dev mode
-    // This prevents import statement injection into non-module scripts
-    middlewareMode: false,
   },
   // Configure which files Vite should pre-bundle
   optimizeDeps: {

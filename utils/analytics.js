@@ -81,16 +81,20 @@ class Analytics {
       }
     });
     
-    // Track tool usage
-    document.querySelectorAll('.tool-card').forEach(card => {
-      card.addEventListener('click', () => {
-        const toolName = card.querySelector('h3')?.textContent;
+    // Track tool usage - use event delegation to avoid interfering with navigation
+    // Use capture phase to track before navigation happens, but don't prevent default
+    document.addEventListener('click', (e) => {
+      // Check if clicked element is a tool-card or inside one
+      const toolCard = e.target.closest('.tool-card');
+      if (toolCard && toolCard.tagName === 'A' && toolCard.href) {
+        const toolName = toolCard.querySelector('h3')?.textContent;
         this.trackEvent('tool_click', {
           toolName: toolName,
-          toolUrl: card.href
+          toolUrl: toolCard.href
         });
-      });
-    });
+        // Don't prevent default - let navigation proceed normally
+      }
+    }, true); // Use capture phase so it fires before other handlers
   }
   
   // Track custom events

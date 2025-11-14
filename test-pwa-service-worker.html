@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA & Service Worker Verification</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .pass { background: #10b981; color: white; }
+    .fail { background: #ef4444; color: white; }
+    .warning { background: #f59e0b; color: white; }
+    .info { background: #3b82f6; color: white; }
+    .details {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f9fafb;
+      border-left: 4px solid #3b82f6;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 PWA & Service Worker Verification</h1>
+  
+  <div class="test-section">
+    <h2>1. Service Worker Support <span id="sw-support-status"></span></h2>
+    <div id="sw-support-details" class="details"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>2. Service Worker Registration <span id="sw-registration-status"></span></h2>
+    <div id="sw-registration-details" class="details"></div>
+    <button onclick="checkServiceWorker()">Re-check Service Worker</button>
+    <button onclick="registerServiceWorker()">Force Register</button>
+    <button onclick="unregisterServiceWorker()">Unregister</button>
+  </div>
+  
+  <div class="test-section">
+    <h2>3. Service Worker State <span id="sw-state-status"></span></h2>
+    <div id="sw-state-details" class="details"></div>
+  </div>
+  
+  <div class="test-section">
+    <h2>4. Cache Status <span id="cache-status"></span></h2>
+    <div id="cache-details" class="details"></div>
+    <button onclick="checkCache()">Re-check Cache</button>
+    <button onclick="clearCache()">Clear All Caches</button>
+  </div>
+  
+  <div class="test-section">
+    <h2>5. Manifest File <span id="manifest-status"></span></h2>
+    <div id="manifest-details" class="details"></div>
+    <button onclick="checkManifest()">Re-check Manifest</button>
+  </div>
+  
+  <div class="test-section">
+    <h2>6. PWA Installability <span id="install-status"></span></h2>
+    <div id="install-details" class="details"></div>
+    <button onclick="checkInstallPrompt()">Check Install Prompt</button>
+  </div>
+  
+  <div class="test-section">
+    <h2>7. Offline Functionality <span id="offline-status"></span></h2>
+    <div id="offline-details" class="details"></div>
+    <button onclick="testOffline()">Test Offline Mode</button>
+  </div>
+  
+  <div class="test-section">
+    <h2>8. Icons & Assets <span id="icons-status"></span></h2>
+    <div id="icons-details" class="details"></div>
+  </div>
+
+  <script>
+    // Update status badge
+    function updateStatus(elementId, status, message = '') {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<span class="status ${status}">${status.toUpperCase()}</span>`;
+      if (message && element.nextElementSibling) {
+        element.nextElementSibling.textContent = message;
+      }
+    }
+
+    // 1. Check Service Worker Support
+    function checkServiceWorkerSupport() {
+      const hasSupport = 'serviceWorker' in navigator;
+      updateStatus('sw-support-status', hasSupport ? 'pass' : 'fail');
+      const details = document.getElementById('sw-support-details');
+      details.textContent = hasSupport 
+        ? '✅ Service Workers are supported in this browser'
+        : '❌ Service Workers are NOT supported in this browser';
+    }
+
+    // 2. Check Service Worker Registration
+    async function checkServiceWorker() {
+      try {
+        if (!('serviceWorker' in navigator)) {
+          updateStatus('sw-registration-status', 'fail');
+          document.getElementById('sw-registration-details').textContent = 'Service Workers not supported';
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          updateStatus('sw-registration-status', 'pass');
+          const details = {
+            registered: true,
+            scope: registration.scope,
+            active: registration.active ? 'Active' : 'Not active',
+            installing: registration.installing ? 'Installing' : 'Not installing',
+            waiting: registration.waiting ? 'Waiting' : 'Not waiting',
+            updateViaCache: registration.updateViaCache
+          };
+          document.getElementById('sw-registration-details').textContent = 
+            `✅ Service Worker is registered\n\n${JSON.stringify(details, null, 2)}`;
+        } else {
+          updateStatus('sw-registration-status', 'warning');
+          document.getElementById('sw-registration-details').textContent = 
+            '⚠️ No service worker registered';
+        }
+      } catch (error) {
+        updateStatus('sw-registration-status', 'fail');
+        document.getElementById('sw-registration-details').textContent = 
+          `❌ Error checking registration: ${error.message}`;
+      }
+    }
+
+    // Force register service worker
+    async function registerServiceWorker() {
+      try {
+        const registration = await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+        updateStatus('sw-registration-status', 'pass');
+        document.getElementById('sw-registration-details').textContent = 
+          `✅ Service Worker registered successfully!\nScope: ${registration.scope}`;
+        setTimeout(checkServiceWorker, 1000);
+      } catch (error) {
+        updateStatus('sw-registration-status', 'fail');
+        document.getElementById('sw-registration-details').textContent = 
+          `❌ Registration failed: ${error.message}`;
+      }
+    }
+
+    // Unregister service worker
+    async function unregisterServiceWorker() {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          const result = await registration.unregister();
+          updateStatus('sw-registration-status', result ? 'info' : 'warning');
+          document.getElementById('sw-registration-details').textContent = 
+            result ? '✅ Service Worker unregistered' : '⚠️ Unregistration may have failed';
+          setTimeout(checkServiceWorker, 500);
+        }
+      } catch (error) {
+        document.getElementById('sw-registration-details').textContent = 
+          `❌ Error unregistering: ${error.message}`;
+      }
+    }
+
+    // 3. Check Service Worker State
+    async function checkServiceWorkerState() {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          const worker = registration.active || registration.waiting || registration.installing;
+          if (worker) {
+            updateStatus('sw-state-status', 'pass');
+            const state = {
+              state: worker.state,
+              scriptURL: worker.scriptURL,
+              scope: registration.scope
+            };
+            document.getElementById('sw-state-details').textContent = 
+              `✅ Service Worker State:\n\n${JSON.stringify(state, null, 2)}`;
+            
+            // Listen for state changes
+            worker.addEventListener('statechange', () => {
+              document.getElementById('sw-state-details').textContent = 
+                `State changed to: ${worker.state}`;
+            });
+          } else {
+            updateStatus('sw-state-status', 'warning');
+            document.getElementById('sw-state-details').textContent = 
+              '⚠️ Service Worker registered but no active worker';
+          }
+        } else {
+          updateStatus('sw-state-status', 'warning');
+          document.getElementById('sw-state-details').textContent = 
+            '⚠️ No service worker registered';
+        }
+      } catch (error) {
+        updateStatus('sw-state-status', 'fail');
+        document.getElementById('sw-state-details').textContent = 
+          `❌ Error: ${error.message}`;
+      }
+    }
+
+    // 4. Check Cache
+    async function checkCache() {
+      try {
+        const cacheNames = await caches.keys();
+        updateStatus('cache-status', cacheNames.length > 0 ? 'pass' : 'info');
+        
+        let details = `Found ${cacheNames.length} cache(s):\n\n`;
+        
+        for (const cacheName of cacheNames) {
+          const cache = await caches.open(cacheName);
+          const keys = await cache.keys();
+          details += `${cacheName}: ${keys.length} items\n`;
+          
+          // Show first few items
+          for (let i = 0; i < Math.min(5, keys.length); i++) {
+            details += `  - ${keys[i].url}\n`;
+          }
+          if (keys.length > 5) {
+            details += `  ... and ${keys.length - 5} more\n`;
+          }
+          details += '\n';
+        }
+        
+        document.getElementById('cache-details').textContent = details;
+      } catch (error) {
+        updateStatus('cache-status', 'fail');
+        document.getElementById('cache-details').textContent = 
+          `❌ Error: ${error.message}`;
+      }
+    }
+
+    // Clear all caches
+    async function clearCache() {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        document.getElementById('cache-details').textContent = 
+          `✅ Cleared ${cacheNames.length} cache(s)`;
+        setTimeout(checkCache, 500);
+      } catch (error) {
+        document.getElementById('cache-details').textContent = 
+          `❌ Error clearing cache: ${error.message}`;
+      }
+    }
+
+    // 5. Check Manifest
+    async function checkManifest() {
+      try {
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (!manifestLink) {
+          updateStatus('manifest-status', 'fail');
+          document.getElementById('manifest-details').textContent = 
+            '❌ No manifest link found in HTML';
+          return;
+        }
+
+        const manifestUrl = manifestLink.href;
+        const response = await fetch(manifestUrl);
+        
+        if (!response.ok) {
+          updateStatus('manifest-status', 'fail');
+          document.getElementById('manifest-details').textContent = 
+            `❌ Manifest file not found: ${manifestUrl}\nStatus: ${response.status}`;
+          return;
+        }
+
+        const manifest = await response.json();
+        updateStatus('manifest-status', 'pass');
+        document.getElementById('manifest-details').textContent = 
+          `✅ Manifest loaded successfully:\n\n${JSON.stringify(manifest, null, 2)}`;
+      } catch (error) {
+        updateStatus('manifest-status', 'fail');
+        document.getElementById('manifest-details').textContent = 
+          `❌ Error loading manifest: ${error.message}`;
+      }
+    }
+
+    // 6. Check Install Prompt
+    function checkInstallPrompt() {
+      let deferredPrompt;
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        updateStatus('install-status', 'pass');
+        document.getElementById('install-details').textContent = 
+          '✅ PWA is installable! The install prompt can be shown.';
+      });
+
+      // Check if already installed
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        updateStatus('install-status', 'info');
+        document.getElementById('install-details').textContent = 
+          'ℹ️ App is already installed (running in standalone mode)';
+      } else {
+        // Check after a delay if prompt hasn't fired
+        setTimeout(() => {
+          if (!deferredPrompt) {
+            updateStatus('install-status', 'warning');
+            document.getElementById('install-details').textContent = 
+              '⚠️ Install prompt not available. This could mean:\n' +
+              '- App is already installed\n' +
+              '- Browser doesn\'t support install prompt\n' +
+              '- Manifest or service worker missing';
+          }
+        }, 2000);
+      }
+    }
+
+    // 7. Test Offline
+    async function testOffline() {
+      try {
+        // Try to fetch a cached resource
+        const response = await caches.match('/index.html');
+        if (response) {
+          updateStatus('offline-status', 'pass');
+          document.getElementById('offline-details').textContent = 
+            '✅ Offline functionality works! index.html is cached.';
+        } else {
+          updateStatus('offline-status', 'warning');
+          document.getElementById('offline-details').textContent = 
+            '⚠️ index.html not found in cache. Service worker may not have cached it yet.';
+        }
+      } catch (error) {
+        updateStatus('offline-status', 'fail');
+        document.getElementById('offline-details').textContent = 
+          `❌ Error testing offline: ${error.message}`;
+      }
+    }
+
+    // 8. Check Icons
+    async function checkIcons() {
+      const icons = [
+        '/icons/icon-192.png',
+        '/icons/icon-512.png',
+        '/icon-192.png',
+        '/icon-512.png'
+      ];
+      
+      let found = 0;
+      let details = 'Checking icon files:\n\n';
+      
+      for (const icon of icons) {
+        try {
+          const response = await fetch(icon, { method: 'HEAD' });
+          if (response.ok) {
+            found++;
+            details += `✅ ${icon}\n`;
+          } else {
+            details += `❌ ${icon} (${response.status})\n`;
+          }
+        } catch (error) {
+          details += `❌ ${icon} (Error: ${error.message})\n`;
+        }
+      }
+      
+      updateStatus('icons-status', found > 0 ? 'pass' : 'warning');
+      document.getElementById('icons-details').textContent = details;
+    }
+
+    // Run all tests on load
+    window.addEventListener('load', () => {
+      checkServiceWorkerSupport();
+      checkServiceWorker();
+      checkServiceWorkerState();
+      checkCache();
+      checkManifest();
+      checkInstallPrompt();
+      checkIcons();
+      
+      // Listen for service worker updates
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('Service worker controller changed');
+        setTimeout(() => {
+          checkServiceWorker();
+          checkServiceWorkerState();
+        }, 1000);
+      });
+    });
+
+    // Check online/offline status
+    window.addEventListener('online', () => {
+      console.log('Browser is online');
+    });
+    
+    window.addEventListener('offline', () => {
+      console.log('Browser is offline');
+      testOffline();
+    });
+  </script>
+</body>
+</html>
+

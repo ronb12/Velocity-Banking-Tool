@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Load auth.js first before any scripts that use it -->
+  <script type="module" src="../../../auth.js"></script>
+  <script src="../../../utils/authHelper.js"></script>
   <script type="module" src="../../../sync.js"></script>
   <!-- Optional file removed -->
   
@@ -1560,7 +1563,13 @@
         return;
       }
 
-      db.collection('networth').doc(userId).set(payload)
+      const currentDb = window.db || db;
+      if (!currentDb) {
+        console.error('[NetWorth] DB not available');
+        showSaveStatus('Save failed - DB not available', 'error');
+        return;
+      }
+      currentDb.collection('networth').doc(userId).set(payload)
         .then(() => {
           state.lastSavedSnapshot = payload;
           if (options.showStatus !== false) showSaveStatus();
@@ -1688,7 +1697,12 @@
         return;
       }
 
-      db.collection('networth').doc(userId).get()
+      const currentDb = window.db || db;
+      if (!currentDb) {
+        console.error('[NetWorth] DB not available for loadData');
+        return;
+      }
+      currentDb.collection('networth').doc(userId).get()
         .then(doc => {
           if (!doc.exists) {
             if (shouldSeedSampleData()) {
@@ -1713,15 +1727,51 @@
         });
     }
 
-    auth.onAuthStateChanged(user => {
-      if (!user && !IS_LOCALHOST) {
-        window.location.href = 'login.html';
-        return;
+    // Wait for auth to be available before using it
+    (async () => {
+      try {
+        const { auth } = await waitForAuth(10000);
+        window.auth = auth; // Make globally available
+        
+        auth.onAuthStateChanged(user => {
+          if (!user && !IS_LOCALHOST) {
+            // Add delay to prevent immediate redirect
+            setTimeout(() => {
+              window.location.href = '../../../index.html';
+            }, 500);
+            return;
+          }
+          userId = user ? user.uid : 'local-user';
+          userEmail = user?.email || '';
+          // Ensure db is available before loading
+          if (window.db || db) {
+            loadData();
+          } else {
+            console.warn('[NetWorth] DB not available, waiting...');
+            setTimeout(() => {
+              if (window.db || db) {
+                loadData();
+              } else {
+                console.error('[NetWorth] DB not available after waiting');
+              }
+            }, 1000);
+          }
+        });
+      } catch (error) {
+        console.error('[NetWorth] Error waiting for auth:', error);
+        // Only redirect if not localhost
+        if (!IS_LOCALHOST) {
+          setTimeout(() => {
+            window.location.href = '../../../index.html';
+          }, 1000);
+        } else {
+          // Use local data in localhost
+          userId = 'local-user';
+          userEmail = '';
+          loadData();
+        }
       }
-      userId = user ? user.uid : 'local-user';
-      userEmail = user?.email || '';
-      loadData();
-    });
+    })();
 
     document.querySelectorAll('[data-add]').forEach(button => {
       button.addEventListener('click', () => addRow(button.dataset.add));
