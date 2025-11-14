@@ -358,7 +358,11 @@
             loginAttemptsElement.textContent = '';
           }
           
-          console.log('[Login] Login successful for', email, 'waiting for auth state change...');
+          // Set flag to prevent auth.js from redirecting (we'll handle it here)
+          sessionStorage.setItem('login-handling-redirect', 'true');
+          sessionStorage.removeItem('auth-redirect-done'); // Clear any existing redirect flag
+          
+          console.log('[Login] Login successful for', email, 'handling redirect...');
           const successMessage = 'Login successful! Redirecting...';
           if (typeof ErrorHandler !== 'undefined' && ErrorHandler.showSuccess) {
             ErrorHandler.showSuccess(successMessage);
@@ -367,17 +371,19 @@
             document.getElementById('error').style.color = '#10b981';
           }
           
-          // Wait a bit for auth state to update, then redirect
-          setTimeout(() => {
-            console.log('[Login] Redirecting to index.html, current auth user:', auth.currentUser?.email || 'null');
-            // Use safe redirect wrapper if available, otherwise use relative path
-            const redirectPath = '../../index.html';
-            if (window.safeLocationReplace) {
-              window.safeLocationReplace(redirectPath);
-            } else {
+          // Redirect immediately (don't wait, auth.js will try to redirect too)
+          console.log('[Login] Redirecting to index.html, current auth user:', auth.currentUser?.email || 'null');
+          const redirectPath = '../../index.html';
+          
+          // Use safe redirect wrapper if available
+          if (window.safeLocationReplace) {
+            window.safeLocationReplace(redirectPath);
+          } else {
+            // Small delay to ensure flag is set
+            setTimeout(() => {
               window.location.replace(redirectPath);
-            }
-          }, 1000);
+            }, 100);
+          }
         }
         
       } catch (error) {
@@ -431,12 +437,18 @@
           localStorage.removeItem('loginAttempts');
           document.getElementById('loginAttempts').textContent = '';
           
+          // Set flag to prevent auth.js from redirecting
+          sessionStorage.setItem('login-handling-redirect', 'true');
+          sessionStorage.removeItem('auth-redirect-done');
+          
           // Use consistent redirect path and method
           const redirectPath = '../../index.html';
           if (window.safeLocationReplace) {
             window.safeLocationReplace(redirectPath);
           } else {
-            window.location.replace(redirectPath);
+            setTimeout(() => {
+              window.location.replace(redirectPath);
+            }, 100);
           }
         })
         .catch(error => {

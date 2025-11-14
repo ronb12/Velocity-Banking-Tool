@@ -158,88 +158,219 @@ function updateUIForLoggedInUser(user) {
   }
 }
 
-// Authentication state observer
+// Debounce auth state changes to prevent rapid firing
+let authStateChangeTimeout = null;
+let lastAuthState = null;
+let authStateChangeCount = 0;
+
+// Authentication state observer with debouncing
 auth.onAuthStateChanged(async user => {
-  console.log('[Auth] onAuthStateChanged fired, user:', user?.email || 'null', 'authStateResolved:', authStateResolved);
-  currentUser = user;
-  
-  if (user) {
-    authStateResolved = true;
-    console.log('[Auth] User signed in:', user.email, 'Verified:', user.emailVerified);
-    // Check if email is verified
-    const emailLower = (user.email || '').toLowerCase();
-    const isUnverifiedAllowed = ALLOW_UNVERIFIED_LOCAL_LOGIN || ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower);
-    
-    console.log('[Auth] Email check - emailLower:', emailLower, 'isUnverifiedAllowed:', isUnverifiedAllowed, 'emailVerified:', user.emailVerified);
-    console.log('[Auth] Allowed accounts:', [...ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS]);
-    console.log('[Auth] Email in allowed set?', ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower));
-
-    if (!user.emailVerified && !isUnverifiedAllowed) {
-      console.log('[Auth] Email not verified and not in allowed list, signing out');
-      await signOut(auth);
-      window.location.href = "login.html?error=Please verify your email first";
-      return;
-    }
-    
-    console.log('[Auth] User authentication check passed, proceeding with login');
-    
-    // Redirect authenticated users away from auth-only pages
-    const authPages = ['login.html', 'register.html', 'reset.html'];
-    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-    if (authPages.includes(currentPage)) {
-      console.log('[Auth] Redirecting authenticated user away from auth page.');
-      window.location.replace('index.html');
-      return;
-    }
-    
-    // Start session timer
-    startSessionTimer();
-    
-    // Update UI for logged in user
-    updateUIForLoggedInUser(user);
-    
-    // Show/hide auth-dependent elements
-    document.querySelectorAll('.auth-required').forEach(element => {
-      element.style.display = 'block';
-    });
-    document.querySelectorAll('.auth-not-required').forEach(element => {
-      element.style.display = 'none';
-    });
-
-    // Initialize user data in Firestore if needed
-    const userRef = doc(db, 'users', user.uid);
-    const docSnap = await getDoc(userRef);
-    if (!docSnap.exists()) {
-      await setDoc(userRef, { 
-        email: user.email, 
-        joined: new Date().toISOString(),
-        lastLogin: new Date().toISOString()
-      });
-    } else {
-      await updateDoc(userRef, { lastLogin: new Date().toISOString() });
-    }
-  } else {
-    if (!authStateResolved) {
-      authStateResolved = true;
-      console.log('[Auth] Awaiting persistence restoration... (initial page load, no user yet)');
-      return;
-    }
-    console.log('[Auth] User signed out or no user present');
-    // Update UI for logged out user
-    document.querySelectorAll('.auth-required').forEach(element => {
-      element.style.display = 'none';
-    });
-    document.querySelectorAll('.auth-not-required').forEach(element => {
-      element.style.display = 'block';
-    });
-    
-    // Redirect to login if on protected page
-    const protectedPages = ['dashboard.html', 'budget.html', 'debt-tracker.html', 'velocity-calculator.html'];
-    const currentPage = window.location.pathname.split('/').pop();
-    if (protectedPages.includes(currentPage)) {
-      window.location.href = "login.html";
-    }
+  // Debounce: Wait 500ms before processing auth state change
+  if (authStateChangeTimeout) {
+    clearTimeout(authStateChangeTimeout);
   }
+  
+  // Check if state actually changed
+  const currentUserId = user?.uid || null;
+  if (currentUserId === lastAuthState) {
+    // State hasn't changed, ignore
+    return;
+  }
+  
+  authStateChangeCount++;
+  console.log('[Auth] onAuthStateChanged fired (#', authStateChangeCount, '), user:', user?.email || 'null', 'authStateResolved:', authStateResolved);
+  
+  // Debounce processing
+  authStateChangeTimeout = setTimeout(async () => {
+    // Prevent multiple simultaneous auth state changes
+    if (authStateChangeTimeout === null) {
+      return; // Already processed
+    }
+    
+    lastAuthState = currentUserId;
+    currentUser = user;
+    
+    // Check if we're in a reload loop (prevent processing if too many changes)
+    if (authStateChangeCount > 5) {
+      console.error('[Auth] Too many auth state changes detected, ignoring to prevent loop');
+      authStateChangeTimeout = null;
+      return;
+    }
+    
+    // Check reload guard
+    const reloadHistory = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+    const now = Date.now();
+    const recentReloads = reloadHistory.filter(timestamp => (now - timestamp) < 5000);
+    if (recentReloads.length >= 3) {
+      console.error('[Auth] Reload loop detected, blocking auth state change processing');
+      authStateChangeTimeout = null;
+      return;
+    }
+    
+    if (user) {
+      authStateResolved = true;
+      console.log('[Auth] User signed in:', user.email, 'Verified:', user.emailVerified);
+      
+      // Check if email is verified
+      const emailLower = (user.email || '').toLowerCase();
+      const isUnverifiedAllowed = ALLOW_UNVERIFIED_LOCAL_LOGIN || ALWAYS_ALLOW_UNVERIFIED_ACCOUNTS.has(emailLower);
+      
+      console.log('[Auth] Email check - emailLower:', emailLower, 'isUnverifiedAllowed:', isUnverifiedAllowed, 'emailVerified:', user.emailVerified);
+
+      if (!user.emailVerified && !isUnverifiedAllowed) {
+        console.log('[Auth] Email not verified and not in allowed list, signing out');
+        await signOut(auth);
+        // Check reload guard before redirecting
+        const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+        const recent = history.filter(t => (Date.now() - t) < 5000);
+        if (recent.length < 2) {
+          window.location.href = "login.html?error=Please verify your email first";
+        }
+        authStateChangeTimeout = null;
+        return;
+      }
+      
+      console.log('[Auth] User authentication check passed, proceeding with login');
+      
+      // Redirect authenticated users away from auth-only pages
+      // Only redirect if we're actually on an auth page (not already on index.html)
+      const authPages = ['login.html', 'register.html', 'reset.html'];
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      const isIndexPage = currentPage === 'index.html' || currentPage === '' || currentPage === '/';
+      
+      if (authPages.includes(currentPage) && !isIndexPage) {
+        // CRITICAL: Check if login.html is handling the redirect itself
+        if (sessionStorage.getItem('login-handling-redirect') === 'true') {
+          console.log('[Auth] Login page is handling redirect, skipping auth.js redirect');
+          // Clear the flag after a short delay
+          setTimeout(() => {
+            sessionStorage.removeItem('login-handling-redirect');
+          }, 2000);
+          authStateChangeTimeout = null;
+          return;
+        }
+        
+        console.log('[Auth] Redirecting authenticated user away from auth page:', currentPage);
+        // Use a flag to prevent redirect loops - check reload guard
+        const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+        const recent = history.filter(t => (Date.now() - t) < 5000);
+        // CRITICAL: Check reload guard FIRST before any navigation
+        if (sessionStorage.getItem('reload-blocked') === 'true') {
+          console.error('[Auth] Navigation blocked by reload guard - reload loop detected');
+          authStateChangeTimeout = null;
+          return;
+        }
+        
+        if (recent.length < 1 && !sessionStorage.getItem('auth-redirect-done')) { // Changed to < 1 (only 0 allowed)
+          sessionStorage.setItem('auth-redirect-done', 'true');
+          // For login.html, use correct relative path
+          let redirectPath = 'index.html';
+          if (currentPage === 'login.html' && window.location.pathname.includes('/auth/')) {
+            redirectPath = '../../index.html';
+          }
+          
+          // Use safe navigation if available, otherwise check before navigating
+          if (window.safeLocationReplace) {
+            window.safeLocationReplace(redirectPath);
+          } else {
+            // Final check - make absolutely sure we're not in a loop
+            const finalCheck = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+            const finalRecent = finalCheck.filter(t => (Date.now() - t) < 5000);
+            if (finalRecent.length === 0 && sessionStorage.getItem('reload-blocked') !== 'true') {
+              window.location.replace(redirectPath);
+            } else {
+              console.log('[Auth] Final check blocked redirect - reload loop detected');
+            }
+          }
+        } else {
+          console.log('[Auth] Redirect blocked by reload guard or already redirected');
+        }
+        authStateChangeTimeout = null;
+        return;
+      } else {
+        // Clear the redirect flag if we're on a non-auth page
+        sessionStorage.removeItem('auth-redirect-done');
+      }
+      
+      // Start session timer
+      startSessionTimer();
+      
+      // Update UI for logged in user
+      updateUIForLoggedInUser(user);
+      
+      // Show/hide auth-dependent elements
+      document.querySelectorAll('.auth-required').forEach(element => {
+        element.style.display = 'block';
+      });
+      document.querySelectorAll('.auth-not-required').forEach(element => {
+        element.style.display = 'none';
+      });
+
+      // Initialize user data in Firestore if needed
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userRef);
+        if (!docSnap.exists()) {
+          await setDoc(userRef, { 
+            email: user.email, 
+            joined: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          });
+        } else {
+          await updateDoc(userRef, { lastLogin: new Date().toISOString() });
+        }
+      } catch (error) {
+        console.error('[Auth] Error updating user data:', error);
+      }
+    } else {
+      if (!authStateResolved) {
+        authStateResolved = true;
+        console.log('[Auth] Awaiting persistence restoration... (initial page load, no user yet)');
+        authStateChangeTimeout = null;
+        return;
+      }
+      console.log('[Auth] User signed out or no user present');
+      
+      // Update UI for logged out user
+      document.querySelectorAll('.auth-required').forEach(element => {
+        element.style.display = 'none';
+      });
+      document.querySelectorAll('.auth-not-required').forEach(element => {
+        element.style.display = 'block';
+      });
+      
+      // CRITICAL: Never redirect if we're already on an auth page - this prevents loops
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      const isAuthPage = ['login.html', 'register.html', 'reset.html'].includes(currentPage);
+      
+      // If we're on an auth page, do NOT redirect - stay on the page
+      if (isAuthPage) {
+        console.log('[Auth] Already on auth page, not redirecting to prevent loop');
+        authStateChangeTimeout = null;
+        return;
+      }
+      
+      // Redirect to login if on protected page - but ONLY if not already on auth page
+      const protectedPages = ['dashboard.html', 'budget.html', 'debt-tracker.html', 'velocity-calculator.html'];
+      
+      // Only redirect if we're on a protected page
+      if (protectedPages.includes(currentPage)) {
+        // Check reload guard before redirecting - be very strict
+        const history = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+        const recent = history.filter(t => (Date.now() - t) < 10000); // 10 second window
+        if (recent.length < 1) { // Only allow 1 redirect per 10 seconds
+          // Double-check we're not already going to login
+          if (!window.location.href.includes('login.html')) {
+            window.location.href = "login.html";
+          }
+        } else {
+          console.log('[Auth] Redirect to login blocked by reload guard - too many recent redirects');
+        }
+      }
+    }
+    
+    authStateChangeTimeout = null;
+  }, 500); // 500ms debounce
 });
 
 // Export functions and variables
