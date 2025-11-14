@@ -249,6 +249,7 @@ let authStateChangeTimeout = null;
 let lastAuthState = null;
 let authStateChangeCount = 0;
 let isProcessingAuthState = false; // Flag to prevent concurrent processing
+let pageLoadTime = Date.now(); // Track when page was loaded
 
 // Authentication state observer with debouncing
 auth.onAuthStateChanged(async user => {
@@ -270,8 +271,28 @@ auth.onAuthStateChanged(async user => {
     return;
   }
   
+  // CRITICAL: Wait at least 2 seconds after page load before processing redirects when no user
+  // This gives Firebase persistence time to restore auth state on Firebase hosting
+  const timeSincePageLoad = Date.now() - pageLoadTime;
+  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+  const isAuthPage = ['login.html', 'register.html', 'reset.html'].includes(currentPage);
+  
+  // If page just loaded (< 2 seconds ago) and we're on login.html with no user, wait
+  // This prevents immediate redirects before persistence restores
+  if (timeSincePageLoad < 2000 && isAuthPage && !user) {
+    console.log('[Auth] Page just loaded on auth page, waiting for auth persistence to restore (', timeSincePageLoad, 'ms ago)');
+    authStateChangeTimeout = setTimeout(() => {
+      // Check again after waiting - auth state might have been restored
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        console.log('[Auth] Auth state restored after wait, user:', currentUser.email);
+      }
+    }, 2000 - timeSincePageLoad + 500); // Wait a bit longer to ensure persistence is done
+    // Don't return - let it process normally, but the redirect logic below will check timeSincePageLoad
+  }
+  
   authStateChangeCount++;
-  console.log('[Auth] onAuthStateChanged fired (#', authStateChangeCount, '), user:', user?.email || 'null', 'authStateResolved:', authStateResolved);
+  console.log('[Auth] onAuthStateChanged fired (#', authStateChangeCount, '), user:', user?.email || 'null', 'authStateResolved:', authStateResolved, 'timeSincePageLoad:', timeSincePageLoad);
   
   // Debounce processing
   authStateChangeTimeout = setTimeout(async () => {
@@ -335,6 +356,26 @@ auth.onAuthStateChanged(async user => {
       const isIndexPage = currentPage === 'index.html' || currentPage === '' || currentPage === '/';
       
       if (authPages.includes(currentPage) && !isIndexPage) {
+        // CRITICAL: Don't redirect if page just loaded (< 3 seconds) - wait for auth to fully restore
+        const timeSincePageLoad = Date.now() - pageLoadTime;
+        if (timeSincePageLoad < 3000) {
+          console.log('[Auth] Page just loaded on auth page with user, waiting before redirect (', timeSincePageLoad, 'ms ago)');
+          // Set a flag so we can redirect later once auth is fully settled
+          sessionStorage.setItem('pending-auth-redirect', 'true');
+          authStateChangeTimeout = null;
+          isProcessingAuthState = false;
+          // Check again in a bit
+          setTimeout(() => {
+            if (auth.currentUser && sessionStorage.getItem('pending-auth-redirect') === 'true') {
+              sessionStorage.removeItem('pending-auth-redirect');
+              // Re-trigger the auth state change handler
+              const currentUser = auth.currentUser;
+              auth.onAuthStateChanged.call(null, currentUser);
+            }
+          }, 3000 - timeSincePageLoad);
+          return;
+        }
+        
         // CRITICAL: Check if login.html is handling the redirect itself
         if (sessionStorage.getItem('login-handling-redirect') === 'true') {
           console.log('[Auth] Login page is handling redirect, skipping auth.js redirect');
@@ -344,6 +385,7 @@ auth.onAuthStateChanged(async user => {
             sessionStorage.removeItem('login-handling-redirect');
           }, 5000);
           authStateChangeTimeout = null;
+          isProcessingAuthState = false;
           return;
         }
         
@@ -353,6 +395,7 @@ auth.onAuthStateChanged(async user => {
         if (timeSinceRedirect < 5000) { // Within 5 seconds of last redirect - increased window
           console.log('[Auth] Too soon after last redirect, skipping (within 5 seconds)');
           authStateChangeTimeout = null;
+          isProcessingAuthState = false;
           return;
         }
         
@@ -360,6 +403,7 @@ auth.onAuthStateChanged(async user => {
         if (sessionStorage.getItem('reload-blocked') === 'true') {
           console.error('[Auth] Navigation blocked by reload guard - reload loop detected');
           authStateChangeTimeout = null;
+          isProcessingAuthState = false;
           return;
         }
         
@@ -372,23 +416,22 @@ auth.onAuthStateChanged(async user => {
           sessionStorage.setItem('auth-redirect-done', 'true');
           sessionStorage.setItem('last-auth-redirect-time', Date.now().toString());
           
-          // Determine correct redirect path
-          let redirectPath = 'index.html';
+          // Determine correct redirect path - use absolute path on Firebase hosting
+          let redirectPath = '/index.html';
           const currentPath = window.location.pathname;
           
-          if (currentPage === 'login.html') {
-            if (currentPath.includes('/src/pages/auth/')) {
-              redirectPath = '../../index.html';
-            } else if (currentPath.includes('/auth/')) {
-              redirectPath = '../../index.html';
-            } else if (currentPath === '/login.html' || currentPath.endsWith('/login.html')) {
-              redirectPath = 'index.html';
-            } else {
-              redirectPath = '/index.html';
-            }
+          // Use absolute path to avoid issues with Firebase rewrites
+          if (currentPath.includes('/src/pages/auth/')) {
+            redirectPath = window.location.origin + '/index.html';
+          } else {
+            redirectPath = window.location.origin + '/index.html';
           }
           
           console.log('[Auth] Redirecting to:', redirectPath, 'Current path:', currentPath);
+          
+          // Add to reload history before redirect
+          history.push(Date.now());
+          sessionStorage.setItem('reload-history', JSON.stringify(history));
           
           // Use a small delay to prevent immediate redirect loops
           setTimeout(() => {
@@ -398,22 +441,19 @@ auth.onAuthStateChanged(async user => {
               console.error('[Auth] Redirect error:', error);
               window.location.replace(window.location.origin + '/index.html');
             }
-          }, 200);
+          }, 500); // Increased delay to 500ms
         } else {
           console.log('[Auth] Redirect blocked - too many recent redirects or already redirected');
         }
-    authStateChangeTimeout = null;
-    isProcessingAuthState = false;
-    return;
-  } else {
-        // Clear the redirect flags if we're on a non-auth page (like index.html)
-        // But only after a delay to ensure we're not in the middle of a redirect
-        setTimeout(() => {
-          sessionStorage.removeItem('auth-redirect-done');
-          sessionStorage.removeItem('last-auth-redirect-time');
-          sessionStorage.removeItem('login-handling-redirect');
-        }, 2000);
       }
+      
+      // Clear the redirect flags if we're on a non-auth page (like index.html)
+      // But only after a delay to ensure we're not in the middle of a redirect
+      setTimeout(() => {
+        sessionStorage.removeItem('auth-redirect-done');
+        sessionStorage.removeItem('last-auth-redirect-time');
+        sessionStorage.removeItem('login-handling-redirect');
+      }, 2000);
       
       // Start session timer
       startSessionTimer();
@@ -445,11 +485,30 @@ auth.onAuthStateChanged(async user => {
       } catch (error) {
         console.error('[Auth] Error updating user data:', error);
       }
+      
+      authStateChangeTimeout = null;
+      isProcessingAuthState = false;
     } else {
+      // User is not authenticated
+      const timeSincePageLoad = Date.now() - pageLoadTime;
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      const isAuthPage = ['login.html', 'register.html', 'reset.html'].includes(currentPage);
+      
       if (!authStateResolved) {
         authStateResolved = true;
+        // On initial page load, wait longer before making decisions
+        // This is especially important on Firebase hosting where persistence takes time
+        if (timeSincePageLoad < 2500) {
+          console.log('[Auth] Initial page load - waiting for auth persistence to restore (', timeSincePageLoad, 'ms ago)');
+          // Just return early - Firebase will fire the handler again when persistence restores
+          // Don't process redirects yet as auth state might change
+          authStateChangeTimeout = null;
+          isProcessingAuthState = false;
+          return;
+        }
         console.log('[Auth] Awaiting persistence restoration... (initial page load, no user yet)');
         authStateChangeTimeout = null;
+        isProcessingAuthState = false;
         return;
       }
       console.log('[Auth] User signed out or no user present');
@@ -463,13 +522,11 @@ auth.onAuthStateChanged(async user => {
       });
       
       // CRITICAL: Never redirect if we're already on an auth page - this prevents loops
-      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-      const isAuthPage = ['login.html', 'register.html', 'reset.html'].includes(currentPage);
-      
       // If we're on an auth page, do NOT redirect - stay on the page
       if (isAuthPage) {
         console.log('[Auth] Already on auth page, not redirecting to prevent loop');
         authStateChangeTimeout = null;
+        isProcessingAuthState = false;
         return;
       }
       
@@ -481,11 +538,21 @@ auth.onAuthStateChanged(async user => {
           sessionStorage.removeItem('logout-in-progress');
         }, 2000);
         authStateChangeTimeout = null;
+        isProcessingAuthState = false;
         return;
       }
       
-      // Redirect to login if on protected page OR index.html - but ONLY if not already on auth page
-      // Protected pages are ALL pages under /src/pages/ (except auth pages), plus index.html
+      // CRITICAL: Don't redirect if page just loaded (< 3 seconds) - wait for auth to fully restore
+      if (timeSincePageLoad < 3000) {
+        console.log('[Auth] Page just loaded, waiting before redirect decision (', timeSincePageLoad, 'ms ago)');
+        authStateChangeTimeout = null;
+        isProcessingAuthState = false;
+        return;
+      }
+      
+      // Redirect to login if on protected page - but ONLY if not already on auth page
+      // Protected pages are ALL pages under /src/pages/ (except auth pages)
+      // IMPORTANT: Do NOT redirect from index.html - it's a public page
       const currentPath = window.location.pathname;
       const isIndexPage = currentPage === 'index.html' || currentPage === '' || currentPage === '/';
       const isUnderSrcPages = currentPath.includes('/src/pages/') && !currentPath.includes('/src/pages/auth/');
@@ -498,11 +565,11 @@ auth.onAuthStateChanged(async user => {
       // Check if we've already attempted a redirect recently
       const lastRedirectAttempt = parseInt(sessionStorage.getItem('last-redirect-attempt') || '0');
       const timeSinceRedirect = Date.now() - lastRedirectAttempt;
-      const hasRecentRedirect = timeSinceRedirect < 3000; // 3 seconds
+      const hasRecentRedirect = timeSinceRedirect < 5000; // Increased to 5 seconds
       
       // Don't redirect from index.html - it's a public page that shows the dashboard
       // Only redirect from actual protected pages under /src/pages/
-      const shouldRedirect = isUnderSrcPages && !isAuthPage && !hasRecentRedirect;
+      const shouldRedirect = isUnderSrcPages && !isAuthPage && !hasRecentRedirect && !isIndexPage;
       
       if (shouldRedirect) {
         // Mark redirect attempt
@@ -514,37 +581,35 @@ auth.onAuthStateChanged(async user => {
         if (recent.length < 1) { // Only allow 1 redirect per 10 seconds
           // Double-check we're not already going to login
           if (!window.location.href.includes('login.html')) {
-            // Determine correct login path
-            let loginPath = 'src/pages/auth/login.html';
-            if (currentPath.includes('/src/pages/')) {
-              loginPath = '../../src/pages/auth/login.html';
-            } else if (currentPath.includes('/pages/')) {
-              loginPath = '../auth/login.html';
-            }
+            // Use absolute path to avoid issues with Firebase rewrites
+            const loginPath = window.location.origin + '/src/pages/auth/login.html';
             console.log('[Auth] Redirecting unauthenticated user to login:', loginPath, 'from:', currentPath);
             
             // Add to reload history to prevent loops
             history.push(Date.now());
             sessionStorage.setItem('reload-history', JSON.stringify(history));
             
-            window.location.replace(loginPath);
+            setTimeout(() => {
+              window.location.replace(loginPath);
+            }, 500);
           }
         } else {
           console.log('[Auth] Redirect to login blocked by reload guard - too many recent redirects');
           // Clear the redirect attempt flag if blocked
           sessionStorage.removeItem('last-redirect-attempt');
         }
-      } else if (isIndexPage && !hasRecentRedirect) {
-        // On index.html without recent redirect - this is fine, user can view public dashboard
+      } else if (isIndexPage) {
+        // On index.html - this is fine, user can view public dashboard
         console.log('[Auth] User on index.html (public page), allowing access');
         // Clear redirect attempt flag
         sessionStorage.removeItem('last-redirect-attempt');
       } else if (hasRecentRedirect) {
-        console.log('[Auth] Skipping redirect - recent redirect attempt detected (within 3s)');
+        console.log('[Auth] Skipping redirect - recent redirect attempt detected (within 5s)');
       }
+      
+      authStateChangeTimeout = null;
+      isProcessingAuthState = false;
     }
-    
-    authStateChangeTimeout = null;
   }, 500); // 500ms debounce
 });
 
