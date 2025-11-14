@@ -88,6 +88,38 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // For navigation requests (HTML), always fetch from network first
+  // This ensures we get the correct page (login.html, register.html, etc.)
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // Only cache successful responses
+          if (response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(DYNAMIC_CACHE)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache only if network fails
+          return caches.match(event.request)
+            .then(response => {
+              if (response) {
+                return response;
+              }
+              // Return offline page as last resort
+              return caches.match('/offline.html');
+            });
+        })
+    );
+    return;
+  }
+
+  // For non-navigation requests (assets, API calls), use network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then(response => {
@@ -111,11 +143,7 @@ self.addEventListener('fetch', event => {
             if (response) {
               return response;
             }
-            // Return offline page for HTML requests
-            if (event.request.headers.get('accept').includes('text/html')) {
-              return caches.match('/offline.html');
-            }
-            // Return a default offline response for other requests
+            // Return a default offline response for non-HTML requests
             return new Response('Offline', {
               status: 503,
               statusText: 'Service Unavailable',
