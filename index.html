@@ -4,31 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>Bradley's Financial Tools</title>
-  <link rel="stylesheet" href="theme.css?v=2.1.0">
-  <link rel="stylesheet" href="src/styles/index-inline.css?v=2.1.0">
+  <link rel="stylesheet" href="/theme.css?v=2.1.0">
+  <link rel="stylesheet" href="/src/styles/index-inline.css?v=2.1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Favicon and Manifest -->
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+  <link rel="manifest" href="/manifest.json" />
 
   <!-- iOS PWA Support -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="VB Toolkit">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/icons/icon-120.png">
 
   <!-- Theme Color for Android + iOS -->
   <meta name="theme-color" content="#007bff">
 
   <!-- Config and utilities -->
-  <script src="config.js"></script>
+  <script src="/config.js"></script>
   <!-- local-test-data.js is loaded conditionally by config.js (localhost only) -->
   <!-- Track navigation start time to prevent auth.js from blocking navigation -->
   <script>
@@ -40,26 +40,26 @@
       }
     }, true);
   </script>
-  <script src="utils/validation.js"></script>
-  <script src="utils/errorHandler.js"></script>
-  <script src="utils/performance.js"></script>
-  <script src="utils/lazyLoader.js"></script>
-  <script src="utils/mobileOptimizer.js"></script>
-  <script src="utils/accessibility.js"></script>
-  <script src="utils/analytics.js"></script>
-  <script src="utils/financialInsights.js"></script>
-  <script src="utils/themeManager.js"></script>
+  <script src="/utils/validation.js"></script>
+  <script src="/utils/errorHandler.js"></script>
+  <script src="/utils/performance.js"></script>
+  <script src="/utils/lazyLoader.js"></script>
+  <script src="/utils/mobileOptimizer.js"></script>
+  <script src="/utils/accessibility.js"></script>
+  <script src="/utils/analytics.js"></script>
+  <script src="/utils/financialInsights.js"></script>
+  <script src="/utils/themeManager.js"></script>
   <!-- Core Services - Load early for error handling -->
-  <script type="module" src="src/scripts/core/ErrorBoundary.js"></script>
-  <script type="module" src="src/scripts/core/Logger.js"></script>
-  <script type="module" src="src/scripts/core/InputValidator.js"></script>
-  <script type="module" src="src/scripts/core/RateLimiter.js"></script>
-  <script type="module" src="src/scripts/core/SecurityService.js"></script>
-  <script type="module" src="auth.js"></script>
-  <script src="utils/authHelper.js"></script>
-  <script type="module" src="sync.js"></script>
+  <script type="module" src="/src/scripts/core/ErrorBoundary.js"></script>
+  <script type="module" src="/src/scripts/core/Logger.js"></script>
+  <script type="module" src="/src/scripts/core/InputValidator.js"></script>
+  <script type="module" src="/src/scripts/core/RateLimiter.js"></script>
+  <script type="module" src="/src/scripts/core/SecurityService.js"></script>
+  <script type="module" src="/auth.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <script type="module" src="/sync.js"></script>
   <!-- auth and db are now imported directly in index-inline.js, no need for separate script -->
-  <script src="app-updater.js"></script>
+  <script src="/app-updater.js"></script>
   
   <!-- Service Worker Registration -->
   <script>
@@ -144,7 +144,7 @@
   
   <!-- PWA Scrolling Fix -->
   <!-- Inline scripts moved to src/scripts/pages/index-inline.js -->
-    <script type="module" src="src/scripts/pages/index-inline.js"></script>
+    <script type="module" src="/src/scripts/pages/index-inline.js"></script>
     <!-- <script>
     // Fix PWA scrolling issues
     if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -178,7 +178,7 @@
         <button class="control-btn" onclick="openProfileModal()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">👤 Profile</button>
         <button class="user-menu auth-required" style="display: none; cursor:pointer;" title="Click to open profile" id="profileButton">
           <span class="user-email"></span>
-          <img src="icons/icon-192.png" alt="Profile" class="profile-avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;margin-left:0.5rem;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+          <img src="/icons/icon-192.png" alt="Profile" class="profile-avatar" style="width:36px;height:36px;border-radius:50%;object-fit:cover;margin-left:0.5rem;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
           <span class="profile-text">Profile</span>
         </button>
       </div>
@@ -217,52 +217,52 @@
     </div>
 
     <div class="tools-grid">
-      <a href="src/pages/debt/Debt_Tracker.html" class="tool-card">
+      <a href="/src/pages/debt/Debt_Tracker.html" class="tool-card">
         <div class="tool-icon">📋</div>
         <h3>Debt Tracker</h3>
         <p>Track and manage your debts</p>
       </a>
-      <a href="src/pages/other/budget.html" class="tool-card">
+      <a href="/src/pages/other/budget.html" class="tool-card">
         <div class="tool-icon">💰</div>
         <h3>Budget Tracker</h3>
         <p>Manage your income and expenses</p>
       </a>
-      <a href="src/pages/calculators/Velocity_Calculator.html" class="tool-card">
+      <a href="/src/pages/calculators/Velocity_Calculator.html" class="tool-card">
         <div class="tool-icon">⚡</div>
         <h3>Velocity Calculator</h3>
         <p>Optimize your debt payoff strategy</p>
       </a>
-      <a href="src/pages/other/net_worth_tracker.html" class="tool-card">
+      <a href="/src/pages/other/net_worth_tracker.html" class="tool-card">
         <div class="tool-icon">💎</div>
         <h3>Net Worth Tracker</h3>
         <p>Monitor your financial growth</p>
       </a>
-      <a href="src/pages/calculators/Credit_Score_Estimator.html" class="tool-card">
+      <a href="/src/pages/calculators/Credit_Score_Estimator.html" class="tool-card">
         <div class="tool-icon">💳</div>
         <h3>Credit Score Estimator</h3>
         <p>Estimate your credit score</p>
       </a>
-      <a href="src/pages/calculators/1099_calculator.html" class="tool-card">
+      <a href="/src/pages/calculators/1099_calculator.html" class="tool-card">
         <div class="tool-icon">📟</div>
         <h3>1099 Tax Estimator</h3>
         <p>Calculate your self-employed taxes</p>
       </a>
-      <a href="src/pages/savings/savings_goal_tracker.html" class="tool-card">
+      <a href="/src/pages/savings/savings_goal_tracker.html" class="tool-card">
         <div class="tool-icon">🎯</div>
         <h3>Savings Goal Tracker</h3>
         <p>Track your savings progress</p>
       </a>
-      <a href="src/pages/other/notifications.html" class="tool-card">
+      <a href="/src/pages/other/notifications.html" class="tool-card">
         <div class="tool-icon">🔔</div>
         <h3>Notifications</h3>
         <p>Stay updated on your finances</p>
       </a>
-      <a href="src/pages/other/activity_feed.html" class="tool-card">
+      <a href="/src/pages/other/activity_feed.html" class="tool-card">
         <div class="tool-icon">🧾</div>
         <h3>Activity Feed</h3>
         <p>View your financial history</p>
       </a>
-      <a href="src/pages/savings/challenge_library.html" class="tool-card">
+      <a href="/src/pages/savings/challenge_library.html" class="tool-card">
         <div class="tool-icon">🏆</div>
         <h3>Challenge Library</h3>
         <p>Explore savings challenges</p>
@@ -317,7 +317,7 @@
           <div class="recommendation-content">
             <h3>Start with Debt Tracking</h3>
             <p>Use our Debt Tracker to list all your debts with interest rates. This gives you a clear picture of what you owe and helps prioritize payments.</p>
-            <a href="src/pages/debt/Debt_Tracker.html" class="recommendation-link">Track Your Debts →</a>
+            <a href="/src/pages/debt/Debt_Tracker.html" class="recommendation-link">Track Your Debts →</a>
           </div>
         </div>
         
@@ -326,7 +326,7 @@
           <div class="recommendation-content">
             <h3>Create Your First Budget</h3>
             <p>Set up a monthly budget to track income and expenses. This helps you understand where your money goes and identify savings opportunities.</p>
-            <a href="src/pages/other/budget.html" class="recommendation-link">Build Your Budget →</a>
+            <a href="/src/pages/other/budget.html" class="recommendation-link">Build Your Budget →</a>
           </div>
         </div>
         
@@ -335,7 +335,7 @@
           <div class="recommendation-content">
             <h3>Set a Savings Goal</h3>
             <p>Start with an emergency fund goal of $1,000, then work toward 3-6 months of expenses. Use our Savings Goal Tracker to stay motivated.</p>
-            <a href="src/pages/savings/savings_goal_tracker.html" class="recommendation-link">Set Your Goal →</a>
+            <a href="/src/pages/savings/savings_goal_tracker.html" class="recommendation-link">Set Your Goal →</a>
           </div>
         </div>
         
@@ -344,7 +344,7 @@
           <div class="recommendation-content">
             <h3>Try Velocity Banking</h3>
             <p>If you have a line of credit, use our Velocity Calculator to see how you can pay off debts faster and save on interest.</p>
-            <a href="src/pages/calculators/Velocity_Calculator.html" class="recommendation-link">Calculate Strategy →</a>
+            <a href="/src/pages/calculators/Velocity_Calculator.html" class="recommendation-link">Calculate Strategy →</a>
           </div>
         </div>
         </div>
@@ -365,7 +365,7 @@
       <button class="close-profile-modal" id="closeProfileModal">&times;</button>
       <div class="profile-header">
         <div class="avatar-container">
-          <img src="icons/icon-192.png" alt="Profile" class="profile-avatar-large" id="profileAvatar">
+          <img src="/icons/icon-192.png" alt="Profile" class="profile-avatar-large" id="profileAvatar">
           <button class="avatar-upload-btn" onclick="document.getElementById('avatarInput').click()">
             <span class="upload-icon">📷</span>
           </button>
