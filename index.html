@@ -61,7 +61,7 @@
   <!-- auth and db are now imported directly in index-inline.js, no need for separate script -->
   <script src="app-updater.js"></script>
   
-  <!-- Service Worker Registration - CLEAN REGISTRATION -->
+  <!-- Service Worker Registration -->
   <script>
     // Register service worker - unregister all existing ones first to prevent duplicates
     if ('serviceWorker' in navigator) {
@@ -74,6 +74,12 @@
         
         // Small delay to ensure page is fully loaded and avoid conflicts
         setTimeout(() => {
+          // Check if reload is blocked to prevent registration loops
+          if (sessionStorage.getItem('reload-blocked') === 'true') {
+            console.warn('[SW] Reload blocked - skipping service worker registration to prevent loops');
+            return;
+          }
+          
           // Get ALL registrations and unregister any existing ones to prevent duplicates
           navigator.serviceWorker.getRegistrations().then(registrations => {
             if (registrations.length > 0) {
@@ -97,18 +103,31 @@
                 console.log('[SW] ✅ Service Worker registered successfully!');
                 console.log('[SW] Scope:', registration.scope);
                 
-                // DON'T call registration.update() here - app-updater.js handles this
-                // Calling it here can cause conflicts and reload loops
-                // Only check for updates much later and only once
-                if (!registration._updateCheckScheduled) {
-                  registration._updateCheckScheduled = true;
-                  setTimeout(() => {
-                    // Check for updates only once, very delayed
-                    registration.update().catch(err => {
-                      console.log('[SW] Update check (delayed):', err.message);
-                    });
-                  }, 60000); // Wait 60 seconds before first update check
+                // CRITICAL: DO NOT call registration.update() automatically
+                // This can cause reload loops when service worker updates are found
+                // Let app-updater.js handle updates only on localhost
+                // On production, updates should only happen when user explicitly requests them
+                console.log('[SW] Skipping automatic update check to prevent reload loops');
+                
+                // Listen for waiting service workers (new version installed)
+                // But DO NOT auto-reload - let user decide
+                if (registration.waiting) {
+                  console.log('[SW] Service worker update waiting - user must manually reload');
                 }
+                
+                // Listen for updates (but don't auto-reload)
+                registration.addEventListener('updatefound', () => {
+                  console.log('[SW] Service worker update found - waiting for user confirmation');
+                  const newWorker = registration.installing;
+                  if (newWorker) {
+                    newWorker.addEventListener('statechange', () => {
+                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('[SW] New service worker installed - waiting for user to reload');
+                        // Do NOT auto-reload here - this causes loops
+                      }
+                    });
+                  }
+                });
               })
               .catch(error => {
                 console.error('[SW] ❌ Service Worker registration failed:', error);

@@ -62,20 +62,23 @@ self.addEventListener('activate', event => {
         return Promise.all(
           cacheNames.map(cacheName => {
             if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-              console.log('Deleting old cache:', cacheName);
+              console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       }),
-      // Only claim clients if explicitly requested (not automatically)
+      // CRITICAL: DO NOT call clients.claim() automatically
       // This prevents automatic reload loops
-      // clients.claim() is now only called when user explicitly updates
+      // clients.claim() should only be called when user explicitly requests an update
+      // Calling it here causes the service worker to take control immediately
+      // which can trigger reload loops when a new service worker is installed
     ]).then(() => {
+      console.log('[SW] Activate event completed - NOT claiming clients to prevent reload loops');
       // Try to register background sync, but don't fail if it's not supported
       if (self.registration.sync) {
         return self.registration.sync.register('sync-data').catch(err => {
-          console.warn('Background sync registration failed (non-fatal):', err);
+          console.warn('[SW] Background sync registration failed (non-fatal):', err);
           return Promise.resolve();
         });
       }
