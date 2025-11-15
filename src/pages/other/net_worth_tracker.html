@@ -1728,42 +1728,85 @@
     }
 
     // Wait for auth to be available before using it
+    let netWorthAuthListenerUnsubscribe = null;
+    let authStateProcessed = false;
+    
+    // CRITICAL: Prevent multiple redirects by checking if redirect was already attempted
+    const checkRedirectGuard = () => {
+      const lastRedirect = sessionStorage.getItem('networth-redirect-time');
+      const timeSinceRedirect = lastRedirect ? Date.now() - parseInt(lastRedirect) : 10000;
+      return timeSinceRedirect > 3000; // Only allow redirect if last one was > 3 seconds ago
+    };
+    
     (async () => {
       try {
         const { auth } = await waitForAuth(10000);
         window.auth = auth; // Make globally available
         
-        auth.onAuthStateChanged(user => {
-          if (!user && !IS_LOCALHOST) {
-            // Add delay to prevent immediate redirect
+        // Only set up listener if not already processed
+        if (!authStateProcessed) {
+          netWorthAuthListenerUnsubscribe = auth.onAuthStateChanged(user => {
+            // Prevent multiple processing
+            if (authStateProcessed) {
+              return;
+            }
+            
+            // Wait a bit for auth to stabilize
             setTimeout(() => {
-              window.location.href = '../../../index.html';
-            }, 500);
-            return;
-          }
-          userId = user ? user.uid : 'local-user';
-          userEmail = user?.email || '';
-          // Ensure db is available before loading
-          if (window.db || db) {
-            loadData();
-          } else {
-            console.warn('[NetWorth] DB not available, waiting...');
-            setTimeout(() => {
+              if (!user && !IS_LOCALHOST) {
+                // Check redirect guard
+                if (!checkRedirectGuard()) {
+                  console.log('[NetWorth] Skipping redirect - recent redirect detected');
+                  return;
+                }
+                
+                // Set flag to prevent multiple redirects
+                authStateProcessed = true;
+                sessionStorage.setItem('networth-redirect-time', Date.now().toString());
+                
+                // Use absolute path to prevent path resolution issues
+                // Let auth.js handle the redirect - don't do it here
+                // This prevents conflicts between page-level and global auth.js redirects
+                console.log('[NetWorth] User not authenticated, letting auth.js handle redirect');
+                
+                // Clean up listener to prevent multiple calls
+                if (netWorthAuthListenerUnsubscribe) {
+                  netWorthAuthListenerUnsubscribe();
+                  netWorthAuthListenerUnsubscribe = null;
+                }
+                return;
+              }
+              
+              userId = user ? user.uid : 'local-user';
+              userEmail = user?.email || '';
+              authStateProcessed = true;
+              
+              // Ensure db is available before loading
               if (window.db || db) {
                 loadData();
               } else {
-                console.error('[NetWorth] DB not available after waiting');
+                console.warn('[NetWorth] DB not available, waiting...');
+                setTimeout(() => {
+                  if (window.db || db) {
+                    loadData();
+                  } else {
+                    console.error('[NetWorth] DB not available after waiting');
+                  }
+                }, 1000);
               }
-            }, 1000);
-          }
-        });
+            }, 2000); // Wait 2 seconds for auth.js to process first
+          });
+        }
       } catch (error) {
         console.error('[NetWorth] Error waiting for auth:', error);
-        // Only redirect if not localhost
-        if (!IS_LOCALHOST) {
+        // Only redirect if not localhost and guard allows
+        if (!IS_LOCALHOST && checkRedirectGuard()) {
+          authStateProcessed = true;
+          sessionStorage.setItem('networth-redirect-time', Date.now().toString());
+          // Use absolute path
           setTimeout(() => {
-            window.location.href = '../../../index.html';
-          }, 1000);
+            window.location.href = '/index.html';
+          }, 2000);
         } else {
           // Use local data in localhost
           userId = 'local-user';
