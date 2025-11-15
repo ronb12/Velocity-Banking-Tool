@@ -96,40 +96,11 @@ self.addEventListener('fetch', event => {
 
   // CRITICAL: Don't intercept JS, CSS, or other static assets - let the browser handle them
   // Only intercept HTML navigation requests and API calls
-  const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|webp)$/i.test(pathname);
+  const isStaticAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|webp|map)$/i.test(pathname);
   
   if (isStaticAsset) {
-    // For static assets, use network-first but don't interfere with module loading
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // Cache successful responses for static assets
-          if (response.status === 200) {
-            const responseToCache = response.clone();
-            // Cache in background (don't wait for it)
-            caches.open(DYNAMIC_CACHE)
-              .then(cache => {
-                cache.put(event.request, responseToCache).catch(err => {
-                  console.warn('[SW] Failed to cache static asset:', event.request.url, err);
-                });
-              })
-              .catch(err => {
-                console.warn('[SW] Failed to open cache for static asset:', err);
-              });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Fallback to cache if network fails
-          return caches.match(event.request).then(cachedResponse => {
-            if (cachedResponse) {
-              return cachedResponse;
-            }
-            // If no cache, let request fail naturally
-            throw new Error('Network unavailable and no cache');
-          });
-        })
-    );
+    // DO NOT intercept static assets - let browser fetch directly
+    // This prevents MIME type issues and allows Firebase to serve files correctly
     return;
   }
 
@@ -158,14 +129,19 @@ self.addEventListener('fetch', event => {
                              requestUrl.pathname.includes('reset.html');
             if (!isAuthPage) {
               // Cache in background (don't wait for it)
+              // Add error handling to prevent unhandled promise rejections
               caches.open(DYNAMIC_CACHE)
                 .then(cache => {
-                  cache.put(event.request, responseToCache).catch(err => {
+                  return cache.put(event.request, responseToCache).catch(err => {
                     console.warn('[SW] Failed to cache navigation response:', event.request.url, err);
                   });
                 })
                 .catch(err => {
                   console.warn('[SW] Failed to open cache for navigation response:', err);
+                })
+                .catch(() => {
+                  // Final catch to prevent unhandled rejections
+                  // Errors are already logged above
                 });
             }
           }
@@ -179,18 +155,42 @@ self.addEventListener('fetch', event => {
                 // Double-check we're not serving index.html when login.html was requested
                 const requestUrl = new URL(event.request.url);
                 const cachedUrl = response.url ? new URL(response.url) : null;
-                if (cachedUrl && requestUrl.pathname !== cachedUrl.pathname && 
-                    requestUrl.pathname.includes('login.html')) {
-                  // Don't serve wrong cached page - return a basic response
-                  return new Response('Network unavailable', { 
-                    status: 503,
-                    headers: { 'Content-Type': 'text/html' }
-                  });
+                // Check if we're serving the wrong page (e.g., index.html when login.html was requested)
+                if (cachedUrl && requestUrl.pathname !== cachedUrl.pathname) {
+                  const isAuthRequest = requestUrl.pathname.includes('login.html') || 
+                                       requestUrl.pathname.includes('register.html') || 
+                                       requestUrl.pathname.includes('reset.html');
+                  if (isAuthRequest) {
+                    // Don't serve wrong cached page - return offline response
+                    return caches.match('/offline.html').then(offlineResponse => {
+                      if (offlineResponse) {
+                        return offlineResponse;
+                      }
+                      return new Response('Network unavailable. Please check your connection.', { 
+                        status: 503,
+                        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                      });
+                    });
+                  }
                 }
                 return response;
               }
               // Return offline page as last resort
-              return caches.match('/offline.html');
+              // Fallback to a basic offline response if offline page isn't cached
+              return caches.match('/offline.html').then(offlineResponse => {
+                if (offlineResponse) {
+                  return offlineResponse;
+                }
+                // If offline page doesn't exist, return a basic offline message
+                return new Response(
+                  '<!DOCTYPE html><html><head><title>Offline</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:sans-serif;text-align:center;padding:20px;background:#f5f5f5}h1{color:#333;margin-top:50px}</style></head><body><h1>📴 You are offline</h1><p>Please check your internet connection and try again.</p><button onclick="window.location.reload()" style="padding:10px 20px;margin-top:20px;cursor:pointer;background:#2196f3;color:white;border:none;border-radius:5px">Retry</button></body></html>',
+                  {
+                    status: 503,
+                    statusText: 'Service Unavailable',
+                    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                  }
+                );
+              });
             });
         })
     );
@@ -206,9 +206,18 @@ self.addEventListener('fetch', event => {
 
         // Cache the response (but not for API calls)
         if (response.status === 200 && !pathname.includes('/api/')) {
+          // Cache in background with error handling
           caches.open(DYNAMIC_CACHE)
             .then(cache => {
-              cache.put(event.request, responseToCache);
+              return cache.put(event.request, responseToCache).catch(err => {
+                console.warn('[SW] Failed to cache response:', event.request.url, err);
+              });
+            })
+            .catch(err => {
+              console.warn('[SW] Failed to open cache:', err);
+            })
+            .catch(() => {
+              // Final catch to prevent unhandled rejections
             });
         }
 
@@ -262,7 +271,13 @@ self.addEventListener('message', event => {
 // Background sync for offline data
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-data') {
-    event.waitUntil(syncData());
+    event.waitUntil(
+      syncData().catch(error => {
+        // Handle sync errors gracefully
+        console.warn('[SW] Background sync error:', error);
+        return Promise.resolve(); // Don't fail the sync event
+      })
+    );
   }
 });
 
@@ -302,6 +317,18 @@ async function syncData() {
       getAllRequest.onerror = () => reject(getAllRequest.error);
     });
     
+    // Set up transaction completion handler before processing
+    const syncComplete = new Promise((resolve) => {
+      transaction.oncomplete = () => {
+        console.log('[SW] Background sync completed');
+        resolve();
+      };
+      transaction.onerror = () => {
+        console.warn('[SW] Background sync transaction error');
+        resolve(); // Resolve anyway to not block
+      };
+    });
+    
     for (const data of pendingData) {
       try {
         const response = await fetch(data.url, {
@@ -311,7 +338,7 @@ async function syncData() {
         });
         
         if (response.ok) {
-          // Delete synced data
+          // Delete synced data within the same transaction
           store.delete(data.id);
         }
       } catch (error) {
@@ -319,9 +346,8 @@ async function syncData() {
       }
     }
     
-    transaction.oncomplete = () => {
-      console.log('[SW] Background sync completed');
-    };
+    // Wait for transaction to complete
+    await syncComplete;
   } catch (error) {
     // Silently fail - background sync is optional
     console.warn('[SW] Background sync failed (non-fatal):', error);
@@ -391,17 +417,22 @@ async function checkForUpdates() {
   
   lastUpdateCheck = now;
   
+  let timeoutId = null;
   try {
     // Add timeout to prevent hanging
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    timeoutId = setTimeout(() => controller.abort(), 5000);
     
     const response = await fetch('/version.json', { 
       cache: 'no-store',
       signal: controller.signal
     });
     
-    clearTimeout(timeoutId);
+    // Clear timeout only if fetch succeeded
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
     
     if (!response.ok) {
       return; // Silently fail if version file doesn't exist
@@ -419,7 +450,15 @@ async function checkForUpdates() {
       });
     }
   } catch (error) {
+    // Clean up timeout on error
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     // Silently fail - don't log errors that might spam console
     // This prevents update check failures from causing issues
+    // AbortError is expected when timeout occurs, so we can ignore it
+    if (error.name !== 'AbortError') {
+      console.warn('[SW] Update check error:', error.message);
+    }
   }
 }
