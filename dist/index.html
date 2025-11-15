@@ -53,22 +53,86 @@
   <!-- auth and db are now imported directly in index-inline.js, no need for separate script -->
   <script src="/app-updater.js"></script>
   
+  <!-- Reload Loop Prevention - Must be first -->
+  <script>
+    // Track page loads to detect reload loops
+    (function() {
+      const RELOAD_BLOCK_KEY = 'reload-blocked';
+      const RELOAD_HISTORY_KEY = 'reload-history';
+      const MAX_RELOADS = 3;
+      const RELOAD_WINDOW_MS = 5000; // 5 seconds
+      
+      // Get reload history
+      let reloadHistory = JSON.parse(sessionStorage.getItem(RELOAD_HISTORY_KEY) || '[]');
+      const now = Date.now();
+      
+      // Clean old entries (older than window)
+      reloadHistory = reloadHistory.filter(t => (now - t) < RELOAD_WINDOW_MS * 2);
+      
+      // Add current load time
+      reloadHistory.push(now);
+      
+      // Check if we're in a reload loop
+      const recentReloads = reloadHistory.filter(t => (now - t) < RELOAD_WINDOW_MS);
+      
+      if (recentReloads.length >= MAX_RELOADS) {
+        console.error('[Reload Prevention] Reload loop detected! Blocking further reloads.');
+        sessionStorage.setItem(RELOAD_BLOCK_KEY, 'true');
+        
+        // Clear service workers to break the loop
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+              registration.unregister().then(() => {
+                console.log('[Reload Prevention] Unregistered service worker to break loop');
+              });
+            });
+          });
+        }
+      } else {
+        // Not in a loop, save history
+        sessionStorage.setItem(RELOAD_HISTORY_KEY, JSON.stringify(reloadHistory));
+      }
+    })();
+  </script>
+  
   <!-- Service Worker Registration -->
   <script>
     // Register service worker - unregister all existing ones first to prevent duplicates
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         // Skip service worker registration in development to avoid errors
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1' ||
+                           window.location.hostname === '';
+        
+        if (isLocalhost) {
           console.log('[SW] Skipping service worker registration in development mode');
+          return;
+        }
+        
+        // CRITICAL: On production, check if reload is blocked to prevent loops
+        if (sessionStorage.getItem('reload-blocked') === 'true') {
+          console.warn('[SW] Reload blocked - skipping service worker registration to prevent loops');
           return;
         }
         
         // Small delay to ensure page is fully loaded and avoid conflicts
         setTimeout(() => {
-          // Check if reload is blocked to prevent registration loops
+          // Double-check reload is blocked (prevent any loops)
           if (sessionStorage.getItem('reload-blocked') === 'true') {
             console.warn('[SW] Reload blocked - skipping service worker registration to prevent loops');
+            return;
+          }
+          
+          // Check reload history to prevent loops
+          const reloadHistory = JSON.parse(sessionStorage.getItem('reload-history') || '[]');
+          const now = Date.now();
+          const recentReloads = reloadHistory.filter(t => (now - t) < 5000); // 5 seconds
+          
+          if (recentReloads.length >= 3) {
+            console.warn('[SW] Too many recent reloads detected - blocking service worker registration');
+            sessionStorage.setItem('reload-blocked', 'true');
             return;
           }
           

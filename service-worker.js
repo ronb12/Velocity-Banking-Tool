@@ -250,8 +250,15 @@ self.addEventListener('fetch', event => {
 
 // Message handling for version checks and updates
 self.addEventListener('message', event => {
+  // Only skip waiting if explicitly requested (user confirmed update)
   if (event.data.action === 'skipWaiting') {
-    self.skipWaiting();
+    console.log('[SW] skipWaiting requested by user');
+    self.skipWaiting().then(() => {
+      // After skipping waiting, claim clients but don't force reload
+      return self.clients.claim();
+    }).catch(err => {
+      console.warn('[SW] Error skipping waiting:', err);
+    });
   }
   
   if (event.data.action === 'CHECK_VERSION') {
