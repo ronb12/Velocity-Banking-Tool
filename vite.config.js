@@ -96,6 +96,7 @@ export default defineConfig({
           { src: 'utils/financialInsights.js', dest: 'utils/financialInsights.js' },
           { src: 'utils/themeManager.js', dest: 'utils/themeManager.js' },
           { src: 'utils/authHelper.js', dest: 'utils/authHelper.js' },
+          { src: 'utils/capacitor.js', dest: 'utils/capacitor.js' },
           { src: 'app-updater.js', dest: 'app-updater.js' },
         ];
         
@@ -188,6 +189,7 @@ export default defineConfig({
             '/utils/analytics.js',
             '/utils/financialInsights.js',
             '/utils/themeManager.js',
+            '/utils/capacitor.js',
             '/config.js',
             '/app-updater.js',
             '/service-worker.js',
@@ -230,6 +232,7 @@ export default defineConfig({
       './utils/analytics.js',
       './utils/financialInsights.js',
       './utils/themeManager.js',
+      './utils/capacitor.js',
       './config.js',
       './app-updater.js',
     ],

@@ -49,6 +49,8 @@
   <script src="/utils/analytics.js"></script>
   <script src="/utils/financialInsights.js"></script>
   <script src="/utils/themeManager.js"></script>
+  <!-- Capacitor Native Bridge - Initialize early for native features -->
+  <script type="module" src="/utils/capacitor.js"></script>
   <!-- Core Services - Load early for error handling -->
   <script type="module" src="/src/scripts/core/ErrorBoundary.js"></script>
   <script type="module" src="/src/scripts/core/Logger.js"></script>
@@ -144,7 +146,21 @@
   
   <!-- PWA Scrolling Fix -->
   <!-- Inline scripts moved to src/scripts/pages/index-inline.js -->
-    <script type="module" src="/src/scripts/pages/index-inline.js"></script>
+  <!-- Ensure openProfileModal is available immediately -->
+  <script>
+    // Define openProfileModal early to handle button clicks
+    window.openProfileModal = function() {
+      const profileModal = document.getElementById('profileModal');
+      if (profileModal) {
+        profileModal.style.display = 'flex';
+        // Trigger custom event for module to handle initialization
+        window.dispatchEvent(new CustomEvent('profile-modal-open'));
+      } else {
+        console.warn('Profile modal not found');
+      }
+    };
+  </script>
+  <script type="module" src="/src/scripts/pages/index-inline.js"></script>
     <!-- <script>
     // Fix PWA scrolling issues
     if (window.matchMedia('(display-mode: standalone)').matches) {

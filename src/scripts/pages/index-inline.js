@@ -260,42 +260,61 @@ const profileButton = document.getElementById('profileButton');
 const profileModal = document.getElementById('profileModal');
 const closeProfileModal = document.getElementById('closeProfileModal');
 
+// Function to open profile modal with full initialization
+function openProfileModalInternal() {
+  if (!profileModal) {
+    if (logger) logger.error('Profile modal not found');
+    if (errorBoundary) errorBoundary.handleError(new Error('Profile modal not found'), { context: 'profile_modal' });
+    return;
+  }
+  
+  profileModal.style.display = 'flex';
+  if (logger) logger.debug('Modal display set to flex');
+  
+  // Initialize profile stats
+  if (profileStats) {
+    profileStats.updateProfileStats(auth);
+  }
+  
+  // Initialize theme selector
+  initializeThemeSelector();
+  
+  // Debug: Check if avatar elements exist
+  setTimeout(() => {
+    if (logger) {
+      logger.debug('Avatar elements check', {
+        container: !!document.querySelector('.avatar-container'),
+        uploadButton: !!document.querySelector('.avatar-upload-btn'),
+        modalVisible: profileModal.style.display,
+        computedStyle: window.getComputedStyle(profileModal).display
+      });
+    }
+  }, 100);
+}
+
 if (logger) {
   logger.debug('Profile button found', { exists: !!profileButton });
   logger.debug('Profile modal found', { exists: !!profileModal });
 }
 
+// Set up profile button click handler
 if (profileButton) {
   profileButton.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     if (logger) logger.debug('Profile button clicked, opening modal');
-    if (profileModal) {
-      profileModal.style.display = 'flex';
-      if (logger) logger.debug('Modal display set to flex');
-      if (profileStats) profileStats.updateProfileStats(auth);
-      initializeThemeSelector();
-      
-      // Debug: Check if avatar elements exist
-      setTimeout(() => {
-        if (logger) {
-          logger.debug('Avatar elements check', {
-            container: !!document.querySelector('.avatar-container'),
-            uploadButton: !!document.querySelector('.avatar-upload-btn'),
-            modalVisible: profileModal.style.display,
-            computedStyle: window.getComputedStyle(profileModal).display
-          });
-        }
-      }, 100);
-    } else {
-      if (logger) logger.error('Profile modal not found');
-      if (errorBoundary) errorBoundary.handleError(new Error('Profile modal not found'), { context: 'profile_modal' });
-    }
+    openProfileModalInternal();
   });
 } else {
   if (logger) logger.error('Profile button not found');
   if (errorBoundary) errorBoundary.handleError(new Error('Profile button not found'), { context: 'profile_button' });
 }
+
+// Listen for profile modal open event (from early openProfileModal function)
+window.addEventListener('profile-modal-open', () => {
+  if (logger) logger.debug('Profile modal open event received');
+  openProfileModalInternal();
+});
 
 if (closeProfileModal) {
   closeProfileModal.addEventListener('click', () => {
@@ -614,12 +633,9 @@ if (document.readyState === 'loading') {
 }
 
 // Make functions globally available for backward compatibility
+// Override the early definition with full functionality
 window.openProfileModal = () => {
-  if (profileModal) {
-    profileModal.style.display = 'flex';
-    if (profileStats) profileStats.updateProfileStats(auth);
-    initializeThemeSelector();
-  }
+  openProfileModalInternal();
 };
 
 window.updateProfileStats = () => {
