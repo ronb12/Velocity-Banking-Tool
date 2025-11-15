@@ -4,7 +4,6 @@ const DYNAMIC_CACHE = 'dynamic-v2';
 const VERSION = '1.1.0';
 
 const STATIC_ASSETS = [
-  '/',
   '/index.html',
   '/src/pages/other/budget.html',
   '/src/pages/debt/Debt_Tracker.html',
@@ -15,8 +14,9 @@ const STATIC_ASSETS = [
   '/app-updater.js',
   '/config.js',
   '/icon-192.png',
-  '/icon-512.png',
-  '/offline.html'
+  '/icon-512.png'
+  // Note: /offline.html is created dynamically, not cached in STATIC_ASSETS
+  // Note: / (root) is handled by index.html, no need to cache separately
 ];
 
 // Install event - cache static assets
@@ -33,16 +33,19 @@ self.addEventListener('install', event => {
             return Promise.resolve();
           });
         }),
-      // Create offline page
+      // Create offline page dynamically (it doesn't exist as a file)
       caches.open(STATIC_CACHE)
         .then(cache => {
-          return cache.add(new Request('/offline.html', {
-            method: 'GET',
-            headers: new Headers({
-              'Content-Type': 'text/html'
-            }),
-            body: '<!DOCTYPE html><html><head><title>Offline</title><style>body{font-family:sans-serif;text-align:center;padding:20px}h1{color:#333}</style></head><body><h1>You are offline</h1><p>Please check your internet connection and try again.</p></body></html>'
+          const offlineHTML = '<!DOCTYPE html><html><head><title>Offline</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:sans-serif;text-align:center;padding:20px;background:#f5f5f5}h1{color:#333;margin-top:50px}</style></head><body><h1>📴 You are offline</h1><p>Please check your internet connection and try again.</p><button onclick="window.location.reload()" style="padding:10px 20px;margin-top:20px;cursor:pointer;background:#2196f3;color:white;border:none;border-radius:5px">Retry</button></body></html>';
+          return cache.put(new Request('/offline.html'), new Response(offlineHTML, {
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8'
+            }
           }));
+        })
+        .catch(err => {
+          console.warn('[SW] Failed to cache offline page:', err);
+          // Non-fatal - continue anyway
         })
     ])
   );
@@ -100,19 +103,31 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          // Only cache successful responses
-          if (response.status === 200 && response.headers.get('content-type')?.includes('javascript')) {
+          // Cache successful responses for static assets
+          if (response.status === 200) {
             const responseToCache = response.clone();
+            // Cache in background (don't wait for it)
             caches.open(DYNAMIC_CACHE)
               .then(cache => {
-                cache.put(event.request, responseToCache);
+                cache.put(event.request, responseToCache).catch(err => {
+                  console.warn('[SW] Failed to cache static asset:', event.request.url, err);
+                });
+              })
+              .catch(err => {
+                console.warn('[SW] Failed to open cache for static asset:', err);
               });
           }
           return response;
         })
         .catch(() => {
           // Fallback to cache if network fails
-          return caches.match(event.request);
+          return caches.match(event.request).then(cachedResponse => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // If no cache, let request fail naturally
+            throw new Error('Network unavailable and no cache');
+          });
         })
     );
     return;
@@ -137,16 +152,22 @@ self.addEventListener('fetch', event => {
           // Only cache if the response URL matches the request URL (prevent redirects being cached)
           if (response.status === 200 && requestUrl.pathname === responseUrl.pathname) {
             const responseToCache = response.clone();
-            caches.open(DYNAMIC_CACHE)
-              .then(cache => {
-                // Don't cache auth pages to prevent them being served as index.html
-                const isAuthPage = requestUrl.pathname.includes('login.html') || 
-                                 requestUrl.pathname.includes('register.html') || 
-                                 requestUrl.pathname.includes('reset.html');
-                if (!isAuthPage) {
-                  cache.put(event.request, responseToCache);
-                }
-              });
+            // Don't cache auth pages to prevent them being served as index.html
+            const isAuthPage = requestUrl.pathname.includes('login.html') || 
+                             requestUrl.pathname.includes('register.html') || 
+                             requestUrl.pathname.includes('reset.html');
+            if (!isAuthPage) {
+              // Cache in background (don't wait for it)
+              caches.open(DYNAMIC_CACHE)
+                .then(cache => {
+                  cache.put(event.request, responseToCache).catch(err => {
+                    console.warn('[SW] Failed to cache navigation response:', event.request.url, err);
+                  });
+                })
+                .catch(err => {
+                  console.warn('[SW] Failed to open cache for navigation response:', err);
+                });
+            }
           }
           return response;
         })
@@ -220,9 +241,12 @@ self.addEventListener('message', event => {
   }
   
   if (event.data.action === 'CHECK_VERSION') {
-    event.ports[0].postMessage({
-      version: VERSION
-    });
+    // Check if ports array exists and has elements before accessing
+    if (event.ports && event.ports.length > 0) {
+      event.ports[0].postMessage({
+        version: VERSION
+      });
+    }
   }
 
   if (event.data.action === 'UPDATE_AVAILABLE') {

@@ -61,9 +61,9 @@
   <!-- auth and db are now imported directly in index-inline.js, no need for separate script -->
   <script src="app-updater.js"></script>
   
-  <!-- Service Worker Registration - CONSERVATIVE -->
+  <!-- Service Worker Registration - CLEAN REGISTRATION -->
   <script>
-    // Register service worker conservatively - only if not already registered
+    // Register service worker - unregister all existing ones first to prevent duplicates
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         // Skip service worker registration in development to avoid errors
@@ -74,14 +74,23 @@
         
         // Small delay to ensure page is fully loaded and avoid conflicts
         setTimeout(() => {
-          // Check if service worker is already registered - don't unregister/register unnecessarily
-          navigator.serviceWorker.getRegistration().then(registration => {
-            if (registration) {
-              console.log('[SW] Service worker already registered, skipping registration');
-              return;
+          // Get ALL registrations and unregister any existing ones to prevent duplicates
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            if (registrations.length > 0) {
+              console.log(`[SW] Found ${registrations.length} existing service worker(s), unregistering...`);
+              // Unregister all existing service workers
+              return Promise.all(registrations.map(reg => {
+                console.log(`[SW] Unregistering service worker at scope: ${reg.scope}`);
+                return reg.unregister();
+              })).then(() => {
+                console.log('[SW] All existing service workers unregistered');
+                // Wait a bit before registering new one
+                return new Promise(resolve => setTimeout(resolve, 500));
+              });
             }
-            
-            // Only register if not already registered
+            return Promise.resolve();
+          }).then(() => {
+            // Now register the correct service worker
             const swPath = '/service-worker.js';
             navigator.serviceWorker.register(swPath, { scope: '/' })
               .then(registration => {
@@ -105,7 +114,7 @@
                 console.error('[SW] ❌ Service Worker registration failed:', error);
               });
           }).catch(error => {
-            console.warn('[SW] Error checking registration:', error);
+            console.warn('[SW] Error during service worker cleanup/registration:', error);
           });
         }, 2000); // 2 second delay to ensure page is ready
       });
