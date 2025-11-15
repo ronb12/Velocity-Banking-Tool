@@ -82,33 +82,48 @@
             return;
           }
           
-          // Get ALL registrations and unregister any existing ones to prevent duplicates
-          navigator.serviceWorker.getRegistrations().then(registrations => {
-            if (registrations.length > 0) {
-              console.log(`[SW] Found ${registrations.length} existing service worker(s), unregistering...`);
-              // Unregister all existing service workers
-              return Promise.all(registrations.map(reg => {
-                console.log(`[SW] Unregistering service worker at scope: ${reg.scope}`);
-                return reg.unregister();
-              })).then(() => {
-                console.log('[SW] All existing service workers unregistered');
-                // Wait a bit before registering new one
-                return new Promise(resolve => setTimeout(resolve, 500));
-              });
+          // Check if service worker is already registered and working
+          navigator.serviceWorker.getRegistration().then(existingRegistration => {
+            if (existingRegistration) {
+              // Service worker already registered - check if it's the right one
+              const swPath = '/service-worker.js';
+              const currentScriptURL = existingRegistration.active?.scriptURL || existingRegistration.installing?.scriptURL || existingRegistration.waiting?.scriptURL;
+              
+              if (currentScriptURL && currentScriptURL.includes('service-worker.js')) {
+                console.log('[SW] Service worker already registered and active');
+                console.log('[SW] Scope:', existingRegistration.scope);
+                
+                // DO NOT call update() - this can cause reload loops
+                // Only check for updates if explicitly requested by user
+                return;
+              } else {
+                // Wrong service worker registered - unregister it
+                console.log('[SW] Wrong service worker registered, unregistering...');
+                return existingRegistration.unregister().then(() => {
+                  console.log('[SW] Old service worker unregistered');
+                  return registerServiceWorker();
+                });
+              }
+            } else {
+              // No service worker registered - register one
+              return registerServiceWorker();
             }
-            return Promise.resolve();
-          }).then(() => {
-            // Now register the correct service worker
+          }).catch(error => {
+            console.warn('[SW] Error checking service worker registration:', error);
+            // Try to register anyway
+            return registerServiceWorker();
+          });
+          
+          // Function to register service worker (only called when needed)
+          function registerServiceWorker() {
             const swPath = '/service-worker.js';
-            navigator.serviceWorker.register(swPath, { scope: '/' })
+            return navigator.serviceWorker.register(swPath, { scope: '/' })
               .then(registration => {
                 console.log('[SW] ✅ Service Worker registered successfully!');
                 console.log('[SW] Scope:', registration.scope);
                 
                 // CRITICAL: DO NOT call registration.update() automatically
                 // This can cause reload loops when service worker updates are found
-                // Let app-updater.js handle updates only on localhost
-                // On production, updates should only happen when user explicitly requests them
                 console.log('[SW] Skipping automatic update check to prevent reload loops');
                 
                 // Listen for waiting service workers (new version installed)
@@ -118,25 +133,27 @@
                 }
                 
                 // Listen for updates (but don't auto-reload)
-                registration.addEventListener('updatefound', () => {
-                  console.log('[SW] Service worker update found - waiting for user confirmation');
-                  const newWorker = registration.installing;
-                  if (newWorker) {
-                    newWorker.addEventListener('statechange', () => {
-                      if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        console.log('[SW] New service worker installed - waiting for user to reload');
-                        // Do NOT auto-reload here - this causes loops
-                      }
-                    });
-                  }
-                });
+                // Only add listener once
+                if (!registration._updateListenerAdded) {
+                  registration._updateListenerAdded = true;
+                  registration.addEventListener('updatefound', () => {
+                    console.log('[SW] Service worker update found - waiting for user confirmation');
+                    const newWorker = registration.installing;
+                    if (newWorker) {
+                      newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                          console.log('[SW] New service worker installed - waiting for user to reload');
+                          // Do NOT auto-reload here - this causes loops
+                        }
+                      });
+                    }
+                  });
+                }
               })
               .catch(error => {
                 console.error('[SW] ❌ Service Worker registration failed:', error);
               });
-          }).catch(error => {
-            console.warn('[SW] Error during service worker cleanup/registration:', error);
-          });
+          }
         }, 2000); // 2 second delay to ensure page is ready
       });
     } else {

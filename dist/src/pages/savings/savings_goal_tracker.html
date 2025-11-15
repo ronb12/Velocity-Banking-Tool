@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>Savings Goal Tracker – Pro</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  
+  <!-- PWA Scrolling Fix -->
+  <script>
+    // Fix PWA scrolling issues
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      document.addEventListener('DOMContentLoaded', function() {
+        // Force enable scrolling in PWA mode
+        document.body.style.overflow = 'auto';
+        document.body.style.webkitOverflowScrolling = 'touch';
+        document.documentElement.style.overflow = 'auto';
+        document.documentElement.style.webkitOverflowScrolling = 'touch';
+        
+        // Prevent overscroll bounce
+        document.body.style.overscrollBehavior = 'none';
+        document.documentElement.style.overscrollBehavior = 'none';
+        
+        // Ensure proper height
+        document.body.style.minHeight = '100vh';
+        document.documentElement.style.height = '100%';
+      });
+    }
+  </script>
+  
+  <style>
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0; 
+      padding: 20px; 
+      min-height: 100vh;
+    }
+    
+    .container { 
+      max-width: 1200px; 
+      margin: auto; 
+      background: #fff; 
+      padding: 30px; 
+      border-radius: 20px; 
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #f0f0f0;
+    }
+    
+    .back-button { 
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      display: inline-block; 
+      margin-bottom: 20px; 
+      text-decoration: none; 
+      color: white; 
+      padding: 12px 20px; 
+      border-radius: 25px;
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+    }
+    
+    h1 { 
+      color: #2c3e50; 
+      margin: 0;
+      font-size: 2.5em;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.2em;
+    }
+    
+    .stat-card .value {
+      font-size: 2em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 30px 0;
+      align-items: center;
+    }
+    
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    label { 
+      font-weight: 600; 
+      color: #2c3e50;
+    }
+    
+    select, input[type="text"], input[type="number"] { 
+      padding: 12px 15px; 
+      border: 2px solid #e0e0e0; 
+      border-radius: 10px; 
+      font-size: 14px;
+      transition: border-color 0.3s ease;
+    }
+    
+    select:focus, input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(45deg, #6c757d, #495057);
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(45deg, #dc3545, #c82333);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+    
+    .goals-container {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 30px 0;
+    }
+    
+    .goals-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .goals-table th { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; 
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+    }
+    
+    .goals-table td { 
+      padding: 15px; 
+      border-bottom: 1px solid #e0e0e0;
+      vertical-align: middle;
+    }
+    
+    .goals-table tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .progress-container {
+      position: relative;
+      background: #e9ecef;
+      border-radius: 10px;
+      height: 25px;
+      overflow: hidden;
+      margin: 5px 0;
+    }
+    
+    .progress-bar { 
+      height: 100%; 
+      background: linear-gradient(90deg, #28a745, #20c997);
+      transition: width 0.6s ease;
+      position: relative;
+    }
+    
+    .progress-bar.over-100 {
+      background: linear-gradient(90deg, #ffc107, #fd7e14);
+    }
+    
+    .progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: 600;
+      font-size: 12px;
+      color: #2c3e50;
+    }
+    
+    .goal-actions {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .goal-actions .btn {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    
+    .table-input {
+      border: 2px solid #e0e0e0 !important;
+      background: white !important;
+      padding: 8px !important;
+      border-radius: 6px !important;
+      width: 100% !important;
+      font-size: 14px !important;
+      transition: all 0.3s ease !important;
+    }
+    
+    .table-input:focus {
+      outline: none !important;
+      border-color: #667eea !important;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+    }
+    
+    .table-input:hover {
+      border-color: #667eea !important;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+      background: white;
+      margin: 5% auto;
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .close {
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #aaa;
+    }
+    
+    .close:hover {
+      color: #000;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    
+    .form-group input, .form-group select {
+      width: 100%;
+    }
+    
+    .section-title {
+      color: #2c3e50;
+      margin: 30px 0 20px 0;
+      font-size: 1.5em;
+      border-left: 4px solid #667eea;
+      padding-left: 15px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+    }
+    
+    .empty-state i {
+      font-size: 4em;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+        margin: 10px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .goals-table {
+        font-size: 14px;
+      }
+      
+      .goals-table th, .goals-table td {
+        padding: 10px 8px;
+      }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/savingsTracker-xmEPMmwK.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-YP0FEG5d.js">
+  <link rel="modulepreload" crossorigin href="/assets/preload-helper-BzSHXCLh.js">
+  <link rel="modulepreload" crossorigin href="/assets/activityLogger-C4qvEfwc.js">
+  <link rel="stylesheet" crossorigin href="/assets/theme-L6bR_e4s.css">
+  <script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();if(location.protocol!="file:"){window.__vite_is_modern_browser=true}</script>
+  <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+</head>
+<body>
+<div class="container">
+  <a href="/index.html" class="back-button">🔙 Back to Dashboard</a>
+
+  <div class="header">
+    <h1>💰 Savings Goal Tracker – Pro</h1>
+    <p>Track your financial goals with precision and achieve your dreams</p>
+  </div>
+
+  <!-- Statistics Dashboard -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>🎯 Active Goals</h3>
+      <div class="value" id="activeGoalsCount">0</div>
+      <p>Goals in progress</p>
+    </div>
+    <div class="stat-card">
+      <h3>💵 Total Saved</h3>
+      <div class="value" id="totalSaved">$0.00</div>
+      <p>Across all goals</p>
+    </div>
+    <div class="stat-card">
+      <h3>🏆 Completed</h3>
+      <div class="value" id="completedGoals">0</div>
+      <p>Goals achieved</p>
+    </div>
+    <div class="stat-card">
+      <h3>📈 Success Rate</h3>
+      <div class="value" id="successRate">0%</div>
+      <p>Completion rate</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="filter-group">
+      <label for="filterCategory">Filter by Category:</label>
+      <select id="filterCategory" onchange="renderGoals()">
+        <option value="All">All Categories</option>
+      </select>
+    </div>
+    
+    <div class="filter-group">
+      <label for="sortBy">Sort by:</label>
+      <select id="sortBy" onchange="renderGoals()">
+        <option value="name">Goal Name</option>
+        <option value="progress">Progress</option>
+        <option value="target">Target Amount</option>
+        <option value="saved">Amount Saved</option>
+        <option value="category">Category</option>
+      </select>
+    </div>
+    
+    <button class="btn btn-primary" onclick="openAddGoalModal()">+ Add New Goal</button>
+    <button class="btn btn-secondary" onclick="exportGoals()">📤 Export CSV</button>
+    <button class="btn btn-secondary" onclick="exportToPDF()">📄 Export PDF</button>
+    <button class="btn btn-secondary" onclick="printGoals()">🖨️ Print</button>
+    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Clear All Data</button>
+  </div>
+
+  <!-- Goals Table -->
+  <div class="goals-container">
+    <table class="goals-table" id="goalsTable">
+      <thead>
+        <tr>
+          <th>Goal Name</th>
+          <th>Category</th>
+          <th>Target Amount</th>
+          <th>Amount Saved</th>
+          <th>Progress</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="goalsTableBody">
+        <!-- Goals will be populated here -->
+      </tbody>
+    </table>
+    
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div style="font-size: 4em; margin-bottom: 20px;">🎯</div>
+      <h3>No goals yet!</h3>
+      <p>Start by adding your first savings goal to begin tracking your progress.</p>
+      <button class="btn btn-primary" onclick="openAddGoalModal()">Add Your First Goal</button>
+    </div>
+  </div>
+
+
+  <!-- Add Goal Modal -->
+  <div id="addGoalModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add New Savings Goal</h2>
+        <span class="close" onclick="closeAddGoalModal()">&times;</span>
+      </div>
+      <form id="addGoalForm">
+        <div class="form-group">
+          <label for="goalName">Goal Name *</label>
+          <input type="text" id="goalName" required placeholder="e.g., Emergency Fund, Vacation, New Car">
+        </div>
+        <div class="form-group">
+          <label for="goalCategory">Category *</label>
+          <select id="goalCategory" required>
+            <option value="">Select a category</option>
+            <option value="Emergency Fund">Emergency Fund</option>
+            <option value="Vacation">Vacation</option>
+            <option value="Education">Education</option>
+            <option value="Home">Home</option>
+            <option value="Vehicle">Vehicle</option>
+            <option value="Retirement">Retirement</option>
+            <option value="Wedding">Wedding</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Technology">Technology</option>
+            <option value="Hobbies">Hobbies</option>
+            <option value="Investment">Investment</option>
+            <option value="Charity">Charity</option>
+            <option value="Business">Business</option>
+            <option value="Fitness">Fitness</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Insurance">Insurance</option>
+            <option value="Taxes">Taxes</option>
+            <option value="Legal">Legal</option>
+            <option value="Childcare">Childcare</option>
+            <option value="Pet Care">Pet Care</option>
+            <option value="Home Improvement">Home Improvement</option>
+            <option value="Garden">Garden</option>
+            <option value="Books">Books</option>
+            <option value="Gaming">Gaming</option>
+            <option value="Photography">Photography</option>
+            <option value="Travel">Travel</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="targetAmount">Target Amount ($) *</label>
+          <input type="number" id="targetAmount" required min="0" step="0.01" placeholder="1000.00">
+        </div>
+        <div class="form-group">
+          <label for="currentAmount">Current Amount ($)</label>
+          <input type="number" id="currentAmount" min="0" step="0.01" placeholder="0.00" value="0">
+        </div>
+        <div class="form-group">
+          <label for="targetDate">Target Date (Optional)</label>
+          <input type="date" id="targetDate">
+        </div>
+        <div style="text-align: right; margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeAddGoalModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Archived Goals Section -->
+  <div class="section">
+    <h2 class="section-title">🏆 Completed Goals</h2>
+    <div class="goals-container">
+      <table class="goals-table" id="archivedTable">
+        <thead>
+          <tr>
+            <th>Goal Name</th>
+            <th>Category</th>
+            <th>Target Amount</th>
+            <th>Amount Saved</th>
+            <th>Completed Date</th>
+            <th>Days to Complete</th>
+          </tr>
+        </thead>
+        <tbody id="archivedTableBody">
+          <!-- Archived goals will be populated here -->
+        </tbody>
+      </table>
+      
+      <div id="emptyArchiveState" class="empty-state" style="display: none;">
+        <div style="font-size: 4em; margin-bottom: 20px;">🏆</div>
+        <h3>No completed goals yet!</h3>
+        <p>Complete your first goal to see it here.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'savings_goals';
+const ARCHIVE_KEY = 'archived_goals';
+const VERSION_KEY = 'savings_goals_version';
+const CURRENT_VERSION = '2.2.0';
+
+// Initialize the app
+document.addEventListener('DOMContentLoaded', function() {
+  // Check version and force refresh if needed
+  const storedVersion = localStorage.getItem(VERSION_KEY);
+  const urlParams = new URLSearchParams(window.location.search);
+  const forceLoad = urlParams.get('load_samples') === 'true';
+  const clearCache = urlParams.get('clear_cache') === 'true';
+  
+  // Clear cache if requested or version mismatch
+  if (clearCache || storedVersion !== CURRENT_VERSION) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ARCHIVE_KEY);
+    localStorage.setItem(VERSION_KEY, CURRENT_VERSION);
+    // Don't auto-load sample goals on version upgrade
+  }
+  
+  // Check if this is a fresh load (no data) and add sample goals
+  const existingGoals = localStorage.getItem(STORAGE_KEY);
+  const existingArchives = localStorage.getItem(ARCHIVE_KEY);
+  
+  // Only load sample goals if explicitly requested
+  if (forceLoad || clearCache) {
+    addSampleGoals();
+  }
+  
+  renderGoals();
+  renderArchivedGoals();
+  updateStats();
+});
+
+// Add sample goals for demonstration
+function addSampleGoals() {
+  const sampleGoals = [
+    {
+      name: "Emergency Fund",
+      category: "Emergency Fund",
+      target: 10000,
+      saved: 3500,
+      targetDate: "2024-12-31",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Hawaii Vacation",
+      category: "Vacation",
+      target: 5000,
+      saved: 2200,
+      targetDate: "2024-08-15",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "New Laptop",
+      category: "Technology",
+      target: 2000,
+      saved: 1800,
+      targetDate: "2024-06-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Home Down Payment",
+      category: "Home",
+      target: 50000,
+      saved: 12500,
+      targetDate: "2025-06-30",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Wedding Fund",
+      category: "Wedding",
+      target: 15000,
+      saved: 8500,
+      targetDate: "2024-10-15",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Dental Work",
+      category: "Healthcare",
+      target: 3000,
+      saved: 1200,
+      targetDate: "2024-09-30",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Guitar Lessons",
+      category: "Hobbies",
+      target: 800,
+      saved: 400,
+      targetDate: "2024-07-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Stock Investment",
+      category: "Investment",
+      target: 5000,
+      saved: 2500,
+      targetDate: "2024-12-31",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Local Food Bank",
+      category: "Charity",
+      target: 500,
+      saved: 200,
+      targetDate: "2024-12-25",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Gym Membership",
+      category: "Fitness",
+      target: 600,
+      saved: 300,
+      targetDate: "2024-08-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Concert Tickets",
+      category: "Entertainment",
+      target: 400,
+      saved: 200,
+      targetDate: "2024-07-15",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "New Wardrobe",
+      category: "Clothing",
+      target: 1200,
+      saved: 600,
+      targetDate: "2024-09-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Pet Surgery",
+      category: "Pet Care",
+      target: 2000,
+      saved: 800,
+      targetDate: "2024-10-30",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Kitchen Renovation",
+      category: "Home Improvement",
+      target: 15000,
+      saved: 5000,
+      targetDate: "2025-03-31",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Garden Tools",
+      category: "Garden",
+      target: 300,
+      saved: 150,
+      targetDate: "2024-05-01",
+      createdDate: new Date().toISOString()
+    },
+    {
+      name: "Professional Camera",
+      category: "Photography",
+      target: 2500,
+      saved: 1000,
+      targetDate: "2024-11-15",
+      createdDate: new Date().toISOString()
+    }
+  ];
+  
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleGoals));
+  
+  // Add some sample completed goals
+  const sampleCompletedGoals = [
+    {
+      name: "iPhone 15 Pro",
+      category: "Other",
+      target: 1200,
+      saved: 1200,
+      completedDate: "2024-01-15T00:00:00.000Z",
+      daysToComplete: 45
+    },
+    {
+      name: "Weekend Getaway",
+      category: "Vacation",
+      target: 800,
+      saved: 800,
+      completedDate: "2024-02-20T00:00:00.000Z",
+      daysToComplete: 30
+    }
+  ];
+  
+  localStorage.setItem(ARCHIVE_KEY, JSON.stringify(sampleCompletedGoals));
+  
+  // Refresh the display
+  renderGoals();
+  renderArchivedGoals();
+  updateStats();
+  
+  showNotification('Sample goals loaded successfully!', 'success');
+}
+
+// Goal management functions
+function openAddGoalModal() {
+  document.getElementById('addGoalModal').style.display = 'block';
+  document.getElementById('goalName').focus();
+}
+
+function closeAddGoalModal() {
+  document.getElementById('addGoalModal').style.display = 'none';
+  document.getElementById('addGoalForm').reset();
+}
+
+function addGoal(goalData = null) {
+  if (goalData) {
+    // Add goal from form
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    goals.push(goalData);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+    closeAddGoalModal();
+    
+    // Log activity
+    if (window.activityLogger) {
+      window.activityLogger.logSavingsGoalCreated(goalData.name, parseFloat(goalData.targetAmount), goalData.category);
+    }
+  }
+  
+  renderGoals();
+  updateStats();
+}
+
+function editGoal(index, field, value) {
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  if (goals[index]) {
+    const oldValue = goals[index][field];
+    goals[index][field] = value;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+    
+    // Log activity for savings contributions
+    if (window.activityLogger && field === 'saved' && value > oldValue) {
+      const contribution = value - oldValue;
+      window.activityLogger.logSavingsContribution(goals[index].name, contribution, (value / goals[index].target * 100));
+    }
+    
+    renderGoals();
+    updateStats();
+    updateChart();
+  }
+}
+
+function deleteGoal(index) {
+  if (confirm('Are you sure you want to delete this goal?')) {
+    const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const goalToDelete = goals[index];
+    
+    // Log activity
+    if (window.activityLogger && goalToDelete) {
+      window.activityLogger.logActivity('savings_goal_deleted', `Deleted savings goal: ${goalToDelete.name}`, '🗑️');
+    }
+    
+    goals.splice(index, 1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+    renderGoals();
+    updateStats();
+    updateChart();
+  }
+}
+
+function completeGoal(index) {
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const goal = goals[index];
+  
+  if (goal.saved >= goal.target && goal.target > 0) {
+    // Log activity
+    if (window.activityLogger) {
+      window.activityLogger.logActivity('savings_goal_completed', `Completed savings goal: ${goal.name} ($${goal.saved})`, '🎉');
+    }
+    
+    // Archive the goal
+    const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+    archives.push({
+      ...goal,
+      completedDate: new Date().toISOString(),
+      daysToComplete: goal.targetDate ? 
+        Math.ceil((new Date(goal.targetDate) - new Date(goal.createdDate || new Date())) / (1000 * 60 * 60 * 24)) : 
+        null
+    });
+    localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archives));
+    
+    // Remove from active goals
+    goals.splice(index, 1);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+    
+    renderGoals();
+    renderArchivedGoals();
+    updateStats();
+    
+    // Show celebration
+    showNotification('🎉 Congratulations! Goal completed!', 'success');
+  } else {
+    showNotification('Goal must be fully funded to complete!', 'warning');
+  }
+}
+
+function renderGoals() {
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const filter = document.getElementById('filterCategory').value;
+  const sortBy = document.getElementById('sortBy').value;
+  
+  // Filter goals
+  let filteredGoals = goals.filter(goal => 
+    filter === 'All' || goal.category === filter
+  );
+  
+  // Sort goals
+  filteredGoals.sort((a, b) => {
+    switch(sortBy) {
+      case 'name': return a.name.localeCompare(b.name);
+      case 'progress': return (b.saved / b.target) - (a.saved / a.target);
+      case 'target': return b.target - a.target;
+      case 'saved': return b.saved - a.saved;
+      case 'category': return a.category.localeCompare(b.category);
+      default: return 0;
+    }
+  });
+  
+  const tbody = document.getElementById('goalsTableBody');
+  const emptyState = document.getElementById('emptyState');
+  
+  if (filteredGoals.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  
+  emptyState.style.display = 'none';
+  tbody.innerHTML = '';
+  
+  filteredGoals.forEach((goal, index) => {
+    const progress = goal.target > 0 ? (goal.saved / goal.target) * 100 : 0;
+    const isOver100 = progress > 100;
+    
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>
+        <input type="text" value="${goal.name}" 
+               onchange="editGoal(${index}, 'name', this.value)"
+               class="table-input" style="font-weight: 600;">
+      </td>
+      <td>
+        <select onchange="editGoal(${index}, 'category', this.value)"
+                class="table-input">
+          <option value="Emergency Fund" ${goal.category === 'Emergency Fund' ? 'selected' : ''}>Emergency Fund</option>
+          <option value="Vacation" ${goal.category === 'Vacation' ? 'selected' : ''}>Vacation</option>
+          <option value="Education" ${goal.category === 'Education' ? 'selected' : ''}>Education</option>
+          <option value="Home" ${goal.category === 'Home' ? 'selected' : ''}>Home</option>
+          <option value="Vehicle" ${goal.category === 'Vehicle' ? 'selected' : ''}>Vehicle</option>
+          <option value="Retirement" ${goal.category === 'Retirement' ? 'selected' : ''}>Retirement</option>
+          <option value="Wedding" ${goal.category === 'Wedding' ? 'selected' : ''}>Wedding</option>
+          <option value="Healthcare" ${goal.category === 'Healthcare' ? 'selected' : ''}>Healthcare</option>
+          <option value="Technology" ${goal.category === 'Technology' ? 'selected' : ''}>Technology</option>
+          <option value="Hobbies" ${goal.category === 'Hobbies' ? 'selected' : ''}>Hobbies</option>
+          <option value="Investment" ${goal.category === 'Investment' ? 'selected' : ''}>Investment</option>
+          <option value="Charity" ${goal.category === 'Charity' ? 'selected' : ''}>Charity</option>
+          <option value="Business" ${goal.category === 'Business' ? 'selected' : ''}>Business</option>
+          <option value="Fitness" ${goal.category === 'Fitness' ? 'selected' : ''}>Fitness</option>
+          <option value="Entertainment" ${goal.category === 'Entertainment' ? 'selected' : ''}>Entertainment</option>
+          <option value="Clothing" ${goal.category === 'Clothing' ? 'selected' : ''}>Clothing</option>
+          <option value="Insurance" ${goal.category === 'Insurance' ? 'selected' : ''}>Insurance</option>
+          <option value="Taxes" ${goal.category === 'Taxes' ? 'selected' : ''}>Taxes</option>
+          <option value="Legal" ${goal.category === 'Legal' ? 'selected' : ''}>Legal</option>
+          <option value="Childcare" ${goal.category === 'Childcare' ? 'selected' : ''}>Childcare</option>
+          <option value="Pet Care" ${goal.category === 'Pet Care' ? 'selected' : ''}>Pet Care</option>
+          <option value="Home Improvement" ${goal.category === 'Home Improvement' ? 'selected' : ''}>Home Improvement</option>
+          <option value="Garden" ${goal.category === 'Garden' ? 'selected' : ''}>Garden</option>
+          <option value="Books" ${goal.category === 'Books' ? 'selected' : ''}>Books</option>
+          <option value="Gaming" ${goal.category === 'Gaming' ? 'selected' : ''}>Gaming</option>
+          <option value="Photography" ${goal.category === 'Photography' ? 'selected' : ''}>Photography</option>
+          <option value="Travel" ${goal.category === 'Travel' ? 'selected' : ''}>Travel</option>
+          <option value="Other" ${goal.category === 'Other' ? 'selected' : ''}>Other</option>
+        </select>
+      </td>
+      <td>
+        <input type="number" value="${goal.target}" min="0" step="0.01"
+               onchange="editGoal(${index}, 'target', parseFloat(this.value))"
+               class="table-input" style="text-align: right;">
+      </td>
+      <td>
+        <input type="number" value="${goal.saved}" min="0" step="0.01"
+               onchange="editGoal(${index}, 'saved', parseFloat(this.value))"
+               class="table-input" style="text-align: right;">
+      </td>
+      <td>
+        <div class="progress-container">
+          <div class="progress-bar ${isOver100 ? 'over-100' : ''}" 
+               style="width: ${Math.min(progress, 100)}%"></div>
+          <div class="progress-text">${progress.toFixed(1)}%</div>
+        </div>
+        <small style="color: #6c757d;">
+          $${goal.saved.toFixed(2)} of $${goal.target.toFixed(2)}
+        </small>
+      </td>
+      <td>
+        <div class="goal-actions">
+          <button class="btn btn-primary" onclick="completeGoal(${index})" 
+                  ${goal.saved < goal.target ? 'disabled' : ''} 
+                  style="font-size: 10px; padding: 5px 8px;">
+            ✓ Complete
+          </button>
+          <button class="btn btn-danger" onclick="deleteGoal(${index})"
+                  style="font-size: 10px; padding: 5px 8px;">
+            🗑️
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+  
+  updateCategoryFilter();
+}
+
+function renderArchivedGoals() {
+  const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+  const tbody = document.getElementById('archivedTableBody');
+  const emptyState = document.getElementById('emptyArchiveState');
+  
+  if (archives.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  
+  emptyState.style.display = 'none';
+  tbody.innerHTML = '';
+  
+  archives.forEach(goal => {
+    const row = document.createElement('tr');
+    const completedDate = new Date(goal.completedDate).toLocaleDateString();
+    const daysToComplete = goal.daysToComplete ? `${goal.daysToComplete} days` : 'N/A';
+    
+    row.innerHTML = `
+      <td><strong>${goal.name}</strong></td>
+      <td><span style="background: #e9ecef; padding: 4px 8px; border-radius: 12px; font-size: 12px;">${goal.category}</span></td>
+      <td>$${goal.target.toFixed(2)}</td>
+      <td>$${goal.saved.toFixed(2)}</td>
+      <td>${completedDate}</td>
+      <td>${daysToComplete}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function updateStats() {
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+  
+  const totalSaved = goals.reduce((sum, goal) => sum + goal.saved, 0);
+  const completedCount = archives.length;
+  const activeCount = goals.length;
+  const totalGoals = activeCount + completedCount;
+  const successRate = totalGoals > 0 ? Math.round((completedCount / totalGoals) * 100) : 0;
+  
+  document.getElementById('activeGoalsCount').textContent = activeCount;
+  document.getElementById('totalSaved').textContent = `$${totalSaved.toFixed(2)}`;
+  document.getElementById('completedGoals').textContent = completedCount;
+  document.getElementById('successRate').textContent = `${successRate}%`;
+}
+
+function updateCategoryFilter() {
+  const select = document.getElementById('filterCategory');
+  const current = select.value;
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  
+  // Get unique categories
+  const categories = [...new Set(goals.map(goal => goal.category))].filter(Boolean);
+  
+  select.innerHTML = '<option value="All">All Categories</option>';
+  categories.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = category;
+    select.appendChild(option);
+  });
+  
+  select.value = current || 'All';
+}
+
+
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${type === 'success' ? '#28a745' : type === 'warning' ? '#ffc107' : '#007bff'};
+    color: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    z-index: 10000;
+    font-weight: 600;
+  `;
+  notification.textContent = message;
+  
+  document.body.appendChild(notification);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Form submission
+document.getElementById('addGoalForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  const goalData = {
+    name: document.getElementById('goalName').value,
+    category: document.getElementById('goalCategory').value,
+    target: parseFloat(document.getElementById('targetAmount').value),
+    saved: parseFloat(document.getElementById('currentAmount').value) || 0,
+    targetDate: document.getElementById('targetDate').value,
+    createdDate: new Date().toISOString()
+  };
+  
+  addGoal(goalData);
+  showNotification('Goal added successfully!', 'success');
+});
+
+// Export and print functions
+function exportGoals() {
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+  
+  let csv = 'Type,Name,Category,Target Amount,Amount Saved,Progress,Status\n';
+  
+  // Active goals
+  goals.forEach(goal => {
+    const progress = goal.target > 0 ? (goal.saved / goal.target) * 100 : 0;
+    csv += `Active,${goal.name},${goal.category},${goal.target},${goal.saved},${progress.toFixed(1)}%,In Progress\n`;
+  });
+  
+  // Archived goals
+  archives.forEach(goal => {
+    csv += `Completed,${goal.name},${goal.category},${goal.target},${goal.saved},100%,Completed\n`;
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `savings_goals_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showNotification('Goals exported successfully!', 'success');
+}
+
+function printGoals() {
+  window.print();
+}
+
+// Export goals to PDF
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // Get current date
+  const currentDate = new Date().toLocaleDateString();
+  
+  // Add header
+  doc.setFontSize(20);
+  doc.setTextColor(102, 126, 234);
+  doc.text('Savings Goal Tracker Report', 20, 20);
+  
+  doc.setFontSize(12);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Generated on: ${currentDate}`, 20, 30);
+  
+  // Get goals data
+  const goals = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const archives = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+  
+  // Calculate statistics
+  const totalSaved = goals.reduce((sum, goal) => sum + goal.saved, 0);
+  const completedCount = archives.length;
+  const activeCount = goals.length;
+  const totalGoals = activeCount + completedCount;
+  const successRate = totalGoals > 0 ? Math.round((completedCount / totalGoals) * 100) : 0;
+  
+  // Add summary section
+  doc.setFontSize(14);
+  doc.text('Summary', 20, 50);
+  
+  doc.setFontSize(10);
+  doc.text(`Active Goals: ${activeCount}`, 20, 60);
+  doc.text(`Completed Goals: ${completedCount}`, 20, 67);
+  doc.text(`Total Saved: $${totalSaved.toFixed(2)}`, 20, 74);
+  doc.text(`Success Rate: ${successRate}%`, 20, 81);
+  
+  // Add active goals table
+  if (goals.length > 0) {
+    doc.setFontSize(14);
+    doc.text('Active Goals', 20, 95);
+    
+    const activeGoalsData = goals.map(goal => {
+      const progress = goal.target > 0 ? (goal.saved / goal.target) * 100 : 0;
+      return [
+        goal.name,
+        goal.category,
+        `$${goal.target.toFixed(2)}`,
+        `$${goal.saved.toFixed(2)}`,
+        `${progress.toFixed(1)}%`
+      ];
+    });
+    
+    doc.autoTable({
+      startY: 100,
+      head: [['Goal Name', 'Category', 'Target', 'Saved', 'Progress']],
+      body: activeGoalsData,
+      theme: 'grid',
+      headStyles: { fillColor: [102, 126, 234] },
+      styles: { fontSize: 9 }
+    });
+  }
+  
+  // Add completed goals table
+  if (archives.length > 0) {
+    const lastY = doc.lastAutoTable.finalY || 100;
+    doc.setFontSize(14);
+    doc.text('Completed Goals', 20, lastY + 20);
+    
+    const completedGoalsData = archives.map(goal => {
+      const completedDate = new Date(goal.completedDate).toLocaleDateString();
+      return [
+        goal.name,
+        goal.category,
+        `$${goal.target.toFixed(2)}`,
+        `$${goal.saved.toFixed(2)}`,
+        completedDate
+      ];
+    });
+    
+    doc.autoTable({
+      startY: lastY + 25,
+      head: [['Goal Name', 'Category', 'Target', 'Saved', 'Completed Date']],
+      body: completedGoalsData,
+      theme: 'grid',
+      headStyles: { fillColor: [40, 167, 69] },
+      styles: { fontSize: 9 }
+    });
+  }
+  
+  // Add footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.text('Bradley\'s Financial Tools - Savings Goal Tracker', 20, doc.internal.pageSize.height - 10);
+    doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 40, doc.internal.pageSize.height - 10);
+  }
+  
+  // Save the PDF
+  const fileName = `savings_goals_report_${new Date().toISOString().split('T')[0]}.pdf`;
+  doc.save(fileName);
+  
+  showNotification('PDF report generated successfully!', 'success');
+}
+
+// Clear all data function
+function clearAllData() {
+  if (confirm('Are you sure you want to clear all goals and completed goals? This action cannot be undone.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ARCHIVE_KEY);
+    renderGoals();
+    renderArchivedGoals();
+    updateStats();
+    showNotification('All data cleared successfully!', 'success');
+  }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('addGoalModal');
+  if (event.target === modal) {
+    closeAddGoalModal();
+  }
+}
+
+// Initialize activity logger (mock Firebase for local storage only)
+window.db = null;
+window.auth = { currentUser: { uid: 'local-user' } };
+</script>
+  <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+  <script nomodule crossorigin id="vite-legacy-polyfill" src="/assets/polyfills-legacy-gx6x68nW.js"></script>
+  <script nomodule crossorigin id="vite-legacy-entry" data-src="/assets/savingsTracker-legacy-BmwHBs3T.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+</body>
+</html>

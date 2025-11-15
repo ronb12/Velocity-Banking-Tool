@@ -1,0 +1,438 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <!-- Optional file removed: global.js -->
+ <!-- Optional file removed: theme.js -->
+ 
+ <!-- PWA Scrolling Fix -->
+ <script>
+   // Fix PWA scrolling issues
+   if (window.matchMedia('(display-mode: standalone)').matches) {
+     document.addEventListener('DOMContentLoaded', function() {
+       // Force enable scrolling in PWA mode
+       document.body.style.overflow = 'auto';
+       document.body.style.webkitOverflowScrolling = 'touch';
+       document.documentElement.style.overflow = 'auto';
+       document.documentElement.style.webkitOverflowScrolling = 'touch';
+       
+       // Prevent overscroll bounce
+       document.body.style.overscrollBehavior = 'none';
+       document.documentElement.style.overscrollBehavior = 'none';
+       
+       // Ensure proper height
+       document.body.style.minHeight = '100vh';
+       document.documentElement.style.height = '100%';
+     });
+   }
+ </script>
+ 
+   <style>
+/* ✅ Save Status Text */
+#saveStatus {
+  font-size: 13px;
+  color: green;
+  text-align: right;
+  margin-top: 5px;
+  margin-bottom: -15px;
+  margin-right: 10px;
+  opacity: 0;
+  transition: opacity 0.5s ease, color 0.5s ease;
+}
+/* ✅ When showing (we toggle opacity) */
+#saveStatus.show {
+  opacity: 1;
+}
+</style>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Debt Tracker – Full Featured</title>
+  <link rel="icon" type="image/x-icon" href="/assets/favicon-CvrWmkED.ico" />
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Debt Crusher – Velocity Banking Tool</title>
+<style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input, button, select {
+            width: calc(100% - 22px);
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .feedback {
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .high {
+            background-color: #ffcccc;
+            color: #cc0000;
+        }
+        .normal {
+            background-color: #ccffcc;
+            color: #006600;
+        }
+        .strategy {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    
+@media print {
+  #user-name-display {
+    display: block !important;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #000;
+  }
+}
+</style>
+<style media="print">
+form, button { display: none !important; }
+.strategy { page-break-after: always; }
+table { page-break-inside: avoid; }
+body { color-adjust: exact !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+</style><style>
+#recommended-strategy {
+  background: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+}
+#recommended-strategy h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.recommendation-badge {
+  background: #4CAF50;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 14px;
+}
+</style>  <script type="module" crossorigin src="/assets/debtCrusher-Bb-UQRjH.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-YP0FEG5d.js">
+  <link rel="modulepreload" crossorigin href="/assets/sync-BSpl6rnS.js">
+  <script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();if(location.protocol!="file:"){window.__vite_is_modern_browser=true}</script>
+  <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+</head>
+<body>
+        <nav style="text-align: center; margin-bottom: 20px;">
+  <a href="/index.html" style="font-weight: bold; font-size: 16px; color: #007BFF; text-decoration: none;">
+    ⬅️ Back to Dashboard
+  </a>
+</nav>
+
+<div class="container">
+<h1>Debt Crusher – Velocity Banking Tool</h1>
+<form id="calculator-form">
+<label for="userName">Your Name (optional):</label>
+<input id="userName" name="userName" placeholder="Enter your name" type="text"/>
+<label for="income">Monthly Income ($)</label>
+<input id="income" required="" step="0.01" type="number"/>
+<label for="extraIncome">Yearly Extra Income ($)</label>
+<input id="extraIncome" required="" step="0.01" type="number"/>
+<label for="expenses">Monthly Expenses ($)</label>
+<input id="expenses" required="" step="0.01" type="number"/>
+<label for="debtBalance">Total Debt Balance ($)</label>
+<input id="debtBalance" required="" step="0.01" type="number"/>
+<label for="interestRate">Average Interest Rate (%)</label>
+<input id="interestRate" required="" step="0.01" type="number"/>
+<label for="minimumPayment">Minimum Monthly Payment ($)</label>
+<input id="minimumPayment" required="" step="0.01" type="number"/>
+<label for="extraPayment">Extra Payment ($)</label>
+<input id="extraPayment" step="0.01" type="number"/>
+<label for="lineOfCredit">Select Velocity Banking Line of Credit:</label>
+<select id="lineOfCredit" required="">
+<option value="creditCard">Credit Card</option>
+<option value="HELOC">HELOC</option>
+<option value="personalLoan">Personal Loan</option>
+<option value="businessLoan">Business Loan</option>
+<option value="ploc">PLOC (e.g., NetCredit)</option>
+</select>
+<label for="chunkPayment">Velocity Banking Chunk Payment ($)</label>
+<input id="chunkPayment" required="" step="0.01" type="number"/>
+<label for="chunkMonths">Months for Chunk Payments (comma-separated, e.g., 3,6,12)</label>
+<input id="chunkMonths" placeholder="e.g., 3,6,12" type="text"/>
+<button type="submit">Calculate</button>
+<button id="saveInputs" type="button">Save Inputs</button>
+<button id="loadInputs" type="button">Load Inputs</button>
+<button id="exportPdf" type="button">Export Strategy as PDF</button>
+<label><input id="limitMonthsToggle" style="width:auto; margin-right:10px;" type="checkbox"/> Limit table to first 60 months</label>
+</form>
+<div id="feedback"></div>
+<div id="user-name-display" style="font-size: 18px; font-weight: bold; margin-top: 20px;"></div><div id="results"></div>
+<div id="recommended-strategy" style="margin-top: 30px;">
+<h2>Recommended Strategy<span class="recommendation-badge">RECOMMENDED</span></h2>
+<div id="recommended-strategy-details"></div>
+</div>
+<footer style="text-align: center; margin-top: 40px; font-weight: bold; font-size: 14px; color: #555;">This is a product of Bradley Virtual Solutions, LLC</footer></div>
+<script>
+window.onload = function () {
+    function getLineOfCreditBehavior(type) {
+        switch(type) {
+            case 'creditCard':
+                return { rateMultiplier: 1.05, description: 'Credit Card (daily compound)', fee: 0 };
+            case 'HELOC':
+                return { rateMultiplier: 1.0, description: 'HELOC (simple interest)', fee: 0 };
+            case 'personalLoan':
+                return { rateMultiplier: 0.95, description: 'Personal Loan (amortized)', fee: 0 };
+            case 'businessLoan':
+                return { rateMultiplier: 1.1, description: 'Business Loan (interest-only 3 months)', fee: 0 };
+            case 'ploc':
+                return { rateMultiplier: 1.0, description: 'PLOC (simple interest, fee included)', fee: 0 };
+            default:
+                return { rateMultiplier: 1.0, description: 'Standard', fee: 0 };
+        }
+    }
+
+    document.getElementById('saveInputs').addEventListener('click', function () {
+        const inputs = {
+            income: document.getElementById('income').value,
+            extraIncome: document.getElementById('extraIncome').value,
+            expenses: document.getElementById('expenses').value,
+            debtBalance: document.getElementById('debtBalance').value,
+            interestRate: document.getElementById('interestRate').value,
+            minimumPayment: document.getElementById('minimumPayment').value,
+            extraPayment: document.getElementById('extraPayment').value,
+            lineOfCredit: document.getElementById('lineOfCredit').value,
+            chunkPayment: document.getElementById('chunkPayment').value,
+            chunkMonths: document.getElementById('chunkMonths').value
+        };
+        localStorage.setItem('debtStrategyInputs', JSON.stringify(inputs));
+        alert('Inputs saved successfully!');
+    });
+
+    document.getElementById('loadInputs').addEventListener('click', function () {
+        const savedInputs = JSON.parse(localStorage.getItem('debtStrategyInputs'));
+        if (!savedInputs) {
+            alert('No saved inputs found.');
+            return;
+        }
+        for (const key in savedInputs) {
+            const element = document.getElementById(key);
+            if (element) element.value = savedInputs[key];
+        }
+        alert('Inputs loaded successfully!');
+    });
+
+    document.getElementById('exportPdf').addEventListener('click', function () {
+        window.print();
+    });
+
+    document.getElementById('calculator-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const income = parseFloat(document.getElementById('income').value);
+        const expenses = parseFloat(document.getElementById('expenses').value);
+        const debtBalance = parseFloat(document.getElementById('debtBalance').value);
+        const baseInterestRate = parseFloat(document.getElementById('interestRate').value) / 100 / 12;
+        const minimumPayment = parseFloat(document.getElementById('minimumPayment').value);
+        const extraPayment = parseFloat(document.getElementById('extraPayment').value) || 0;
+        const chunkPayment = parseFloat(document.getElementById('chunkPayment').value);
+        const chunkMonths = document.getElementById('chunkMonths').value.split(',').map(Number).filter(n => !isNaN(n));
+        const lineOfCredit = document.getElementById('lineOfCredit').value;
+        const locBehavior = getLineOfCreditBehavior(lineOfCredit);
+        const interestRate = baseInterestRate * locBehavior.rateMultiplier;
+        const extraIncome = parseFloat(document.getElementById('extraIncome').value) || 0;
+
+        const yearlyIncome = income * 12;
+        const totalYearlyIncome = yearlyIncome + extraIncome;
+        const dtiRatio = (debtBalance / totalYearlyIncome) * 100;
+        const cashFlow = income - expenses;
+
+        const feedback = document.getElementById('feedback');
+        feedback.innerHTML = `
+            <p>Yearly Income (with Extra): $${totalYearlyIncome.toFixed(2)}</p>
+            <p>Available Cash Flow: $${cashFlow.toFixed(2)}</p>
+            <p>Selected Line of Credit: ${locBehavior.description}</p>
+        `;
+
+        if (lineOfCredit === 'ploc') {
+            feedback.innerHTML += `<p><em>Note: PLOC selected — make sure any one-time fees (e.g., NetCredit’s 10%) are already included in your total debt balance or chunk payments.</em></p>`;
+        }
+
+        if (dtiRatio > 43) {
+            feedback.innerHTML += `<p class="feedback high">⚠️ Debt-to-Income Ratio: ${dtiRatio.toFixed(2)}% (Too High)</p>`;
+        } else {
+            feedback.innerHTML += `<p class="feedback normal">✅ Debt-to-Income Ratio: ${dtiRatio.toFixed(2)}% (Within Normal Limits)</p>`;
+        }
+
+        if (cashFlow <= 0) {
+            feedback.innerHTML += `<p class="feedback high">Insufficient cash flow. Adjust your income or expenses.</p>`;
+            return;
+        }
+
+        function calculateStrategy(debtBalance, interestRate, payment, strategyName, chunkMonths) {
+            let balance = debtBalance, months = 0, totalInterest = 0, payments = [], totalPrincipalPaid = 0;
+
+            while (balance > 0 && months < 1500) {
+                const interest = balance * interestRate;
+                totalInterest += interest;
+                let actualPayment = payment;
+
+                const chunkPaymentApplied = chunkMonths.includes(months + 1);
+                if (chunkPaymentApplied) {
+                    actualPayment += chunkPayment;
+                }
+
+                actualPayment = Math.min(actualPayment, balance + interest);
+                balance += interest - actualPayment;
+
+                const principalPaid = actualPayment - interest;
+                totalPrincipalPaid += principalPaid;
+
+                payments.push({
+                    payment: actualPayment.toFixed(2),
+                    interest: interest.toFixed(2),
+                    balance: balance.toFixed(2),
+                    principalPaid: principalPaid.toFixed(2)
+                });
+
+                months++;
+            }
+
+            const debtFreeDate = new Date();
+            debtFreeDate.setMonth(debtFreeDate.getMonth() + months);
+            const yearsToPayoff = (months / 12).toFixed(2);
+
+            return { strategyName, totalInterest, months, debtFreeDate, yearsToPayoff, totalPrincipalPaid, payments };
+        }
+
+        const minimumStrategy = calculateStrategy(debtBalance, interestRate, minimumPayment, "Minimum Payment", []);
+        const velocityStrategy = calculateStrategy(debtBalance, interestRate, cashFlow, "Velocity Banking", chunkMonths);
+        const extraStrategy = calculateStrategy(debtBalance, interestRate, minimumPayment + extraPayment, "Minimum Payments with Extra Payment", []);
+
+        function calculateSavings(baseStrategy, otherStrategy) {
+            return baseStrategy.totalInterest - otherStrategy.totalInterest;
+        }
+
+        const velocitySavings = calculateSavings(minimumStrategy, velocityStrategy);
+        const extraSavings = calculateSavings(minimumStrategy, extraStrategy);
+
+        const strategies = [velocityStrategy, extraStrategy];
+        const bestStrategy = strategies.reduce((best, current) => current.totalInterest < best.totalInterest ? current : best, minimumStrategy);
+
+        const avgMonthlySavings = (minimumStrategy.totalInterest - bestStrategy.totalInterest) / bestStrategy.months;
+        let confidenceLevel = '';
+        if (cashFlow >= chunkPayment * 1.5) {
+            confidenceLevel = '🚀 High Confidence – Strong Cash Flow';
+        } else if (cashFlow >= chunkPayment) {
+            confidenceLevel = '✅ Moderate Confidence – Cash Flow Sufficient';
+        } else {
+            confidenceLevel = '⚠️ Low Confidence – Tight Cash Flow';
+        }
+
+        function renderStrategy(strategy, savings) {
+            const limited = strategy.months > 120;
+            const limitRows = limited || document.getElementById('limitMonthsToggle').checked;
+            const maxRows = limitRows ? 60 : strategy.payments.length;
+            const notice = limited ? '<p><em>Only first 60 months shown. Full data is included in totals.</em></p>' : '';
+
+            return `
+                <div class="strategy" style="border-top: 4px solid #4CAF50;">
+                    <h2>${strategy.strategyName.replace('Minimum Payments with Extra Payment', '🧮 Minimum Payments with Extra Payment')}</h2>
+                    ${notice}
+                    <p>Total Interest Paid: $${strategy.totalInterest.toFixed(2)}</p>
+                    <p>Months to Payoff: ${strategy.months} (${strategy.yearsToPayoff} years)</p>
+                    <p>Debt-Free Date: ${strategy.debtFreeDate.toLocaleDateString()}</p>
+                    <p>Interest Saved Compared to Minimum Payments: $${savings.toFixed(2)}</p>
+                    <p>Total Principal Paid: $${strategy.totalPrincipalPaid.toFixed(2)}</p>
+                    <p>Total Amount Paid: $${(strategy.totalPrincipalPaid + strategy.totalInterest).toFixed(2)}</p>
+                    <table>
+                        <tr>
+                            <th>Month</th>
+                            <th>Payment ($)</th>
+                            <th>Principal Paid ($)</th>
+                            <th>Interest ($)</th>
+                            <th>Balance ($)</th>
+                        </tr>
+                        ${strategy.payments.slice(0, maxRows).map((p, i) => {
+                            return `<tr>
+                                <td>${i + 1}</td>
+                                <td>${p.payment}</td>
+                                <td>${p.principalPaid}</td>
+                                <td>${p.interest}</td>
+                                <td>${p.balance}</td>
+                            </tr>`;
+                        }).join('')}
+                    </table>
+                </div>
+            `;
+        }
+
+        document.getElementById('results').innerHTML = `
+            ${renderStrategy(velocityStrategy, velocitySavings)}
+            ${renderStrategy(extraStrategy, extraSavings)}
+        `;
+
+        const recommendedHtml = `
+            <p><em>✅ Recommended because it saves the most interest while maintaining a fast payoff timeline.</em></p>
+            <p><strong>Recommended Strategy:</strong> ${bestStrategy.strategyName}</p>
+            <p>Total Interest: $${bestStrategy.totalInterest.toFixed(2)}</p>
+            <p>Months to Payoff: ${bestStrategy.months} months (${bestStrategy.yearsToPayoff} years)</p>
+            <p>Debt-Free Date: ${bestStrategy.debtFreeDate.toLocaleDateString()}</p>
+            <p>💰 Est. Avg. Monthly Savings vs. Minimum: $${avgMonthlySavings.toFixed(2)}</p>
+            <p>📊 Payoff Confidence: <strong>${confidenceLevel}</strong></p>
+        `;
+        
+        const userName = document.getElementById('userName').value.trim();
+        if (userName) {
+            document.getElementById('user-name-display').innerHTML = `📄 Strategy Report for <strong>${userName}</strong>`;
+        } else {
+            document.getElementById('user-name-display').innerHTML = '';
+        }
+
+        document.getElementById('recommended-strategy-details').innerHTML = recommendedHtml;
+    });
+};
+</script>  <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+  <script nomodule crossorigin id="vite-legacy-polyfill" src="/assets/polyfills-legacy-gx6x68nW.js"></script>
+  <script nomodule crossorigin id="vite-legacy-entry" data-src="/assets/debtCrusher-legacy-X5XDBPKn.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+</body>
+</html>

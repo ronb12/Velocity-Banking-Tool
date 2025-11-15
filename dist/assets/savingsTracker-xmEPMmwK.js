@@ -1,0 +1,1 @@
+function t(){import.meta.url,import("_").catch(()=>1),async function*(){}().next()}import"./modulepreload-polyfill-YP0FEG5d.js";/* empty css              */import"./activityLogger-C4qvEfwc.js";import"./preload-helper-BzSHXCLh.js";export{t as __vite_legacy_guard};

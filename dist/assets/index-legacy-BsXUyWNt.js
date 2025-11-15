@@ -1,0 +1,1 @@
+System.register(["./preload-helper-legacy-B-gntM7F.js","./index-legacy-Dr8f_-Ur.js"],function(e,t){"use strict";var r,s;return{setters:[e=>{r=e._},e=>{s=e.r}],execute:function(){e("Network",s("Network",{web:()=>r(()=>t.import("./web-legacy-D0EoozhP.js"),void 0).then(e=>new e.NetworkWeb)}))}}});

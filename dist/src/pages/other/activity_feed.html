@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <title>📜 Master Activity Feed | Bradley's Financial Tools</title>
+  <!-- Load auth.js first before any scripts that use it -->
+  <script src="/utils/authHelper.js"></script>
+  
+  <!-- PWA Scrolling Fix -->
+  <script>
+    // Fix PWA scrolling issues
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      document.addEventListener('DOMContentLoaded', function() {
+        // Force enable scrolling in PWA mode
+        document.body.style.overflow = 'auto';
+        document.body.style.webkitOverflowScrolling = 'touch';
+        document.documentElement.style.overflow = 'auto';
+        document.documentElement.style.webkitOverflowScrolling = 'touch';
+        
+        // Prevent overscroll bounce
+        document.body.style.overscrollBehavior = 'none';
+        document.documentElement.style.overscrollBehavior = 'none';
+        
+        // Ensure proper height
+        document.body.style.minHeight = '100vh';
+        document.documentElement.style.height = '100%';
+      });
+    }
+  </script>
+  
+  <style>
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      margin: 0; 
+      padding: 20px; 
+      min-height: 100vh;
+    }
+    
+    .container { 
+      max-width: 1200px; 
+      margin: auto; 
+      background: #fff; 
+      padding: 30px; 
+      border-radius: 20px; 
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #f0f0f0;
+    }
+    
+    .back-button { 
+      background: linear-gradient(45deg, #007bff, #0056b3);
+      display: inline-block; 
+      margin-bottom: 20px; 
+      text-decoration: none; 
+      color: white; 
+      padding: 12px 20px; 
+      border-radius: 25px;
+      font-weight: 600;
+      transition: transform 0.3s ease;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+    }
+    
+    h1 { 
+      color: #2c3e50; 
+      margin: 0;
+      font-size: 2.5em;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.2em;
+    }
+    
+    .stat-card .value {
+      font-size: 2em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 30px 0;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(45deg, #6c757d, #495057);
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+    }
+    
+    .activity-feed {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 30px 0;
+      min-height: 400px;
+    }
+    
+    .entry {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      border-left: 4px solid #e9ecef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .entry:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .entry.new {
+      border-left-color: #28a745;
+      background: linear-gradient(135deg, #f8fff8 0%, #ffffff 100%);
+      animation: slideIn 0.5s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .entry-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .entry-icon {
+      font-size: 1.5em;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      border-radius: 50%;
+    }
+    
+    .entry-text {
+      font-size: 16px;
+      color: #2c3e50;
+      font-weight: 500;
+    }
+    
+    .entry-time {
+      font-size: 12px;
+      color: #6c757d;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    
+    .entry-type {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-left: 10px;
+    }
+    
+    .type-debt { background: #ffebee; color: #c62828; }
+    .type-budget { background: #e3f2fd; color: #1976d2; }
+    .type-savings { background: #e8f5e8; color: #2e7d32; }
+    .type-networth { background: #fff3e0; color: #f57c00; }
+    .type-velocity { background: #f3e5f5; color: #7b1fa2; }
+    .type-tax { background: #e0f2f1; color: #00695c; }
+    .type-login { background: #fce4ec; color: #ad1457; }
+    
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+      font-size: 18px;
+    }
+    
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #6c757d;
+    }
+    
+    .empty-state i {
+      font-size: 4em;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+    
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #6c757d;
+      font-size: 14px;
+    }
+    
+    .refresh-indicator {
+      width: 8px;
+      height: 8px;
+      background: #28a745;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        padding: 20px;
+        margin: 10px;
+      }
+      
+      .entry {
+        flex-direction: column !important;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .entry-left {
+        width: 100%;
+      }
+      
+      .entry-time {
+        align-self: flex-end;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/activityFeed-DenfwNRc.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-YP0FEG5d.js">
+  <link rel="modulepreload" crossorigin href="/assets/auth-D-ZYIE7C.js">
+  <link rel="stylesheet" crossorigin href="/assets/theme-L6bR_e4s.css">
+  <script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();if(location.protocol!="file:"){window.__vite_is_modern_browser=true}</script>
+  <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+</head>
+<body>
+  <div class="container">
+    <a href="/index.html" class="back-button">🔙 Back to Dashboard</a>
+
+    <div class="header">
+      <h1>📜 Master Activity Feed</h1>
+      <p>Track all your financial activities and progress</p>
+    </div>
+
+    <!-- Statistics Dashboard -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>📊 Total Activities</h3>
+        <div class="value" id="totalActivities">0</div>
+        <p>All logged activities</p>
+      </div>
+      <div class="stat-card">
+        <h3>💳 Debt Activities</h3>
+        <div class="value" id="debtActivities">0</div>
+        <p>Debt-related actions</p>
+      </div>
+      <div class="stat-card">
+        <h3>💰 Savings Activities</h3>
+        <div class="value" id="savingsActivities">0</div>
+        <p>Savings & goals</p>
+      </div>
+      <div class="stat-card">
+        <h3>📈 Recent Activity</h3>
+        <div class="value" id="recentActivities">0</div>
+        <p>Last 24 hours</p>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="auto-refresh">
+        <div class="refresh-indicator"></div>
+        <span>Auto-refreshing every 30 seconds</span>
+      </div>
+      
+      <div>
+        <button class="btn btn-secondary" onclick="refreshFeed()">🔄 Refresh Now</button>
+        <button class="btn btn-primary" onclick="clearOldActivities()">🗑️ Clear Old</button>
+      </div>
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="activity-feed">
+      <div id="loading" class="loading">Loading activity feed...</div>
+      <div id="activityFeed"></div>
+    </div>
+  </div>
+
+  <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+  <script nomodule crossorigin id="vite-legacy-polyfill" src="/assets/polyfills-legacy-gx6x68nW.js"></script>
+  <script nomodule crossorigin id="vite-legacy-entry" data-src="/assets/activityFeed-legacy-Da4Q-h-V.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+</body>
+</html>

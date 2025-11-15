@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login | Bradley's Financial Tools</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="VB Toolkit">
+  <link rel="apple-touch-icon" href="/assets/icon-192-vRrdG-eQ.png">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, rgba(17, 24, 39, 0.88), rgba(37, 99, 235, 0.75)),
+                  url('https://images.pexels.com/photos/4386326/pexels-photo-4386326.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=1600&w=2400') center/cover fixed no-repeat;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      color: #1e293b;
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.92);
+      padding: 2.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .logo-container {
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      width: 120px;
+      height: auto;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      font-size: 1.875rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      box-sizing: border-box;
+    }
+
+    input:focus {
+      border-color: #2563eb;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 1rem;
+    }
+
+    .login-btn {
+      background: #2563eb;
+      color: white;
+    }
+
+    .login-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .google-btn {
+      background: white;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .google-btn:hover {
+      background: #f8fafc;
+    }
+
+    .google-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 1rem 0;
+      color: #64748b;
+      font-size: 0.875rem;
+    }
+
+    .remember-me input {
+      width: auto;
+      margin: 0;
+    }
+
+    .error {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      text-align: left;
+    }
+
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .session-timeout {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.25rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      display: none;
+      z-index: 1000;
+    }
+
+    .session-timeout button {
+      margin-top: 0.5rem;
+      background: #2563eb;
+      color: white;
+    }
+
+    .session-timeout button:hover {
+      background: #1d4ed8;
+    }
+
+    @media (max-width: 640px) {
+      .login-container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/login-8nV3y_9Y.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-YP0FEG5d.js">
+  <link rel="modulepreload" crossorigin href="/assets/config-BVEHcmK7.js">
+  <link rel="modulepreload" crossorigin href="/assets/validation-DH8JBn6E.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-utils-D8RwcFva.js">
+  <link rel="modulepreload" crossorigin href="/assets/auth-D-ZYIE7C.js">
+  <link rel="stylesheet" crossorigin href="/assets/login-DSAiJyQN.css">
+  <link rel="stylesheet" crossorigin href="/assets/theme-L6bR_e4s.css">
+  <script type="module">import.meta.url;import("_").catch(()=>1);(async function*(){})().next();if(location.protocol!="file:"){window.__vite_is_modern_browser=true}</script>
+  <script type="module">!function(){if(window.__vite_is_modern_browser)return;console.warn("vite: loading legacy chunks, syntax error above and the same error below should be ignored");var e=document.getElementById("vite-legacy-polyfill"),n=document.createElement("script");n.src=e.src,n.onload=function(){System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))},document.body.appendChild(n)}();</script>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo-container">
+      <img src="/assets/icon-192-vRrdG-eQ.png" alt="Bradley's Financial Tools Logo" class="logo">
+      <h1>Welcome Back</h1>
+    </div>
+    <div id="error" class="error"></div>
+    <form id="loginForm" onsubmit="return false;">
+      <div class="form-group">
+        <input type="email" id="email" placeholder="Email address" required autocomplete="email" />
+        <div class="field-error" id="emailError"></div>
+      </div>
+      <div class="form-group">
+        <input type="password" id="password" placeholder="Password" required autocomplete="current-password" />
+        <div class="field-error" id="passwordError"></div>
+      </div>
+      <div class="remember-me">
+        <input type="checkbox" id="rememberMe" />
+        <label for="rememberMe">Remember me</label>
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">
+        <span class="btn-text">Sign In</span>
+        <span class="btn-spinner" style="display: none;">⏳</span>
+      </button>
+      <button type="button" id="googleLoginBtn" class="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="google-icon">
+        Sign in with Google
+      </button>
+      <div id="loginAttempts" class="error" style="display: none;"></div>
+    </form>
+    <a href="register.html">Create an account</a>
+  </div>
+
+  <div class="session-timeout" id="sessionTimeout">
+    Your session will expire in <span id="timeoutCountdown">5:00</span>
+    <button onclick="extendSession()">Stay Logged In</button>
+  </div>
+
+  <script nomodule>!function(){var e=document,t=e.createElement("script");if(!("noModule"in t)&&"onbeforeload"in t){var n=!1;e.addEventListener("beforeload",(function(e){if(e.target===t)n=!0;else if(!e.target.hasAttribute("nomodule")||!n)return;e.preventDefault()}),!0),t.type="module",t.src=".",e.head.appendChild(t),t.remove()}}();</script>
+  <script nomodule crossorigin id="vite-legacy-polyfill" src="/assets/polyfills-legacy-gx6x68nW.js"></script>
+  <script nomodule crossorigin id="vite-legacy-entry" data-src="/assets/login-legacy-Bh8wVycg.js">System.import(document.getElementById('vite-legacy-entry').getAttribute('data-src'))</script>
+</body>
+</html>
