@@ -53,13 +53,32 @@ export class DashboardData {
     if (useFirestore) {
       try {
         // Import Firestore v9 functions dynamically
-        const { doc, getDoc, setDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+        // Use the db instance which should already have Firestore methods available
+        // But we still need to import the helper functions
+        let doc, getDoc, setDoc, onSnapshot;
+        try {
+          const firestoreModule = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
+          doc = firestoreModule.doc;
+          getDoc = firestoreModule.getDoc;
+          setDoc = firestoreModule.setDoc;
+          onSnapshot = firestoreModule.onSnapshot;
+        } catch (importError) {
+          console.error('[DashboardData] Failed to import Firestore functions:', importError);
+          throw new Error('Firestore functions not available');
+        }
+        
         const userRef = doc(this.db, 'users', user.uid);
+        console.log('[DashboardData] User ref created:', user.uid, 'DB:', !!this.db);
         
         // First, ensure the user document exists with sample data
         // ONLY initialize sample data for the test user
         try {
+          console.log('[DashboardData] Fetching user document from Firestore...');
           const userDoc = await getDoc(userRef);
+          console.log('[DashboardData] User document fetched:', {
+            exists: userDoc.exists(),
+            hasData: userDoc.exists() ? Object.keys(userDoc.data() || {}).length : 0
+          });
           const isTest = this.isTestUser(user);
           
           if (!userDoc.exists()) {
@@ -107,9 +126,14 @@ export class DashboardData {
               this.updateStatsFromData(data);
             }
           }
-        } catch (error) {
-          console.error('[DashboardData] Error checking/initializing user document:', error);
-          // Only show sample data for test user if Firestore fails
+          } catch (error) {
+            console.error('[DashboardData] Error checking/initializing user document:', error);
+            console.error('[DashboardData] Error details:', {
+              message: error.message,
+              code: error.code,
+              stack: error.stack
+            });
+            // Only show sample data for test user if Firestore fails
           if (this.isTestUser(user)) {
             this.applyLocalDashboardData();
           } else {
@@ -117,11 +141,16 @@ export class DashboardData {
           }
         }
         
-        // Set up Firestore listener
+        // Set up Firestore listener for real-time updates
         try {
-          onSnapshot(userRef,
+          console.log('[DashboardData] Setting up Firestore listener...');
+          const unsubscribe = onSnapshot(userRef,
             docSnap => {
               try {
+                console.log('[DashboardData] onSnapshot fired:', {
+                  exists: docSnap.exists(),
+                  hasData: docSnap.exists() ? Object.keys(docSnap.data() || {}).length : 0
+                });
                 if (!docSnap.exists()) {
                   // Document doesn't exist - initialize sample data for test user
                   if (this.isTestUser(user)) {
@@ -174,7 +203,12 @@ export class DashboardData {
               }
             },
             error => {
-              console.warn('[DashboardData] Firestore listener error (non-critical):', error.message);
+              console.warn('[DashboardData] Firestore listener error (non-critical):', error);
+              console.warn('[DashboardData] Listener error details:', {
+                message: error.message,
+                code: error.code,
+                stack: error.stack
+              });
               // Only show sample data for test user
               if (this.isTestUser(user)) {
                 this.applyLocalDashboardData();
@@ -183,6 +217,11 @@ export class DashboardData {
               }
             }
           );
+          
+          // Store unsubscribe function for cleanup if needed
+          if (typeof window !== 'undefined') {
+            window._dashboardUnsubscribe = unsubscribe;
+          }
         } catch (error) {
           console.warn('[DashboardData] Could not set up Firestore listener:', error.message);
           // Only show sample data for test user

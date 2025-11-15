@@ -145,7 +145,18 @@ async function loadDashboardData() {
 
   try {
     dashboardDataManager = new DashboardData(currentAuth, currentDb);
-    const useFirestore = typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : true;
+    // Always use Firestore on production (non-localhost)
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const useFirestore = typeof USE_FIRESTORE !== 'undefined' ? USE_FIRESTORE : !isLocalhost;
+    
+    console.log('[Index] Loading dashboard data with settings:', {
+      useFirestore,
+      isLocalhost,
+      hasAuth: !!currentAuth,
+      hasDb: !!currentDb,
+      hasUser: !!currentAuth?.currentUser,
+      userEmail: currentAuth?.currentUser?.email || 'none'
+    });
     
     if (errorBoundary && typeof errorBoundary.wrapAsync === 'function') {
       const loadData = errorBoundary.wrapAsync(
