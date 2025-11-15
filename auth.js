@@ -554,7 +554,17 @@ auth.onAuthStateChanged(async user => {
       // Protected pages are ALL pages under /src/pages/ (except auth pages)
       // IMPORTANT: Do NOT redirect from index.html - it's a public page
       const currentPath = window.location.pathname;
-      const isIndexPage = currentPage === 'index.html' || currentPage === '' || currentPage === '/';
+      
+      // CRITICAL: Check if we're on index.html more robustly
+      // Check both the pathname and the currentPage variable
+      const pathnameLower = currentPath.toLowerCase();
+      const isIndexPage = currentPage === 'index.html' || 
+                          currentPage === '' || 
+                          currentPage === '/' ||
+                          pathnameLower === '/' ||
+                          pathnameLower === '/index.html' ||
+                          pathnameLower.endsWith('/index.html');
+      
       const isUnderSrcPages = currentPath.includes('/src/pages/') && !currentPath.includes('/src/pages/auth/');
       
       // CRITICAL: Prevent redirect loops on production
@@ -568,8 +578,8 @@ auth.onAuthStateChanged(async user => {
       const hasRecentRedirect = timeSinceRedirect < 5000; // Increased to 5 seconds
       
       // Don't redirect from index.html - it's a public page that shows the dashboard
-      // Only redirect from actual protected pages under /src/pages/
-      const shouldRedirect = isUnderSrcPages && !isAuthPage && !hasRecentRedirect && !isIndexPage;
+      // CRITICAL: If on index.html, NEVER redirect to login - allow public access
+      const shouldRedirect = !isIndexPage && isUnderSrcPages && !isAuthPage && !hasRecentRedirect;
       
       if (shouldRedirect) {
         // Mark redirect attempt
@@ -600,11 +610,16 @@ auth.onAuthStateChanged(async user => {
         }
       } else if (isIndexPage) {
         // On index.html - this is fine, user can view public dashboard
-        console.log('[Auth] User on index.html (public page), allowing access');
-        // Clear redirect attempt flag
+        // CRITICAL: Never redirect from index.html - it's a public page
+        console.log('[Auth] User on index.html (public page), allowing access - NO REDIRECT');
+        // Clear redirect attempt flag and any pending redirects
         sessionStorage.removeItem('last-redirect-attempt');
+        sessionStorage.removeItem('pending-auth-redirect');
       } else if (hasRecentRedirect) {
         console.log('[Auth] Skipping redirect - recent redirect attempt detected (within 5s)');
+      } else {
+        // Not on index.html, not on auth page, not under src/pages - allow access
+        console.log('[Auth] Page is not protected, allowing access:', currentPath);
       }
       
       authStateChangeTimeout = null;
