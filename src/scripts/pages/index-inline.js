@@ -7,6 +7,7 @@
  */
 
 // Import components - use standard ES module imports
+// Note: ES6 imports are static, so we handle errors in usage instead
 import { financialInsights } from '../components/FinancialInsights.js';
 import { dataExport } from '../components/DataExport.js';
 import { financialTips } from '../components/FinancialTips.js';

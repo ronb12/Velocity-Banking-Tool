@@ -11,6 +11,8 @@ export class ErrorBoundary {
     this.maxErrors = 10;
     this.errorWindow = 60000; // 1 minute
     this.errorTimestamps = [];
+    this._lastError = null;
+    this._rateLimitWarning = null;
   }
 
   /**
@@ -33,12 +35,33 @@ export class ErrorBoundary {
       });
     });
 
-    // Wrap console.error to capture errors
-    const originalError = console.error;
-    console.error = (...args) => {
-      this.handleError(args.join(' '), { type: 'console_error' });
-      originalError.apply(console, args);
-    };
+    // Wrap console.error to capture errors (only once, avoid infinite loops)
+    // Check if already wrapped to prevent multiple wrappings
+    if (!console.error._errorBoundaryWrapped) {
+      const originalError = console.error.bind(console);
+      const errorBoundary = this;
+      
+      // Store original for use in other parts of ErrorBoundary
+      console.error._originalError = originalError;
+      
+      console.error = function(...args) {
+        // Always call original first (this prevents recursion issues)
+        originalError.apply(console, args);
+        
+        // Track errors but don't call handleError (which would log again)
+        // This prevents infinite loops while still tracking error patterns
+        const errorMessage = args.join(' ');
+        const now = Date.now();
+        
+        // Simple deduplication - don't track same error within 1 second
+        if (!errorBoundary._lastError || 
+            errorBoundary._lastError.message !== errorMessage || 
+            now - errorBoundary._lastError.timestamp > 1000) {
+          errorBoundary._lastError = { message: errorMessage, timestamp: now };
+        }
+      };
+      console.error._errorBoundaryWrapped = true;
+    }
   }
 
   /**
@@ -47,6 +70,12 @@ export class ErrorBoundary {
    * @param {Object} context - Additional context about the error
    */
   handleError(error, context = {}) {
+    // Skip console_error types to prevent recursive logging
+    if (context.type === 'console_error') {
+      // Don't log console errors again - they're already logged
+      return;
+    }
+    
     // Rate limiting - prevent error spam
     const now = Date.now();
     this.errorTimestamps = this.errorTimestamps.filter(
@@ -54,7 +83,11 @@ export class ErrorBoundary {
     );
 
     if (this.errorTimestamps.length >= this.maxErrors) {
-      console.warn('[ErrorBoundary] Too many errors, suppressing further errors');
+      // Only log once per minute when rate limit is hit
+      if (!this._rateLimitWarning || now - this._rateLimitWarning > 60000) {
+        console.warn('[ErrorBoundary] Too many errors, suppressing further errors');
+        this._rateLimitWarning = now;
+      }
       return;
     }
 
@@ -78,7 +111,13 @@ export class ErrorBoundary {
       try {
         listener(errorInfo);
       } catch (e) {
-        console.error('[ErrorBoundary] Error in error listener:', e);
+        // Use original console.error if available to avoid recursion
+        if (console.error._originalError) {
+          console.error._originalError.call(console, '[ErrorBoundary] Error in error listener:', e);
+        } else {
+          // Fallback: use console.warn instead to avoid recursion
+          console.warn('[ErrorBoundary] Error in error listener:', e);
+        }
       }
     });
 
@@ -96,7 +135,13 @@ export class ErrorBoundary {
       try {
         window.ErrorHandler.logError(errorInfo);
       } catch (e) {
-        console.error('[ErrorBoundary] Failed to log error:', e);
+        // Use original console.error if available to avoid recursion
+        if (console.error._originalError) {
+          console.error._originalError.call(console, '[ErrorBoundary] Failed to log error:', e);
+        } else {
+          // Fallback: use console.warn instead to avoid recursion
+          console.warn('[ErrorBoundary] Failed to log error:', e);
+        }
       }
     }
 

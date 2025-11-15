@@ -15,7 +15,8 @@ export class Logger {
       ERROR: 3
     };
     this.currentLevel = this.levels.INFO;
-    this.enableConsole = process.env.NODE_ENV !== 'production';
+    // Check if we're in a browser environment (process.env not available in browsers)
+    this.enableConsole = typeof process === 'undefined' || process.env?.NODE_ENV !== 'production';
   }
 
   /**
