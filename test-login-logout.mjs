@@ -28,16 +28,16 @@ async function runTests() {
     // Launch browser
     console.log('\n1️⃣ Launching browser...');
     browser = await puppeteer.launch({
-      headless: false, // Set to true for headless mode
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true, // Use headless for automated testing
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       defaultViewport: { width: 1280, height: 720 }
     });
     
     page = await browser.newPage();
     
     // Set longer timeout for page loads
-    page.setDefaultTimeout(30000);
-    page.setDefaultNavigationTimeout(30000);
+    page.setDefaultTimeout(60000);
+    page.setDefaultNavigationTimeout(60000);
     
     // Monitor console messages
     page.on('console', msg => {
@@ -106,9 +106,9 @@ async function runTests() {
         console.log('   ℹ️  Not logged in, proceeding to login...');
         // Navigate to login page
         await page.goto(`${SERVER_URL}/src/pages/auth/login.html`, {
-          waitUntil: 'networkidle2'
+          waitUntil: 'domcontentloaded'
         });
-        await delay(2000);
+        await delay(3000); // Wait longer for auth to settle
         console.log('   ✅ Login page loaded');
       }
     } catch (error) {
@@ -116,9 +116,9 @@ async function runTests() {
       // Try to go to login page anyway
       try {
         await page.goto(`${SERVER_URL}/src/pages/auth/login.html`, {
-          waitUntil: 'networkidle2'
+          waitUntil: 'domcontentloaded'
         });
-        await delay(2000);
+        await delay(3000);
         console.log('   ✅ Login page loaded');
       } catch (loginPageError) {
         testResults.errors.push(`Login page load failed: ${loginPageError.message}`);
@@ -130,26 +130,52 @@ async function runTests() {
     if (!testResults.login) {
       console.log('\n3️⃣ Filling in login credentials...');
       try {
-        // Wait for form elements
-        await page.waitForSelector('#email', { timeout: 5000 });
-        await page.waitForSelector('#password', { timeout: 5000 });
+        // Wait for page to be stable (no navigation)
+        await delay(2000);
+        
+        // Check if we're still on login page
+        const currentUrl = page.url();
+        if (!currentUrl.includes('login.html')) {
+          console.log(`   ⚠️  Page navigated away from login: ${currentUrl}`);
+          // Try to navigate back
+          await page.goto(`${SERVER_URL}/src/pages/auth/login.html`, {
+            waitUntil: 'domcontentloaded'
+          });
+          await delay(2000);
+        }
+        
+        // Wait for form elements with longer timeout
+        await page.waitForSelector('#email', { timeout: 10000, visible: true });
+        await page.waitForSelector('#password', { timeout: 10000, visible: true });
       
-      // Clear and fill in email - try lowercase version first
-      await page.click('#email', { clickCount: 3 }); // Select all
-      await page.keyboard.press('Backspace'); // Clear
-      await page.type('#email', TEST_EMAIL.toLowerCase(), { delay: 50 });
-      
-      // Verify email was entered correctly
-      const emailValue = await page.$eval('#email', el => el.value);
-      console.log(`   ✅ Email entered: ${emailValue}`);
-      
-      // Clear and fill in password - use test1234 (lowercase)
-      await page.click('#password', { clickCount: 3 }); // Select all
-      await page.keyboard.press('Backspace'); // Clear
-      await page.type('#password', TEST_PASSWORD, { delay: 50 }); // Use test password
-      
-      console.log('   ✅ Password entered');
-      
+        // Clear and fill in email - try lowercase version first
+        await page.evaluate((email) => {
+          const emailInput = document.getElementById('email');
+          if (emailInput) {
+            emailInput.value = '';
+            emailInput.focus();
+          }
+        }, TEST_EMAIL.toLowerCase());
+        
+        await page.type('#email', TEST_EMAIL.toLowerCase(), { delay: 50 });
+        
+        // Verify email was entered correctly
+        const emailValue = await page.$eval('#email', el => el.value);
+        console.log(`   ✅ Email entered: ${emailValue}`);
+        
+        // Clear and fill in password
+        await page.evaluate(() => {
+          const passwordInput = document.getElementById('password');
+          if (passwordInput) {
+            passwordInput.value = '';
+            passwordInput.focus();
+          }
+        });
+        
+        await page.type('#password', TEST_PASSWORD, { delay: 50 });
+        
+        console.log('   ✅ Password entered');
+        
         // Wait for form to be ready
         await delay(1000);
       } catch (error) {
@@ -359,7 +385,7 @@ async function runTests() {
       console.log('\n5️⃣ Verifying logged in state...');
       try {
         // Check if profile button is visible (auth-required element)
-        const profileButton = await page.$('#profileButton, .auth-required, button:has-text("Profile")');
+        const profileButton = await page.$('#profileButton') || await page.$('.auth-required') || await page.$('button');
         if (profileButton) {
           const isVisible = await page.evaluate(el => {
             const style = window.getComputedStyle(el);

@@ -647,6 +647,25 @@ window.updateThemeSelector = updateThemeSelector;
 window.handleExport = handleExport;
 window.updateFinancialInsights = updateFinancialInsights;
 
+// Financial Tips navigation functions (for onclick handlers in HTML)
+window.nextTip = () => {
+  if (financialTips) {
+    financialTips.nextTip();
+  }
+};
+
+window.previousTip = () => {
+  if (financialTips) {
+    financialTips.previousTip();
+  }
+};
+
+window.goToTip = (index) => {
+  if (financialTips) {
+    financialTips.goToTip(index);
+  }
+};
+
 // Export for use in other modules
 export {
   financialInsights,
