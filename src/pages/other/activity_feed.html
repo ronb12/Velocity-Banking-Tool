@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
   <title>📜 Master Activity Feed | Bradley's Financial Tools</title>
   <!-- Load auth.js first before any scripts that use it -->
-  <script type="module" src="../../../auth.js"></script>
-  <script src="../../../utils/authHelper.js"></script>
-  <link rel="stylesheet" href="../../styles/theme.css">
+  <script type="module" src="/auth.js"></script>
+  <script src="/utils/authHelper.js"></script>
+  <link rel="stylesheet" href="/src/styles/theme.css">
   
   <!-- PWA Scrolling Fix -->
   <script>
@@ -328,7 +328,7 @@
 </head>
 <body>
   <div class="container">
-    <a href="../../../index.html" class="back-button">🔙 Back to Dashboard</a>
+    <a href="/index.html" class="back-button">🔙 Back to Dashboard</a>
 
     <div class="header">
       <h1>📜 Master Activity Feed</h1>
@@ -677,7 +677,7 @@
                 <div style="font-size: 4em; margin-bottom: 20px;">🔐</div>
                 <h3>Please log in</h3>
                 <p>You need to be logged in to view your activity feed.</p>
-                <a href="../auth/login.html" class="btn btn-primary" style="margin-top: 20px;">Login</a>
+                <a href="/src/pages/auth/login.html" class="btn btn-primary" style="margin-top: 20px;">Login</a>
               </div>
             `;
             document.getElementById('loading').style.display = 'none';
@@ -696,7 +696,7 @@
               <div style="font-size: 4em; margin-bottom: 20px;">🔐</div>
               <h3>Please log in</h3>
               <p>You need to be logged in to view your activity feed.</p>
-              <a href="../auth/login.html" class="btn btn-primary" style="margin-top: 20px;">Login</a>
+              <a href="/src/pages/auth/login.html" class="btn btn-primary" style="margin-top: 20px;">Login</a>
             </div>
           `;
           if (document.getElementById('loading')) {

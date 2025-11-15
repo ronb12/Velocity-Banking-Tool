@@ -4,17 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login | Bradley's Financial Tools</title>
-  <link rel="stylesheet" href="../../styles/theme.css">
-  <link rel="stylesheet" href="../../styles/auth/login.css">
+  <link rel="stylesheet" href="/src/styles/theme.css">
+  <link rel="stylesheet" href="/src/styles/auth/login.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="../../../config.js" type="module"></script>
-  <script src="../../../utils/validation.js" type="module"></script>
-  <script src="../../../utils/errorHandler.js" type="module"></script>
+  <script src="/config.js" type="module"></script>
+  <script src="/utils/validation.js" type="module"></script>
+  <script src="/utils/errorHandler.js" type="module"></script>
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="VB Toolkit">
-  <link rel="apple-touch-icon" href="../../../icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -175,7 +175,7 @@
 <body>
   <div class="login-container">
     <div class="logo-container">
-      <img src="../../../icons/icon-192.png" alt="Bradley's Financial Tools Logo" class="logo">
+      <img src="/icons/icon-192.png" alt="Bradley's Financial Tools Logo" class="logo">
       <h1>Welcome Back</h1>
     </div>
     <div id="error" class="error"></div>
@@ -211,7 +211,7 @@
   </div>
 
   <script type="module">
-    import { auth, login as authLogin, register, extendSession as authExtendSession } from '../../../auth.js';
+    import { auth, login as authLogin, register, extendSession as authExtendSession } from '/auth.js';
     import { GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence, browserSessionPersistence, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
     
     // Make extendSession globally available for onclick handler
