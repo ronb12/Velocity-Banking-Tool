@@ -4,6 +4,27 @@ import legacy from '@vitejs/plugin-legacy';
 import { resolve, dirname } from 'path';
 import { copyFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
 
+// Plugin to handle Capacitor imports gracefully in build
+// This allows the build to succeed even if Capacitor modules aren't available
+const capacitorPlugin = () => {
+  return {
+    name: 'capacitor-external',
+    resolveId(id) {
+      // Mark Capacitor modules as external - they're only available in native apps
+      // This prevents Vite from trying to bundle them during web build
+      if (id.startsWith('@capacitor/')) {
+        return { id, external: true };
+      }
+    },
+    load(id) {
+      // Provide a stub for Capacitor modules if they're not available
+      if (id.startsWith('@capacitor/')) {
+        return 'export default {};';
+      }
+    },
+  };
+};
+
 export default defineConfig({
   root: '.',
   publicDir: 'public',
@@ -77,6 +98,8 @@ export default defineConfig({
     },
   },
   plugins: [
+    // Plugin to handle Capacitor modules as external
+    capacitorPlugin(),
     // Plugin to copy non-module script files to dist
     {
       name: 'copy-utils-scripts',
@@ -235,6 +258,14 @@ export default defineConfig({
       './utils/capacitor.js',
       './config.js',
       './app-updater.js',
+      // Exclude Capacitor plugins - they're only available in native apps
+      '@capacitor/app',
+      '@capacitor/haptics',
+      '@capacitor/keyboard',
+      '@capacitor/status-bar',
+      '@capacitor/preferences',
+      '@capacitor/network',
+      '@capacitor/splash-screen',
     ],
   },
 });

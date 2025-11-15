@@ -16,43 +16,67 @@ let Storage = null;
 // Initialize Capacitor plugins
 async function initCapacitor() {
   try {
+    // Skip Capacitor initialization in CI/build environments or if Capacitor is not available
+    if (typeof window === 'undefined' || !window.Capacitor) {
+      if (typeof process !== 'undefined' && process.env.CI === 'true') {
+        console.log('[Capacitor] Skipping initialization in CI environment');
+      } else {
+        console.log('[Capacitor] Running in web browser - Capacitor not available');
+      }
+      return false;
+    }
+    
     // Check if running in Capacitor
-    if (typeof window !== 'undefined' && window.Capacitor) {
+    if (window.Capacitor) {
       isCapacitor = true;
       Capacitor = window.Capacitor;
       
-      // Dynamically import Capacitor plugins
-      const { App } = await import('@capacitor/app');
-      const { Haptics } = await import('@capacitor/haptics');
-      const { Keyboard } = await import('@capacitor/keyboard');
-      const { StatusBar } = await import('@capacitor/status-bar');
+      // Dynamically import Capacitor plugins - use dynamic imports that won't break build
+      try {
+        const appModule = await import('@capacitor/app');
+        window.CapacitorApp = appModule.App;
+      } catch (e) {
+        console.log('[Capacitor] App plugin not available');
+      }
+      
+      try {
+        const hapticsModule = await import('@capacitor/haptics');
+        window.CapacitorHaptics = hapticsModule.Haptics;
+      } catch (e) {
+        console.log('[Capacitor] Haptics plugin not available');
+      }
+      
+      try {
+        const keyboardModule = await import('@capacitor/keyboard');
+        window.CapacitorKeyboard = keyboardModule.Keyboard;
+      } catch (e) {
+        console.log('[Capacitor] Keyboard plugin not available');
+      }
+      
+      try {
+        const statusBarModule = await import('@capacitor/status-bar');
+        window.CapacitorStatusBar = statusBarModule.StatusBar;
+      } catch (e) {
+        console.log('[Capacitor] StatusBar plugin not available');
+      }
       
       // Try to import optional plugins
       try {
-        const { Preferences } = await import('@capacitor/preferences');
-        window.CapacitorPreferences = Preferences;
+        const preferencesModule = await import('@capacitor/preferences');
+        window.CapacitorPreferences = preferencesModule.Preferences;
       } catch (e) {
         console.log('[Capacitor] Preferences plugin not available');
       }
       
       try {
-        const { Network } = await import('@capacitor/network');
-        window.CapacitorNetwork = Network;
+        const networkModule = await import('@capacitor/network');
+        window.CapacitorNetwork = networkModule.Network;
       } catch (e) {
         console.log('[Capacitor] Network plugin not available');
       }
       
-      try {
-        const { Storage } = await import('@capacitor/storage');
-        window.CapacitorStorage = Storage;
-      } catch (e) {
-        console.log('[Capacitor] Storage plugin not available');
-      }
-      
-      window.CapacitorApp = App;
-      window.CapacitorHaptics = Haptics;
-      window.CapacitorKeyboard = Keyboard;
-      window.CapacitorStatusBar = StatusBar;
+      // Note: @capacitor/storage is deprecated in Capacitor 7, use @capacitor/preferences instead
+      // Storage functionality is handled by Preferences plugin above
       
       console.log('[Capacitor] Initialized successfully');
       
@@ -319,4 +343,5 @@ if (typeof window !== 'undefined') {
 
 // Export initialization function
 export { initCapacitor };
+
 

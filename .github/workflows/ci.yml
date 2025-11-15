@@ -37,10 +37,12 @@ jobs:
       continue-on-error: true
     
     - name: Build project
-      run: DISABLE_PWA=true npm run build
+      run: npm run build
       env:
         NODE_ENV: production
         DISABLE_PWA: 'true'
+        # Skip Capacitor in CI builds (not needed for web deployment)
+        CI: 'true'
     
     - name: Check build output
       run: |
