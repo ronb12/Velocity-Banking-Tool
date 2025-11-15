@@ -140,8 +140,9 @@ export const logger = new Logger();
 window.Logger = Logger;
 window.logger = logger;
 
-// Replace console methods in production
-if (process.env.NODE_ENV === 'production') {
+// Replace console methods in production (only if process.env is available)
+// In browser environments, process is not defined, so skip this
+if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
   console.log = (...args) => logger.info(args.join(' '));
   console.debug = (...args) => logger.debug(args.join(' '));
   console.info = (...args) => logger.info(args.join(' '));
