@@ -1074,21 +1074,44 @@ window.auth = auth;
       window.Analytics.trackPageView('/budget.html', 'Budget Tracker');
     }
     
-    // Authentication
-auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = "login.html";
+    // Authentication - let auth.js handle redirects to prevent conflicts
+    // Only use onAuthStateChanged for loading data, not for redirects
+    let budgetAuthProcessed = false;
+    const checkBudgetRedirectGuard = () => {
+      const lastRedirect = sessionStorage.getItem('budget-redirect-time');
+      const timeSinceRedirect = lastRedirect ? Date.now() - parseInt(lastRedirect) : 10000;
+      return timeSinceRedirect > 3000;
+    };
+    
+    auth.onAuthStateChanged(user => {
+      // Prevent multiple processing
+      if (budgetAuthProcessed) {
         return;
       }
-  userId = user.uid;
-      console.log('User authenticated, loading budget data...');
       
-      // Set current month as default
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      document.getElementById('monthSelect').value = currentMonth;
-      
-  loadBudget();
-});
+      // Wait for auth.js to process first (2 seconds delay)
+      setTimeout(() => {
+        if (!user && !IS_LOCALHOST) {
+          // Let auth.js handle the redirect - don't redirect here
+          // This prevents conflicts between page-level and global auth.js redirects
+          console.log('[Budget] User not authenticated, letting auth.js handle redirect');
+          budgetAuthProcessed = true;
+          return;
+        }
+        
+        if (user) {
+          userId = user.uid;
+          budgetAuthProcessed = true;
+          console.log('User authenticated, loading budget data...');
+          
+          // Set current month as default
+          const currentMonth = new Date().toISOString().slice(0, 7);
+          document.getElementById('monthSelect').value = currentMonth;
+          
+          loadBudget();
+        }
+      }, 2000); // Wait 2 seconds for auth.js to process first
+    });
 
     // Month change handler
 function onMonthChange() {

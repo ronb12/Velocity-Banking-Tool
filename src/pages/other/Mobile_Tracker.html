@@ -298,6 +298,13 @@ function importCSV(event) {
   reader.readAsText(file);
 }
 
+// CRITICAL: Prevent multiple redirects by checking if redirect was already attempted
+const checkMobileTrackerRedirectGuard = () => {
+  const lastRedirect = sessionStorage.getItem('mobile-tracker-redirect-time');
+  const timeSinceRedirect = lastRedirect ? Date.now() - parseInt(lastRedirect) : 10000;
+  return timeSinceRedirect > 3000; // Only allow redirect if last one was > 3 seconds ago
+};
+
 window.onload = async () => {
   // Wait for auth to be available before using it
   try {
@@ -305,23 +312,43 @@ window.onload = async () => {
     window.auth = authInstance; // Make globally available
     window.db = dbInstance;
     
+    let mobileTrackerAuthProcessed = false;
     authInstance.onAuthStateChanged(async user => {
-      if (!user) {
-        // Add delay to prevent immediate redirect
-        setTimeout(() => {
-          window.location.href = "../../../index.html";
-        }, 500);
+      // Prevent multiple processing
+      if (mobileTrackerAuthProcessed) {
         return;
       }
-      const doc = await window.db.collection("debts").doc(user.uid).get();
-      if (doc.exists) {
-        const debts = doc.data().debts || [];
-        debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
-      } else if (localStorage.getItem("debtData")) {
-        const localDebts = JSON.parse(localStorage.getItem("debtData"));
-        localDebts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
-      }
-      update();
+      
+      // Wait for auth.js to process first (2 seconds delay)
+      setTimeout(async () => {
+        if (!user && !IS_LOCALHOST) {
+          // Check redirect guard
+          if (!checkMobileTrackerRedirectGuard()) {
+            console.log('[MobileTracker] Skipping redirect - recent redirect detected');
+            return;
+          }
+          
+          // Let auth.js handle the redirect - don't redirect here
+          // This prevents conflicts between page-level and global auth.js redirects
+          console.log('[MobileTracker] User not authenticated, letting auth.js handle redirect');
+          mobileTrackerAuthProcessed = true;
+          sessionStorage.setItem('mobile-tracker-redirect-time', Date.now().toString());
+          return;
+        }
+        
+        if (user) {
+          mobileTrackerAuthProcessed = true;
+          const doc = await window.db.collection("debts").doc(user.uid).get();
+          if (doc.exists) {
+            const debts = doc.data().debts || [];
+            debts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+          } else if (localStorage.getItem("debtData")) {
+            const localDebts = JSON.parse(localStorage.getItem("debtData"));
+            localDebts.forEach(d => addDebt(d.name, d.balance, d.rate, d.payment, d.due));
+          }
+          update();
+        }
+      }, 2000); // Wait 2 seconds for auth.js to process first
     });
 
     // ✅ Force register service worker for offline support
@@ -359,12 +386,15 @@ window.onload = async () => {
     }
   } catch (error) {
     console.error('[MobileTracker] Error waiting for auth:', error);
-    // Only redirect if not localhost
+    // Only redirect if not localhost and guard allows
     const IS_LOCALHOST = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-    if (!IS_LOCALHOST) {
+    if (!IS_LOCALHOST && checkMobileTrackerRedirectGuard()) {
+      sessionStorage.setItem('mobile-tracker-redirect-time', Date.now().toString());
+      // Let auth.js handle the redirect - use absolute path as fallback only
       setTimeout(() => {
-        window.location.href = "../../../index.html";
-      }, 1000);
+        // Use absolute path, but prefer letting auth.js handle it
+        console.log('[MobileTracker] Error in auth setup, letting auth.js handle redirect');
+      }, 2000);
     }
   }
 };
