@@ -1,0 +1,12 @@
+{
+	"version": 1,
+	"identifier": "com.bradleysfinancehub.app",
+	"privacy": {
+		"tracking": false,
+		"trackingDomains": [],
+		"collectedDataTypes": [],
+		"accessedAPITypes": []
+	}
+}
+
+
