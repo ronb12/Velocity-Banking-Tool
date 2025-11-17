@@ -21,27 +21,22 @@ final class CoreDataStack {
 		if useCloudKit {
 			#if canImport(CoreData)
 			if #available(iOS 13.0, *) {
-				do {
-					let cloudContainer = NSPersistentCloudKitContainer(name: CoreDataStack.modelName, managedObjectModel: model)
-					container = cloudContainer
-					
-					let storeURL = CoreDataStack.defaultStoreURL()
-					let description = NSPersistentStoreDescription(url: storeURL)
-					description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-					description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-					
-					// Enable CloudKit - use dynamic bundle identifier
-					let bundleID = Bundle.main.bundleIdentifier ?? "com.bradleysfinancehub.app"
-					let containerIdentifier = "iCloud.\(bundleID)"
-					description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
-					print("📦 CloudKit container: \(containerIdentifier)")
-					
-					cloudContainer.persistentStoreDescriptions = [description]
-				} catch {
-					// Fallback to local-only if CloudKit setup fails
-					print("⚠️ CloudKit setup failed, using local-only: \(error.localizedDescription)")
-					container = NSPersistentContainer(name: CoreDataStack.modelName, managedObjectModel: model)
-				}
+				// Try CloudKit container, but fallback to local if it fails
+				let cloudContainer = NSPersistentCloudKitContainer(name: CoreDataStack.modelName, managedObjectModel: model)
+				
+				let storeURL = CoreDataStack.defaultStoreURL()
+				let description = NSPersistentStoreDescription(url: storeURL)
+				description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+				description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+				
+				// Enable CloudKit - use dynamic bundle identifier
+				let bundleID = Bundle.main.bundleIdentifier ?? "com.bradleysfinancehub.app"
+				let containerIdentifier = "iCloud.\(bundleID)"
+				description.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
+				print("📦 CloudKit container: \(containerIdentifier)")
+				
+				cloudContainer.persistentStoreDescriptions = [description]
+				container = cloudContainer
 			} else {
 				container = NSPersistentContainer(name: CoreDataStack.modelName, managedObjectModel: model)
 			}
@@ -82,8 +77,16 @@ final class CoreDataStack {
 	
 	private static func defaultStoreURL() -> URL {
 		let storeName = "\(modelName).sqlite"
-		let storeURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-		return storeURL.appendingPathComponent(storeName)
+		// Try documents directory first
+		if let storeURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+			return storeURL.appendingPathComponent(storeName)
+		}
+		// Fallback to caches directory if documents directory is unavailable
+		if let cacheURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
+			return cacheURL.appendingPathComponent(storeName)
+		}
+		// Last resort: use temporary directory
+		return FileManager.default.temporaryDirectory.appendingPathComponent(storeName)
 	}
 }
 

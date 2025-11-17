@@ -20,9 +20,12 @@ struct BradleysFinanceHubApp: App {
 		// Try CloudKit first, but don't fail if it's not available
 		let stack = CoreDataStack(useCloudKit: true)
 		coreDataStack = stack
-		// Give Core Data a moment to initialize the store
+		// Wait a moment for Core Data to initialize
 		// The loadPersistentStores callback is async, but we'll proceed anyway
-		isCoreDataReady = true
+		// Set ready after a short delay to allow store to load
+		DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+			self.isCoreDataReady = true
+		}
 		print("Core Data stack created")
 	}
     
