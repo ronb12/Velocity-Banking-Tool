@@ -13,10 +13,22 @@ final class CoreDataStack {
 	
 	let container: NSPersistentContainer
 	var viewContext: NSManagedObjectContext { container.viewContext }
+	private var storeLoadContinuation: CheckedContinuation<Void, Error>?
+	private var isStoreLoaded = false
 	
 	init(useCloudKit: Bool = false) {
 		// Build model programmatically to avoid requiring an .xcdatamodeld file.
 		let model = CoreDataStack.buildModel()
+		
+		let storeURL = CoreDataStack.defaultStoreURL()
+		print("📁 Database will be stored at: \(storeURL.path)")
+		
+		// Check if database file already exists
+		if FileManager.default.fileExists(atPath: storeURL.path) {
+			print("✅ Database file already exists")
+		} else {
+			print("📝 Database file will be created on first save")
+		}
 		
 		if useCloudKit {
 			#if canImport(CoreData)
@@ -24,7 +36,6 @@ final class CoreDataStack {
 				// Try CloudKit container, but fallback to local if it fails
 				let cloudContainer = NSPersistentCloudKitContainer(name: CoreDataStack.modelName, managedObjectModel: model)
 				
-				let storeURL = CoreDataStack.defaultStoreURL()
 				let description = NSPersistentStoreDescription(url: storeURL)
 				description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
 				description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
@@ -39,43 +50,198 @@ final class CoreDataStack {
 				container = cloudContainer
 			} else {
 				container = NSPersistentContainer(name: CoreDataStack.modelName, managedObjectModel: model)
+				// Set store URL for non-CloudKit container
+				let description = NSPersistentStoreDescription(url: storeURL)
+				container.persistentStoreDescriptions = [description]
 			}
 			#else
 			container = NSPersistentContainer(name: CoreDataStack.modelName, managedObjectModel: model)
+			// Set store URL
+			let description = NSPersistentStoreDescription(url: storeURL)
+			container.persistentStoreDescriptions = [description]
 			#endif
 		} else {
 			container = NSPersistentContainer(name: CoreDataStack.modelName, managedObjectModel: model)
+			// Set store URL for local-only container
+			let description = NSPersistentStoreDescription(url: storeURL)
+			container.persistentStoreDescriptions = [description]
 		}
 		
 		container.loadPersistentStores { description, error in
 			if let error = error {
 				// Log error instead of crashing
-				print("Core Data error: \(error.localizedDescription)")
-				print("Store description: \(description)")
+				print("❌ Core Data error: \(error.localizedDescription)")
+				print("   Store description: \(description)")
+				print("   Store URL: \(description.url?.path ?? "nil")")
 				
 				// Try to recover by deleting and recreating the store
-				if let url = description.url {
-					do {
-						try FileManager.default.removeItem(at: url)
-						print("Deleted corrupted store, will recreate on next launch")
-					} catch {
-						print("Failed to delete store: \(error.localizedDescription)")
+				// Only attempt deletion if the store failed to load and file exists
+				if let url = description.url, FileManager.default.fileExists(atPath: url.path) {
+					// Try to remove the store from coordinator first
+					if let store = self.container.persistentStoreCoordinator.persistentStores.first(where: { $0.url == url }) {
+						do {
+							try self.container.persistentStoreCoordinator.remove(store)
+							print("🔓 Removed store from coordinator")
+						} catch {
+							print("⚠️ Could not remove store from coordinator: \(error.localizedDescription)")
+						}
+					}
+					
+					// Wait a moment before attempting file deletion
+					DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 0.5) {
+						do {
+							// Try to delete the file
+							try FileManager.default.removeItem(at: url)
+							print("🗑️ Deleted corrupted store, will recreate on next launch")
+							
+							// Also try to delete related files
+							let shmURL = url.appendingPathExtension("-shm")
+							let walURL = url.appendingPathExtension("-wal")
+							try? FileManager.default.removeItem(at: shmURL)
+							try? FileManager.default.removeItem(at: walURL)
+						} catch {
+							// File might be locked - log but don't fail
+							print("⚠️ Could not delete store file (may be locked): \(error.localizedDescription)")
+							print("   This is usually safe - the store will be recreated on next launch")
+						}
 					}
 				}
+				
+				// Mark as loaded anyway (with error) so we don't hang forever
+				self.isStoreLoaded = true
+				
+				// Resume continuation with error
+				self.storeLoadContinuation?.resume(throwing: error)
+				self.storeLoadContinuation = nil
 			} else {
-				print("Core Data store loaded successfully")
+				print("✅ Core Data store loaded successfully")
+				if let url = description.url {
+					print("   Store URL: \(url.path)")
+					if FileManager.default.fileExists(atPath: url.path) {
+						print("   ✅ Database file exists")
+						if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+						   let size = attributes[.size] as? Int64 {
+							print("   📊 Database size: \(size) bytes")
+						}
+					} else {
+						print("   ⚠️ Database file does not exist yet (will be created on first save)")
+					}
+				}
+				
+				// Mark as loaded and resume continuation
+				self.isStoreLoaded = true
+				if let continuation = self.storeLoadContinuation {
+					continuation.resume()
+					self.storeLoadContinuation = nil
+				}
 			}
 		}
 		
 		// Ensure view context is configured properly
 		container.viewContext.automaticallyMergesChangesFromParent = true
 		container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-		
-		container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-		container.viewContext.automaticallyMergesChangesFromParent = true
 	}
 	
-	private static func defaultStoreURL() -> URL {
+	// Wait for store to be loaded
+	func waitForStoreToLoad() async throws {
+		// Check if already loaded
+		if isStoreLoaded && !container.persistentStoreCoordinator.persistentStores.isEmpty {
+			print("✅ Store already loaded")
+			return
+		}
+		
+		// Check if stores are already loaded (might have loaded before we checked)
+		if !container.persistentStoreCoordinator.persistentStores.isEmpty {
+			isStoreLoaded = true
+			print("✅ Store loaded (found existing stores)")
+			return
+		}
+		
+		// If continuation already exists, wait for it
+		if storeLoadContinuation != nil {
+			// Another wait is already in progress, just wait for it
+			print("⏳ Another wait already in progress, waiting...")
+			try await withCheckedThrowingContinuation { continuation in
+				// Wait for existing continuation to complete
+				Task {
+					// Poll until store is loaded or timeout
+					var elapsed: UInt64 = 0
+					let checkInterval: UInt64 = 200_000_000 // 0.2 seconds
+					let timeout: UInt64 = 8_000_000_000 // 8 seconds
+					
+					while elapsed < timeout {
+						if !self.container.persistentStoreCoordinator.persistentStores.isEmpty || self.isStoreLoaded {
+							continuation.resume()
+							return
+						}
+						try? await Task.sleep(nanoseconds: checkInterval)
+						elapsed += checkInterval
+					}
+					
+					// Timeout - proceed anyway
+					continuation.resume()
+				}
+			}
+			return
+		}
+		
+		// Wait up to 8 seconds for store to load
+		try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+			// Set continuation
+			self.storeLoadContinuation = continuation
+			
+			// Timeout after 8 seconds
+			Task {
+				var elapsed: UInt64 = 0
+				let checkInterval: UInt64 = 200_000_000 // 0.2 seconds
+				let timeout: UInt64 = 8_000_000_000 // 8 seconds
+				
+				while elapsed < timeout {
+					try? await Task.sleep(nanoseconds: checkInterval)
+					elapsed += checkInterval
+					
+					// Check if stores are now loaded
+					if !self.container.persistentStoreCoordinator.persistentStores.isEmpty {
+						self.isStoreLoaded = true
+						if let cont = self.storeLoadContinuation {
+							cont.resume()
+							self.storeLoadContinuation = nil
+						}
+						print("✅ Store loaded after \(elapsed / 1_000_000_000) seconds")
+						return
+					}
+					
+					// Check if already marked as loaded (even with error)
+					if self.isStoreLoaded {
+						// Store load completed (possibly with error)
+						if let cont = self.storeLoadContinuation {
+							cont.resume()
+							self.storeLoadContinuation = nil
+						}
+						print("✅ Store marked as loaded")
+						return
+					}
+				}
+				
+				// Timeout reached - proceed anyway
+				print("⚠️ Store load timeout after 8 seconds, proceeding anyway")
+				if let cont = self.storeLoadContinuation {
+					// Check one more time if stores are loaded
+					if !self.container.persistentStoreCoordinator.persistentStores.isEmpty {
+						self.isStoreLoaded = true
+						cont.resume()
+					} else {
+						// Proceed anyway - store will load on first use
+						self.isStoreLoaded = true
+						cont.resume()
+					}
+					self.storeLoadContinuation = nil
+				}
+			}
+		}
+	}
+	
+	static func defaultStoreURL() -> URL {
 		let storeName = "\(modelName).sqlite"
 		// Try documents directory first
 		if let storeURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
@@ -87,6 +253,22 @@ final class CoreDataStack {
 		}
 		// Last resort: use temporary directory
 		return FileManager.default.temporaryDirectory.appendingPathComponent(storeName)
+	}
+	
+	// Public method to verify database exists
+	func verifyDatabase() -> Bool {
+		let storeURL = CoreDataStack.defaultStoreURL()
+		let exists = FileManager.default.fileExists(atPath: storeURL.path)
+		print("🔍 Database verification:")
+		print("   Path: \(storeURL.path)")
+		print("   Exists: \(exists)")
+		if exists {
+			if let attributes = try? FileManager.default.attributesOfItem(atPath: storeURL.path),
+			   let size = attributes[.size] as? Int64 {
+				print("   Size: \(size) bytes")
+			}
+		}
+		return exists
 	}
 }
 
@@ -288,9 +470,27 @@ private extension CoreDataStack {
 		let health_createdAt = dateAttr(optional: false); health_createdAt.name = "createdAt"
 		healthEntity.properties = [health_id, health_score, health_date, health_debtToIncome, health_savingsRate, health_creditUtil, health_emergencyFund, health_budgetAdherence, health_recommendations, health_createdAt]
 		
-		model.entities = [userEntity, debtEntity, budgetEntity, goalEntity, netWorthEntity, activityEntity, transactionEntity, paymentEntity, contributionEntity, recurringEntity, accountEntity, receiptEntity, healthEntity]
+		// BillEntity
+		let billEntity = NSEntityDescription()
+		billEntity.name = "BillEntity"
+		billEntity.managedObjectClassName = NSStringFromClass(BillEntity.self)
+		let bill_id = stringAttr(optional: false); bill_id.name = "id"
+		let bill_name = stringAttr(optional: false); bill_name.name = "name"
+		let bill_amount = doubleAttr(); bill_amount.name = "amount"
+		let bill_dueDate = dateAttr(optional: false); bill_dueDate.name = "dueDate"
+		let bill_category = stringAttr(optional: false); bill_category.name = "category"
+		let bill_frequency = stringAttr(optional: false); bill_frequency.name = "frequency"
+		let bill_isPaid = NSAttributeDescription(); bill_isPaid.attributeType = .booleanAttributeType; bill_isPaid.isOptional = false; bill_isPaid.name = "isPaid"
+		let bill_notes = stringAttr(); bill_notes.name = "notes"
+		let bill_reminderDaysBefore = NSAttributeDescription(); bill_reminderDaysBefore.attributeType = .integer32AttributeType; bill_reminderDaysBefore.isOptional = false; bill_reminderDaysBefore.name = "reminderDaysBefore"
+		let bill_createdAt = dateAttr(optional: false); bill_createdAt.name = "createdAt"
+		let bill_lastPaidDate = dateAttr(); bill_lastPaidDate.name = "lastPaidDate"
+		billEntity.properties = [bill_id, bill_name, bill_amount, bill_dueDate, bill_category, bill_frequency, bill_isPaid, bill_notes, bill_reminderDaysBefore, bill_createdAt, bill_lastPaidDate]
+		
+		model.entities = [userEntity, debtEntity, budgetEntity, goalEntity, netWorthEntity, activityEntity, transactionEntity, paymentEntity, contributionEntity, recurringEntity, accountEntity, receiptEntity, healthEntity, billEntity]
 		return model
 	}
 }
+
 
 

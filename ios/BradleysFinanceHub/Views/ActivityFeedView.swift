@@ -14,9 +14,29 @@ struct ActivityFeedView: View {
     
     var body: some View {
         NavigationView {
-            List {
-                ForEach(activities) { activity in
-                    ActivityRowView(activity: activity)
+            Group {
+                if isLoading {
+                    ProgressView()
+                } else if activities.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "clock.badge.questionmark")
+                            .font(.system(size: 50))
+                            .foregroundColor(.secondary)
+                        Text("No Activity Yet")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        Text("Your financial activities will appear here")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(activities) { activity in
+                            ActivityRowView(activity: activity)
+                        }
+                    }
                 }
             }
             .navigationTitle("Activity Feed")

@@ -45,8 +45,14 @@ struct FinancialHealthScoreView: View {
         do {
             async let d = dataService.fetchDebts()
             async let s = dataService.fetchSavingsGoals()
+            async let nw = dataService.fetchNetWorthHistory()
             debts = try await d
             savings = try await s
+            let netWorthHistory = try await nw
+            
+            if let latest = netWorthHistory.first {
+                netWorth = latest.assets - latest.liabilities
+            }
             
             let healthService = FinancialHealthService()
             healthScore = healthService.calculateHealthScore(

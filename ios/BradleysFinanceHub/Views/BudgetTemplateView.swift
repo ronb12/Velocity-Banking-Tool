@@ -8,11 +8,7 @@
 import SwiftUI
 
 struct BudgetTemplateView: View {
-    let templates = [
-        BudgetTemplate(name: "50/30/20 Rule", description: "50% needs, 30% wants, 20% savings"),
-        BudgetTemplate(name: "Zero-Based", description: "Every dollar assigned a purpose"),
-        BudgetTemplate(name: "Envelope Method", description: "Cash-based budgeting system")
-    ]
+    let templates = BudgetTemplate.predefinedTemplates
     
     var body: some View {
         NavigationView {
@@ -24,12 +20,6 @@ struct BudgetTemplateView: View {
             .navigationTitle("Budget Templates")
         }
     }
-}
-
-struct BudgetTemplate: Identifiable {
-    let id = UUID()
-    let name: String
-    let description: String
 }
 
 struct BudgetTemplateRowView: View {

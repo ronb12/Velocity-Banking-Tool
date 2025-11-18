@@ -30,7 +30,7 @@ class InsightsService {
         
         if monthlyExpenses.count > 1 {
             let sorted = monthlyExpenses.sorted { $0.value > $1.value }
-            if let highest = sorted.first, let lowest = sorted.last {
+            if let highest = sorted.first {
                 insights.append("Your highest spending month was \(highest.key) with $\(String(format: "%.2f", highest.value))")
             }
         }

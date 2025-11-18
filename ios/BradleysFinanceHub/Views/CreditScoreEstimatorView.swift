@@ -55,10 +55,10 @@ struct CreditScoreEstimatorView: View {
                 }
             }
             .navigationTitle("Credit Score Estimator")
-            .onChange(of: paymentHistory) { _ in calculateScore() }
-            .onChange(of: creditUtilization) { _ in calculateScore() }
-            .onChange(of: creditAge) { _ in calculateScore() }
-            .onChange(of: creditMix) { _ in calculateScore() }
+            .onChange(of: paymentHistory) { calculateScore() }
+            .onChange(of: creditUtilization) { calculateScore() }
+            .onChange(of: creditAge) { calculateScore() }
+            .onChange(of: creditMix) { calculateScore() }
         }
     }
     

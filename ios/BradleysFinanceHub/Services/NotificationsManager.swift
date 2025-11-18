@@ -59,5 +59,51 @@ class NotificationsManager {
     func cancelNotification(identifier: String) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
     }
+    
+    // MARK: - Bill Reminders
+    
+    func scheduleBillReminder(billId: String, billName: String, amount: Double, dueDate: Date, reminderDate: Date) {
+        let content = UNMutableNotificationContent()
+        content.title = "Bill Reminder: \(billName)"
+        content.body = "$\(String(format: "%.2f", amount)) is due on \(formatDate(dueDate))"
+        content.sound = .default
+        content.badge = 1
+        content.userInfo = ["billId": billId, "type": "billReminder"]
+        
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminderDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+        let request = UNNotificationRequest(identifier: "bill-\(billId)", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request) { [weak self] error in
+            if let error = error {
+                print("❌ Failed to schedule bill reminder: \(error.localizedDescription)")
+            } else {
+                print("✅ Bill reminder scheduled for \(billName) on \(self?.formatDate(reminderDate) ?? "")")
+            }
+        }
+    }
+    
+    func scheduleBillOverdueReminder(billId: String, billName: String, amount: Double, dueDate: Date) {
+        let content = UNMutableNotificationContent()
+        content.title = "⚠️ Bill Overdue: \(billName)"
+        content.body = "$\(String(format: "%.2f", amount)) was due on \(formatDate(dueDate))"
+        content.sound = .defaultCritical
+        content.badge = 1
+        content.userInfo = ["billId": billId, "type": "billOverdue"]
+        
+        // Schedule for today if overdue
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 60, repeats: false)
+        let request = UNNotificationRequest(identifier: "bill-overdue-\(billId)", content: content, trigger: trigger)
+        
+        UNUserNotificationCenter.current().add(request)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
+    }
 }
 

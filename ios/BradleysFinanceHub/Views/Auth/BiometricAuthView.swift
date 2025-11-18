@@ -63,7 +63,7 @@ struct BiometricAuthView: View {
         }
         .task {
             // Auto-trigger biometric on appear
-            await authenticate()
+            authenticate()
         }
     }
     

@@ -339,13 +339,27 @@
 			mainGroup = B1D206BB9841C97482DD9186;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-			);
+			
+			ba8e39bf086f4217bd8ffd28 /* XCRemoteSwiftPackageReference "plaid-link-ios" */,
+		);
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				9D057CB7F4BE72360E6FF7EE /* BradleysFinanceHub */,
 			);
 		};
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ba8e39bf086f4217bd8ffd28 /* XCRemoteSwiftPackageReference "plaid-link-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/plaid/plaid-link-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */

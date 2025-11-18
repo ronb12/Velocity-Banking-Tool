@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct TransactionFiltersView: View {
+    let categories: [String]
     @Binding var selectedCategory: String?
     @Binding var selectedType: Transaction.TransactionType?
-    @Binding var dateRange: DateRange?
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -18,19 +18,27 @@ struct TransactionFiltersView: View {
             Form {
                 Section("Category") {
                     Picker("Category", selection: $selectedCategory) {
-                        Text("All").tag(nil as String?)
-                        Text("Food").tag("Food" as String?)
-                        Text("Transportation").tag("Transportation" as String?)
-                        Text("Entertainment").tag("Entertainment" as String?)
+                        Text("All Categories").tag(nil as String?)
+                        ForEach(categories, id: \.self) { category in
+                            Text(category).tag(category as String?)
+                        }
                     }
                 }
                 
                 Section("Type") {
                     Picker("Type", selection: $selectedType) {
-                        Text("All").tag(nil as Transaction.TransactionType?)
+                        Text("All Types").tag(nil as Transaction.TransactionType?)
                         Text("Income").tag(Transaction.TransactionType.income as Transaction.TransactionType?)
                         Text("Expense").tag(Transaction.TransactionType.expense as Transaction.TransactionType?)
                     }
+                }
+                
+                Section {
+                    Button("Clear Filters") {
+                        selectedCategory = nil
+                        selectedType = nil
+                    }
+                    .foregroundColor(.red)
                 }
             }
             .navigationTitle("Filters")
