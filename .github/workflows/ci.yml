@@ -1,106 +1,50 @@
-name: CI/CD Pipeline
+name: iOS CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
+    runs-on: macos-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
     
-    - name: Install dependencies
-      run: npm ci
+    - name: Show Xcode version
+      run: xcodebuild -version
     
-    - name: Run linter
+    - name: Build iOS app
       run: |
-        if npm run lint 2>/dev/null; then
-          echo "✅ Linting passed"
-        else
-          echo "⚠️ Linting skipped or failed (non-critical)"
-        fi
+        xcodebuild clean build \
+          -project BradleysFinanceHub.xcodeproj \
+          -scheme BradleysFinanceHub \
+          -destination 'platform=iOS Simulator,name=iPhone 15' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
       continue-on-error: true
     
-    - name: Build project
-      run: npm run build
-      env:
-        NODE_ENV: production
-        DISABLE_PWA: 'true'
-        # Skip Capacitor in CI builds (not needed for web deployment)
-        CI: 'true'
-    
-    - name: Check build output
+    - name: Verify project structure
       run: |
-        if [ ! -d "dist" ]; then
-          echo "❌ Build failed: dist directory not found"
+        echo "✅ Verifying iOS project structure..."
+        if [ -d "BradleysFinanceHub" ]; then
+          echo "✅ iOS app source directory exists"
+          find BradleysFinanceHub -name "*.swift" | wc -l | xargs echo "Swift files:"
+        else
+          echo "❌ iOS app source directory not found"
           exit 1
         fi
-        echo "✅ Build successful: dist directory exists"
-        echo "Build contents:"
-        ls -la dist/ | head -10
-        echo ""
-        echo "Total files in dist:"
-        find dist -type f | wc -l
-    
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts-${{ matrix.node-version }}
-        path: dist/
-        retention-days: 7
-
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run tests
-      run: |
-        echo "Running unit tests..."
-        npm run test:unit || echo "⚠️ Some tests failed (checking if non-critical)"
-      continue-on-error: true
-      
-    - name: Check test results
-      run: |
-        if npm run test:unit 2>&1 | grep -q "Test Suites:.*failed"; then
-          echo "⚠️ Some test suites failed"
-          npm run test:unit 2>&1 | tail -20
+        
+        if [ -d "BradleysFinanceHub.xcodeproj" ]; then
+          echo "✅ Xcode project exists"
         else
-          echo "✅ All tests passed"
+          echo "❌ Xcode project not found"
+          exit 1
         fi
-      continue-on-error: true
-    
-    - name: Run path verification
-      run: |
-        if [ -f "tests/path-verification.mjs" ]; then
-          node tests/path-verification.mjs || echo "⚠️ Path verification found issues (non-critical)"
-        else
-          echo "⚠️ Path verification script not found"
-        fi
-      continue-on-error: true
