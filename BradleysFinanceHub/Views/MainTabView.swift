@@ -128,13 +128,15 @@ struct MainTabView: View {
 					attempts += 1
 				}
 				
-				// Verify Core Data is ready before creating DataService
-				guard let coordinator = context.persistentStoreCoordinator,
-					  !coordinator.persistentStores.isEmpty else {
-					print("⚠️ Warning: Core Data not ready after waiting, creating DataService anyway")
-				}
-				
-				let service = DataService(context: context)
+			// Verify Core Data is ready before creating DataService
+			if let coordinator = context.persistentStoreCoordinator,
+			   !coordinator.persistentStores.isEmpty {
+				print("✅ Core Data is ready")
+			} else {
+				print("⚠️ Warning: Core Data not ready after waiting, creating DataService anyway")
+			}
+			
+			let service = DataService(context: context)
 				// Run migration after store is confirmed loaded
 				service.performMigrationIfNeeded()
 				dataServiceHolder.service = service
