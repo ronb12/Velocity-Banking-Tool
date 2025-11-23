@@ -1,1 +1,0 @@
-System.register(["./modulepreload-polyfill-legacy-CnvmjJHj.js","./auth-legacy-CXkRVKZL.js","https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js","https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js","https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"],function(e,s){"use strict";return{setters:[null,null,null,null,null],execute:function(){}}});
