@@ -1,235 +1,148 @@
 # Bradley's Finance Hub
 
-A comprehensive, AI-powered personal finance dashboard built with Firebase and modern web technologies. This advanced toolkit helps users master their money using velocity banking principles, debt payoff automation, budgeting, and net worth tracking — all in one intuitive, accessible, and secure Progressive Web App (PWA).
-
-## 🌟 Features
-
-### Core Features
-- **Debt Tracking & Management** - Track multiple debts with automated payoff strategies
-- **Savings Goals** - Set and track savings goals with visual progress
-- **Budget Management** - Create and manage budgets with spending tracking
-- **Net Worth Calculator** - Comprehensive net worth tracking
-- **Credit Score Estimator** - Estimate your credit score
-- **Velocity Banking Calculator** - Optimize debt payoff strategies
-- **Challenge Library** - Savings challenges with PDF guides
-- **Activity Feed** - Master activity log for all financial actions
-- **Notifications** - Real-time notifications for important events
-
-### Technical Features
-- **Progressive Web App (PWA)** - Installable, offline-capable
-- **8 Color Themes** - Customizable theme system
-- **Responsive Design** - Mobile-first, works on all devices
-- **Real-time Sync** - Firebase Firestore for data synchronization
-- **Offline Support** - Service worker for offline functionality
-- **Analytics** - Built-in analytics tracking
-- **Accessibility** - WCAG compliant
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ and npm
-- Firebase account and project
-- Git
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/ronb12/Velocity-Banking-Tool.git
-   cd "Bradley's Finance Hub"
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Firebase**
-   - Create a `.env` file in the root directory
-   ```env
-   VITE_FIREBASE_API_KEY=your_api_key
-   VITE_FIREBASE_AUTH_DOMAIN=your_auth_domain
-   VITE_FIREBASE_PROJECT_ID=your_project_id
-   VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   VITE_FIREBASE_APP_ID=your_app_id
-   ```
-
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open in browser**
-   - Navigate to `http://localhost:3000`
-
-## 📁 Project Structure
-
-```
-Bradley's Finance Hub/
-├── src/
-│   ├── pages/          # Page components
-│   │   ├── auth/       # Authentication pages
-│   │   ├── debt/       # Debt tracking pages
-│   │   ├── savings/    # Savings pages
-│   │   ├── calculators/# Calculator pages
-│   │   └── other/      # Other pages
-│   ├── styles/         # CSS files
-│   ├── scripts/        # JavaScript modules
-│   │   ├── core/       # Core functionality
-│   │   ├── components/ # Reusable components
-│   │   └── pages/      # Page controllers
-│   └── components/     # HTML components
-├── public/             # Static assets
-│   ├── icons/          # App icons
-│   ├── pdfs/           # PDF resources
-│   └── assets/         # Other assets
-├── tests/              # Test files
-│   ├── unit/           # Unit tests
-│   ├── integration/    # Integration tests
-│   └── e2e/            # End-to-end tests
-├── utils/              # Utility modules
-├── docs/               # Documentation
-├── firebase.json       # Firebase configuration
-├── vite.config.js      # Vite build configuration
-└── package.json        # Dependencies
-```
-
-## 🛠️ Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm test` - Run tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate test coverage
-- `npm run test:e2e` - Run end-to-end tests
-- `npm run lint` - Lint code
-- `npm run format` - Format code with Prettier
-- `npm run deploy` - Build and deploy to Firebase
-
-### Code Style
-
-- **ESLint** - Code linting
-- **Prettier** - Code formatting
-- **JavaScript ES6+** - Modern JavaScript
-- **CSS Variables** - Theme system
-- **Kebab-case** - File naming convention
-
-## 🧪 Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Generate coverage report
-npm run test:coverage
-
-# Run E2E tests
-npm run test:e2e
-```
-
-### Test Structure
-
-- **Unit Tests** - Test individual functions and components
-- **Integration Tests** - Test component interactions
-- **E2E Tests** - Test full user workflows with Puppeteer
-
-## 📦 Building for Production
-
-```bash
-# Build the app
-npm run build
-
-# Preview the build
-npm run preview
-
-# Deploy to Firebase
-npm run deploy
-```
-
-The build output will be in the `dist/` directory, optimized and minified for production.
-
-## 🔒 Security
-
-### Security Features
-- Firebase Authentication
-- Firestore Security Rules
-- Input validation
-- XSS protection
-- CSRF protection
-- Secure session management
-
-### Environment Variables
-Never commit sensitive data. Use `.env` files for:
-- Firebase configuration
-- API keys
-- Secret keys
-
-## 🚀 Deployment
-
-### Firebase Hosting
-
-1. **Build the app**
-   ```bash
-   npm run build
-   ```
-
-2. **Deploy**
-   ```bash
-   firebase deploy --only hosting
-   ```
-
-### Environment Setup
-
-- Production: Uses production Firebase project
-- Staging: Uses staging Firebase project
-- Development: Uses local Firebase emulator
-
-## 📚 Documentation
-
-- [Architecture Documentation](./docs/ARCHITECTURE.md)
-- [API Documentation](./docs/API.md)
-- [Component Documentation](./docs/COMPONENTS.md)
-- [Theme System](./THEME_SYSTEM.md)
-- [Code Review Analysis](./CODE_REVIEW_ANALYSIS.md)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-- Follow the code style (ESLint + Prettier)
-- Write tests for new features
-- Update documentation
-- Follow semantic versioning
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
-## 👤 Author
-
-Bradley's Finance Hub
-
-## 🙏 Acknowledgments
-
-- Firebase for backend services
-- Vite for build tooling
-- All contributors and testers
+<div align="center">
+  <h3>Comprehensive iOS Financial Management App</h3>
+  <p>Track debts, manage budgets, achieve savings goals, and optimize your finances with velocity banking principles</p>
+  
+  [![iOS](https://img.shields.io/badge/iOS-17.0+-blue.svg)](https://developer.apple.com/ios/)
+  [![Swift](https://img.shields.io/badge/Swift-5.0-orange.svg)](https://swift.org/)
+  [![SwiftUI](https://img.shields.io/badge/SwiftUI-Yes-green.svg)](https://developer.apple.com/xcode/swiftui/)
+  [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+</div>
 
 ---
 
-**Version:** 2.1.0  
-**Last Updated:** 2025-01-13
+## 📱 About
+
+Bradley's Finance Hub is a comprehensive iOS application designed to help you take complete control of your finances. Built with SwiftUI and Core Data, the app provides powerful tools for debt management, budgeting, savings tracking, and financial planning using velocity banking and zero-based budgeting principles.
+
+**Privacy-First**: All your financial data is stored locally on your device. No third-party analytics, no tracking, no data sharing.
+
+## ✨ Features
+
+### 💳 Debt Management
+- Track all your debts in one place
+- Debt snowball and avalanche payoff strategies
+- Payment history and progress tracking
+- Debt payoff timeline visualization
+- Interest rate calculations
+
+### 💰 Budgeting
+- Monthly budget creation and tracking
+- Zero-based budgeting system
+- Envelope budgeting method
+- Budget categories and alerts
+- Spending vs. budgeted comparisons
+
+### 🎯 Savings Goals
+- Set and track multiple savings goals
+- Progress visualization
+- Target date planning
+- Contribution tracking
+- Priority-based goal management
+
+### 📊 Financial Overview
+- Net worth calculator and tracking
+- Financial health score
+- Credit score estimator
+- Comprehensive financial reports
+- Interactive charts and graphs
+
+### 🏦 Account Management
+- Multiple account tracking
+- Transaction history
+- Recurring transaction management
+- Account balance monitoring
+
+### ⚡ Velocity Banking
+- Velocity calculator for debt optimization
+- Payment strategy recommendations
+- Cash flow analysis
+- Debt payoff acceleration tools
+
+### 📅 Additional Features
+- Financial calendar view
+- Activity feed and notifications
+- Challenge library for savings
+- Data export (JSON, CSV, PDF)
+- Biometric authentication
+- Dark mode support
+- iCloud sync (optional)
+
+## 🛠️ Technical Details
+
+- **Platform**: iOS 17.0+
+- **Language**: Swift 5.0
+- **Framework**: SwiftUI
+- **Data Storage**: Core Data (local) with optional CloudKit sync
+- **Architecture**: MVVM with SwiftUI
+- **Authentication**: Apple Sign In, Biometric (Face ID/Touch ID)
+
+## 📋 Requirements
+
+- iOS 17.0 or later
+- Xcode 15.0 or later (for building from source)
+- Apple Developer account (for App Store distribution)
+
+## 🚀 Building from Source
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ronb12/Bradleys-Financial-Hub.git
+   cd Bradleys-Financial-Hub
+   ```
+
+2. Open the project in Xcode:
+   ```bash
+   open BradleysFinanceHub.xcodeproj
+   ```
+
+3. Select your development team in Xcode:
+   - Go to Signing & Capabilities
+   - Select your team for automatic signing
+
+4. Build and run:
+   - Select a simulator or connected device
+   - Press `Cmd + R` to build and run
+
+## 🔒 Privacy & Security
+
+- **Local Storage**: All data is stored locally on your device using Core Data
+- **No Tracking**: Zero third-party analytics or tracking services
+- **Encryption**: Data encrypted at rest with iOS security measures
+- **CloudKit Sync**: Optional iCloud sync uses Apple's encrypted CloudKit service
+- **Biometric Protection**: Face ID/Touch ID support for app access
+
+For detailed privacy information, see our [Privacy Policy](https://ronb12.github.io/Bradleys-Financial-Hub/privacy-policy.html).
+
+## 📱 App Store
+
+Coming soon to the App Store.
+
+## 🤝 Contributing
+
+This is a personal project. Contributions and suggestions are welcome! Please feel free to open an issue or submit a pull request.
+
+## 📄 License
+
+Copyright © 2025 Bradley's Finance Hub. All rights reserved.
+
+This software is proprietary and confidential. Unauthorized copying, modification, distribution, or use of this software, via any medium, is strictly prohibited.
+
+## 🔗 Links
+
+- **Privacy Policy**: [View Online](https://ronb12.github.io/Bradleys-Financial-Hub/privacy-policy.html)
+- **GitHub Pages**: [Website](https://ronb12.github.io/Bradleys-Financial-Hub/)
+- **Repository**: [GitHub](https://github.com/ronb12/Bradleys-Financial-Hub)
+
+## 📞 Support
+
+For support, questions, or feature requests, please open an issue on GitHub.
+
+---
+
+<div align="center">
+  <p>Made with ❤️ using SwiftUI</p>
+  <p>© 2025 Bradley's Finance Hub. All rights reserved.</p>
+</div>
+
