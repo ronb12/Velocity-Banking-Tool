@@ -11,7 +11,7 @@ This folder contains the GitHub Pages website for Bradley's Finance Hub.
 
 To enable GitHub Pages for this repository:
 
-1. Go to your repository on GitHub: https://github.com/ronb12/Velocity-Banking-Tool
+1. Go to your repository on GitHub: https://github.com/ronb12/Bradleys-Financial-Hub
 2. Click on **Settings** (in the repository menu)
 3. Scroll down to **Pages** (in the left sidebar)
 4. Under **Source**, select **Deploy from a branch**
@@ -20,8 +20,8 @@ To enable GitHub Pages for this repository:
 7. Click **Save**
 
 Your site will be available at:
-- `https://ronb12.github.io/Velocity-Banking-Tool/`
-- `https://ronb12.github.io/Velocity-Banking-Tool/privacy-policy.html`
+- `https://ronb12.github.io/Bradleys-Financial-Hub/`
+- `https://ronb12.github.io/Bradleys-Financial-Hub/privacy-policy.html`
 
 ## Updating the Site
 
