@@ -1,0 +1,148 @@
+# Fastlane Deliverfile - App Store Connect Metadata Configuration
+
+# App Information
+app_identifier("com.bradleysfinancehub.app")
+username(ENV["FASTLANE_USER"]) # Set via environment variable or App Store Connect API key
+
+# Metadata
+name({
+  "en-US" => "Bradley's Finance Hub"
+})
+
+subtitle({
+  "en-US" => "Velocity Banking & Financial Management"
+})
+
+description({
+  "en-US" => <<-DESC
+Bradley's Finance Hub is a comprehensive iOS application designed to empower you to take complete control of your financial life. Built with privacy and security as top priorities, this app provides powerful tools for managing your finances, tracking debts, creating budgets, and achieving your financial goals using proven velocity banking principles.
+
+🎯 KEY FEATURES
+
+Debt Tracking & Management
+Monitor all your debts in one centralized location. Track balances, interest rates, minimum payments, and due dates. Implement velocity banking strategies to accelerate debt payoff and save thousands in interest payments.
+
+Budget Management
+Create flexible monthly budgets with detailed categories. Track spending against allocations to stay on track. Use zero-based budgeting to ensure every dollar has a purpose.
+
+Savings Goals
+Set clear savings targets for various objectives—emergency fund, down payment, vacation, or any financial goal. Track your progress with visual indicators and milestone celebrations.
+
+Transaction Tracking
+Easily record and categorize all your income and expenses. Gain insights into your spending habits with detailed transaction history and smart categorization.
+
+Net Worth Calculator
+Understand your overall financial health by tracking assets and liabilities. Calculate your net worth over time and visualize your financial progress.
+
+Velocity Banking Calculator
+Optimize your debt payoff strategy with our powerful velocity banking calculator. Analyze cash flow, identify opportunities to accelerate payments, and see the impact of different payment strategies.
+
+Zero-Based Budgeting
+Allocate every dollar of your income to a specific purpose. Ensure no money is unaccounted for with comprehensive zero-based budgeting tools.
+
+Financial Reports & Insights
+Generate detailed reports and visualizations to understand your financial trends. Make informed decisions with comprehensive financial analytics.
+
+🔒 PRIVACY & SECURITY
+
+Your financial data is stored locally on your device using Apple's Core Data framework. We do not collect, transmit, or share your financial information with any third parties. No tracking, no analytics, no data collection—your privacy is paramount.
+
+Optional iCloud Sync
+Enable iCloud Sync (CloudKit) to keep your data synchronized across your Apple devices. All synchronization is encrypted and managed by Apple.
+
+Biometric Protection
+Secure your financial data with Face ID or Touch ID for quick and safe access to your financial information.
+
+📊 COMPREHENSIVE FINANCIAL TOOLS
+
+• Debt payoff timeline visualization
+• Budget templates and categories
+• Recurring transaction management
+• Account balance monitoring
+• Financial calendar view
+• Activity feed and notifications
+• Challenge library for savings
+• Data export (JSON, CSV, PDF)
+• Dark mode support
+• Universal app (iPhone & iPad)
+
+🎨 MODERN & INTUITIVE
+
+Built with SwiftUI for a beautiful, native iOS experience. Clean, modern interface designed for ease of use. Responsive design that works seamlessly on iPhone and iPad.
+
+💡 PERFECT FOR
+
+• Individuals looking to get out of debt faster
+• Families managing household budgets
+• Anyone tracking savings goals
+• People implementing velocity banking strategies
+• Users who value financial privacy
+• Those who want a comprehensive financial management solution
+
+Start your journey to financial freedom today with Bradley's Finance Hub. Take control of your finances, eliminate debt faster, and achieve your financial goals with confidence.
+
+---
+
+Privacy Policy: https://ronb12.github.io/Bradleys-Financial-Hub/privacy-policy.html
+DESC
+})
+
+keywords({
+  "en-US" => "finance, budget, debt, savings, velocity banking, money, financial planning, net worth, transactions, budgeting"
+})
+
+promotional_text({
+  "en-US" => "New in 2.0: Enhanced velocity banking calculator, improved budget tracking, and faster performance. Start your journey to financial freedom today!"
+})
+
+release_notes({
+  "en-US" => <<-NOTES
+Version 2.0 - Major Update
+
+🎉 New Features:
+• Enhanced velocity banking calculator with advanced optimization strategies
+• Improved budget tracking with better category management
+• Faster app performance and smoother animations
+• Enhanced financial reports with new visualization options
+• Improved data export functionality (JSON, CSV, PDF)
+
+🔧 Improvements:
+• Optimized Core Data performance for faster loading
+• Better error handling and user feedback
+• Improved UI/UX across all screens
+• Enhanced dark mode support
+• Better iPad layout and responsiveness
+
+🐛 Bug Fixes:
+• Fixed app crash on launch issues
+• Resolved Core Data initialization timing problems
+• Fixed version number display in settings
+• Improved biometric authentication reliability
+
+🔒 Privacy:
+• All data remains stored locally on your device
+• No tracking, no analytics, no data collection
+• Optional iCloud sync for cross-device access
+
+Thank you for using Bradley's Finance Hub! We're committed to helping you achieve your financial goals.
+NOTES
+})
+
+support_url("https://github.com/ronb12/Bradleys-Financial-Hub")
+marketing_url("https://ronb12.github.io/Bradleys-Financial-Hub/")
+privacy_policy_url("https://ronb12.github.io/Bradleys-Financial-Hub/privacy-policy.html")
+
+# App Category
+primary_category("Finance")
+secondary_category("Productivity")
+
+# Pricing
+price_tier(0) # Free
+
+# Submission
+submit_for_review(false) # Set to true when ready to submit
+automatic_release(false) # Set to true for automatic release after approval
+
+# Screenshots - These need to be in fastlane/screenshots/ directory
+# You'll need to add screenshots manually or via fastlane snapshot
+

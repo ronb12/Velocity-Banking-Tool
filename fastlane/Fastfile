@@ -1,0 +1,56 @@
+# Fastfile for Bradley's Finance Hub
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Upload metadata to App Store Connect"
+  lane :upload_metadata do
+    deliver(
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_app_version_update: false,
+      force: true,
+      submit_for_review: false
+    )
+  end
+
+  desc "Upload app and metadata to App Store Connect"
+  lane :upload_app do
+    # Build and archive
+    build_app(
+      scheme: "BradleysFinanceHub",
+      export_method: "app-store",
+      export_options: {
+        method: "app-store",
+        signingStyle: "automatic"
+      }
+    )
+
+    # Upload to App Store Connect
+    upload_to_app_store(
+      skip_metadata: false,
+      skip_screenshots: true,
+      submit_for_review: false,
+      force: true
+    )
+  end
+
+  desc "Submit app for review"
+  lane :submit_for_review do
+    deliver(
+      submit_for_review: true,
+      automatic_release: false,
+      force: true
+    )
+  end
+
+  desc "Download existing metadata from App Store Connect"
+  lane :download_metadata do
+    deliver(
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      force: true
+    )
+  end
+end
+
