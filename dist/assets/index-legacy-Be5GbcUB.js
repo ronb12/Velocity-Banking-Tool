@@ -1,1 +1,0 @@
-System.register(["./preload-helper-legacy-B-gntM7F.js","./index-legacy-Dr8f_-Ur.js"],function(e,t){"use strict";var r,p;return{setters:[e=>{r=e._},e=>{p=e.r}],execute:function(){e("App",p("App",{web:()=>r(()=>t.import("./web-legacy-mCZYgnJQ.js"),void 0).then(e=>new e.AppWeb)}))}}});

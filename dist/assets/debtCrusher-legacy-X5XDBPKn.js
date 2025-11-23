@@ -1,1 +1,0 @@
-System.register(["./modulepreload-polyfill-legacy-CnvmjJHj.js","./sync-legacy-DONBmt1x.js","https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"],function(e,s){"use strict";return{setters:[null,null,null],execute:function(){}}});

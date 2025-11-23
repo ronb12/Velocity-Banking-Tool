@@ -1,1 +1,0 @@
-import{r as a}from"./index-CfCPgnOI.js";var r,t,e,D;(t=r||(r={})).Dark="DARK",t.Light="LIGHT",t.Default="DEFAULT",(D=e||(e={})).None="NONE",D.Slide="SLIDE",D.Fade="FADE";const o=e,i=r,s=a("StatusBar");export{e as Animation,s as StatusBar,o as StatusBarAnimation,i as StatusBarStyle,r as Style};

@@ -1,1 +1,0 @@
-function t(){import.meta.url,import("_").catch(()=>1),async function*(){}().next()}import"./modulepreload-polyfill-YP0FEG5d.js";import"./sync-BSpl6rnS.js";import"https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";export{t as __vite_legacy_guard};
