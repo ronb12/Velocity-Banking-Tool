@@ -116,17 +116,17 @@ struct MainTabView: View {
 			}
 		.task {
 			if dataServiceHolder.service == nil {
-				// Wait for Core Data persistent store to be ready
-				// Check if the coordinator and stores are available
-				var attempts = 0
-				while attempts < 50 { // Wait up to 5 seconds (50 * 0.1)
-					if let coordinator = context.persistentStoreCoordinator,
-					   !coordinator.persistentStores.isEmpty {
-						break
-					}
-					try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-					attempts += 1
+			// Wait for Core Data persistent store to be ready
+			// Check if the coordinator and stores are available
+			var attempts = 0
+			while attempts < 20 { // Wait up to 2 seconds (20 * 0.1) - optimized for faster launch
+				if let coordinator = context.persistentStoreCoordinator,
+				   !coordinator.persistentStores.isEmpty {
+					break
 				}
+				try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+				attempts += 1
+			}
 				
 			// Verify Core Data is ready before creating DataService
 			if let coordinator = context.persistentStoreCoordinator,
